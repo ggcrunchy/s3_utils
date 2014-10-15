@@ -425,7 +425,6 @@ function M.EditorEvent (type, what, arg1, arg2, arg3)
 		-- arg1: Dialog
 		-- arg2: Representative object
 		elseif what == "enum_props" then
-			arg1:Spacer()
 			arg1:StockElements("EventBlock", type)
 			arg1:AddLink{ text = "Link to event source", rep = arg2, sub = "fire", interfaces = "event_source" }
 			arg1:AddSeparator()

@@ -132,7 +132,6 @@ function M.EditorEvent (type, what, arg1, arg2, arg3)
 		-- Enumerate Properties --
 		-- arg1: Dialog
 		elseif what == "enum_props" then
-			arg1:Spacer()
 			arg1:StockElements("Dot", type)
 			arg1:AddSeparator()
 --			arg1:AddCheckbox{ text = "On By Default?", value_name = "starts_on" }

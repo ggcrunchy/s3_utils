@@ -52,7 +52,6 @@ function M.EditorEvent (_, what, arg1, arg2)
 	-- arg1: Dialog
 	-- arg2: Representative object
 	if what == "enum_props" then
-		arg1:Spacer()
 		arg1:StockElements(nil)
 		arg1:AddSeparator()
 		arg1:AddLink{ text = "Generic link", rep = arg2, sub = "link" }

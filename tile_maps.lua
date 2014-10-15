@@ -31,7 +31,7 @@ local setmetatable = setmetatable
 local array_index = require("array_ops.index")
 local collision = require("corona_utils.collision")
 local range = require("number_ops.range")
-local sheet = require("ui.Sheet")
+local sheet = require("corona_ui.utils.sheet")
 local tile_flags = require("s3_utils.tile_flags")
 
 -- Corona globals --
