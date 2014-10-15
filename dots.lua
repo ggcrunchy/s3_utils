@@ -38,10 +38,10 @@ local pairs = pairs
 local sort = table.sort
 
 -- Modules --
-local collision = require("game.Collision")
+local collision = require("corona_utils.collision")
 local require_ex = require("tektite.require_ex")
-local tile_maps = require("game.TileMaps")
-local timers = require("game.Timers")
+local tile_maps = require("s3_utils.tile_maps")
+local timers = require("corona_utils.timers")
 
 -- Exports --
 local M = {}
@@ -74,7 +74,7 @@ local function NoOp () end
 -- Unless the **"omit\_from\_event\_blocks"** property is true, a dot will be added to any event
 -- block that it happens to occupy.
 --
--- The **"body"** and **"body_type"** properties can be supplied to @{game.Collision.MakeSensor}.
+-- The **"body"** and **"body_type"** properties can be supplied to @{corona_utils.collision.MakeSensor}.
 -- @pgroup group Display group that will hold the dot.
 -- @ptable info Information about the new dot. Required fields:
 --
@@ -83,7 +83,7 @@ local function NoOp () end
 -- * **type**: Name of dot type, q.v. _name_, above. This is also assigned as the dot's collision type.
 --
 -- Instance-specific data may also be passed in other fields.
--- @see game.Collision.GetType
+-- @see corona_utils.collision.GetType
 function M.AddDot (group, info)
 	local dot = DotList[info.type](group, info)
 	local index = tile_maps.GetTileIndex(info.col, info.row)

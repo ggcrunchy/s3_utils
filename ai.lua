@@ -32,11 +32,11 @@ local type = type
 
 -- Modules --
 local flow = require("coroutine_ops.flow")
-local movement = require("game.Movement")
+local movement = require("s3_utils.movement")
 local mwc_rng = require("number_ops.mwc_rng")
 local range = require("number_ops.range")
-local tile_flags = require("game.TileFlags")
-local tile_maps = require("game.TileMaps")
+local tile_flags = require("s3_utils.tile_flags")
+local tile_maps = require("s3_utils.tile_maps")
 
 -- Corona globals --
 local display = display

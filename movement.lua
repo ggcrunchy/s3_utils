@@ -30,8 +30,8 @@ local max = math.max
 local min = math.min
 
 -- Modules --
-local tile_flags = require("game.TileFlags")
-local tile_maps = require("game.TileMaps")
+local tile_flags = require("s3_utils.tile_flags")
+local tile_maps = require("s3_utils.tile_maps")
 
 -- Imports --
 local IsFlagSet = tile_flags.IsFlagSet

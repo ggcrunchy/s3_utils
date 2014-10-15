@@ -29,10 +29,10 @@ local setmetatable = setmetatable
 
 -- Modules --
 local array_index = require("array_ops.index")
-local collision = require("game.Collision")
+local collision = require("corona_utils.collision")
 local range = require("number_ops.range")
 local sheet = require("ui.Sheet")
-local tile_flags = require("game.TileFlags")
+local tile_flags = require("s3_utils.tile_flags")
 
 -- Corona globals --
 local display = display
@@ -88,12 +88,12 @@ local TileW, TileH
 --
 -- Currently, this is assumed to be a one-time operation on level load.
 -- @pgroup group Group to which tiles are added.
--- @array names Names of tiles, cf. @{game.TileFlags.GetFlagsByName}, from upper-left to
+-- @array names Names of tiles, cf. @{s3_utils.tile_flags.GetFlagsByName}, from upper-left to
 -- lower-right (left to right over each row).
 --
 -- Unrecognized names will be left blank (the editor names blank tiles **false**). The array
 -- is padded with blanks to ensure its length is a multiple of the columns count.
--- @see game.TileFlags.ResolveFlags
+-- @see s3_utils.tile_flags.ResolveFlags
 function M.AddTiles (group, names)
 	local i, y = 1, .5 * TileH
 
@@ -220,7 +220,7 @@ function M.PutObjectAt (index, object)
 end
 
 --- Updates the tiles in a rectangular region to reflect the current resolved flags, cf.
--- @{game.TileFlags.ResolveFlags}.
+-- @{s3_utils.tile_flags.ResolveFlags}.
 -- @pgroup group Group to which tiles are added.
 -- @int col1 Column of one corner...
 -- @int row1 ...row of one corner...

@@ -37,7 +37,7 @@ local M = {}
 -- @param arg Argument to routine specified by _how_. (Currently, the direction we are facing.)
 -- @return Current regular node of path, after advancement; this will differ from _cur_ if a
 -- branch was taken.
--- @see game.Pathing.FindPath
+-- @see s3_utils.pathing.FindPath
 function M.Advance (cur, how, arg)
 	local index = cur.index
 	local dir = cur[index + 1]
@@ -59,7 +59,7 @@ end
 -- @param branch Branch node of path.
 -- @string facing Direction being faced.
 -- @return Chosen regular node from _branch_, with index at start.
--- @see game.Movement.NextDirection
+-- @see s3_utils.movement.NextDirection
 function M.ChooseBranch_Facing (branch, facing)
 	local look, best, lcost, bcost
 

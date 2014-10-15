@@ -44,10 +44,10 @@ local yield = coroutine.yield
 -- Modules --
 local require_ex = require("tektite.require_ex")
 local bind_utils = require("utils.Bind")
-local fx = require("game.FX")
+local fx = require("s3_utils.fx")
 local range = require("number_ops.range")
-local tile_flags = require("game.TileFlags")
-local tile_maps = require("game.TileMaps")
+local tile_flags = require("s3_utils.tile_flags")
+local tile_maps = require("s3_utils.tile_maps")
 local wrapper = require("coroutine_ops.wrapper")
 
 -- Corona globals --
@@ -199,7 +199,7 @@ local function NewBlock (col1, row1, col2, row2)
 	-- @uint nmin Minimum number of clouds to randomly throw up...
 	-- @uint nmax ...and maximum.
 	-- @treturn uint Total time elapsed, in milliseconds, by effect.
-	-- @see game.FX.Poof
+	-- @see s3_utils.fx.Poof
 	function block:Dust (group, nmin, nmax)
 		local total = 0
 
@@ -290,7 +290,7 @@ local function NewBlock (col1, row1, col2, row2)
 	--- Getter.
 	-- @int index Tile index.
 	-- @treturn uint Tile flags at block creation time.
-	-- @see game.TileFlags.GetFlags
+	-- @see s3_utils.tile_flags.GetFlags
 	function block:GetOldFlags (index)
 		return OldFlags[index] or 0
 	end

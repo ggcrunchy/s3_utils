@@ -30,8 +30,8 @@ local ipairs = ipairs
 
 -- Modules --
 local array_funcs = require("array_ops.funcs")
-local movement = require("game.Movement")
-local tile_flags = require("game.TileFlags")
+local movement = require("s3_utils.movement")
+local tile_flags = require("s3_utils.tile_flags")
 
 -- Exports --
 local M = {}
@@ -92,18 +92,18 @@ end
 --
 -- A regular node is a size 2 * _m_ array of elements, where for any _i_ &isin; [1, _m_],
 -- elements _i_ * 2 - 1 and _i_ * 2 are the _i_-th tile index and direction (cf. the
--- **game.Movement** module) at that tile, respectively. These elements in sequence traverse
+-- **s3_utils.movement** module) at that tile, respectively. These elements in sequence traverse
 -- this node's portion of a path. If key **next** exists, it refers to a branch node that
 -- follows said sequence.
 --
 -- **CONSIDER**: Beyond the first pair, elements in a regular node are kind of superfluous,
--- given mechanisms e.g. @{game.Movement.WayToGo} and physics bodies on non-straight
+-- given mechanisms e.g. @{s3_utils.movement.WayToGo} and physics bodies on non-straight
 -- tiles / goals; perhaps this should be simplified later?
 -- @uint start Starting tile index.
 -- @uint goal Goal tile index.
 -- @return On success, returns a branch node; each of its regular nodes begins at _start_,
 -- heading in a different direction. Otherwise, **nil**.
--- @see game.Movement.NextDirection
+-- @see s3_utils.movement.NextDirection
 function M.FindPath (start, goal)
 	-- If we're already at the goal, don't bother with a path. 
 	if start == goal then

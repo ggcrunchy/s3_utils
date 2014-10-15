@@ -34,7 +34,7 @@
 local action = require("hud.Action")
 local move = require("hud.Move")
 local player = require("game.Player")
-local touch = require("ui.Touch")
+local touch = require("corona_ui.utils.touch")
 
 -- Corona globals --
 local display = display

@@ -26,7 +26,7 @@
 -- Standard library imports --
 
 -- Modules --
-local collision = require("game.Collision")
+local collision = require("corona_utils.collision")
 
 -- Exports --
 local M = {}

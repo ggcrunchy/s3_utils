@@ -28,7 +28,7 @@
 local pairs = pairs
 
 -- Modules --
-local tile_maps = require("game.TileMaps")
+local tile_maps = require("s3_utils.tile_maps")
 
 -- Exports --
 local M = {}
