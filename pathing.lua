@@ -29,7 +29,7 @@ local insert = table.insert
 local ipairs = ipairs
 
 -- Modules --
-local array_funcs = require("array_ops.funcs")
+local array_funcs = require("tektite_core.array.funcs")
 local movement = require("s3_utils.movement")
 local tile_flags = require("s3_utils.tile_flags")
 

@@ -34,7 +34,7 @@ local type = type
 local flow = require("coroutine_ops.flow")
 local movement = require("s3_utils.movement")
 local mwc_rng = require("number_sequences.mwc_rng")
-local range = require("number_ops.range")
+local range = require("tektite_core.number.range")
 local tile_flags = require("s3_utils.tile_flags")
 local tile_maps = require("s3_utils.tile_maps")
 

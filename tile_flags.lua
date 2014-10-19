@@ -29,10 +29,10 @@
 -- Standard library imports --
 
 -- Modules --
-local array_index = require("array_ops.index")
+local array_index = require("tektite_core.array.index")
 local powers_of_2 = require("bitwise_ops.powers_of_2")
-local range = require("number_ops.range")
-local table_funcs = require("table_ops.funcs")
+local range = require("tektite_core.number.range")
+local table_funcs = require("tektite_core.table.funcs")
 
 -- Imports --
 local IsSet = powers_of_2.IsSet

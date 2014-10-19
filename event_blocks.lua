@@ -42,10 +42,10 @@ local random = math.random
 local yield = coroutine.yield
 
 -- Modules --
-local require_ex = require("tektite.require_ex")
+local require_ex = require("tektite_core.require_ex")
 local bind_utils = require("utils.Bind")
 local fx = require("s3_utils.fx")
-local range = require("number_ops.range")
+local range = require("tektite_core.number.range")
 local tile_flags = require("s3_utils.tile_flags")
 local tile_maps = require("s3_utils.tile_maps")
 local wrapper = require("coroutine_ops.wrapper")

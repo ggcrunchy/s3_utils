@@ -39,7 +39,7 @@ local sort = table.sort
 
 -- Modules --
 local collision = require("corona_utils.collision")
-local require_ex = require("tektite.require_ex")
+local require_ex = require("tektite_core.require_ex")
 local tile_maps = require("s3_utils.tile_maps")
 local timers = require("corona_utils.timers")
 

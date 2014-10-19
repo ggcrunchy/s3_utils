@@ -28,9 +28,9 @@ local ipairs = ipairs
 local setmetatable = setmetatable
 
 -- Modules --
-local array_index = require("array_ops.index")
+local array_index = require("tektite_core.array.index")
 local collision = require("corona_utils.collision")
-local range = require("number_ops.range")
+local range = require("tektite_core.number.range")
 local sheet = require("corona_ui.utils.sheet")
 local tile_flags = require("s3_utils.tile_flags")
 
