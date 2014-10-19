@@ -31,8 +31,8 @@
 --
 
 -- Modules --
-local action = require("hud.Action")
-local move = require("hud.Move")
+local action = require("s3_utils.hud.action")
+local move = require("s3_utils.hud.move")
 local player = require("game.Player")
 local touch = require("corona_ui.utils.touch")
 
