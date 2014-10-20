@@ -1,6 +1,6 @@
 --- Various space-filling operations.
 --
--- This module lays claim to the **"filler"** set, cf. @{effect.Stash}.
+-- This module lays claim to the **"filler"** set, cf. @{s3_utils.effect.stash}.
 
 --
 -- Permission is hereby granted, free of charge, to any person obtaining
