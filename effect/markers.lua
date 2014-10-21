@@ -33,10 +33,9 @@ local sin = math.sin
 
 -- Modules --
 local glow = require("s3_utils.effect.glow")
+local length = require("tektite_core.number.length")
 local line_ex = require("corona_ui.utils.line_ex")
-local quantize = require("geom2d_ops.quantize")
 local timers = require("corona_utils.timers")
-local vector = require("geom2d_ops.vector")
 
 -- Corona globals --
 local display = display
@@ -183,7 +182,7 @@ local function ArrowGroupMaker (sep, dfunc)
 		--
 		local dx, dy = x2 - x1, y2 - y1
 
-		for i = 1, quantize.ToBin(dx, dy, sep, 1) do
+		for i = 1, length.ToBin(dx, dy, sep, 1) do
 			M.StraightArrow(arrow_group, dir, 0, 0, width)
 		end
 
@@ -291,7 +290,7 @@ local MakeColumn = ArrowGroupMaker(75, function(i, n, dx, dy, offset, agroup)
 
 		agroup.m_dir = dir
 
-		local len = vector.Distance(dx, dy) / 20
+		local len = length.Deltas(dx, dy) / 20
 		local nx, ny = dx / len, dy / len
 
 		if dir == "backward" then

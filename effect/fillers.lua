@@ -33,8 +33,8 @@ local pairs = pairs
 -- Modules --
 local audio = require("corona_utils.audio")
 local circle = require("s3_utils.fill.circle")
+local length = require("tektite_core.number.length")
 local pixels = require("utils.Pixels") -- TODO: DEFUNCT!
-local quantize = require("geom2d_ops.quantize")
 local sheet = require("corona_ui.utils.sheet")
 local stash = require("s3_utils.effect.stash")
 local timers = require("corona_utils.timers")
@@ -202,7 +202,7 @@ function M.Fill (group, how, ulx, uly, lrx, lry)
 
 		timers.RepeatEx(function()
 			if filler.parent then
-				local radius = quantize.ToBin_RoundUp(filler.width / dw, filler.height / dh, 1.15, .01)
+				local radius = length.ToBin_RoundUp(filler.width / dw, filler.height / dh, 1.15, .01)
 
 				spread(radius)
 
