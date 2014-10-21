@@ -35,7 +35,7 @@ local unpack = unpack
 
 -- Modules --
 local array_index = require("tektite_core.array.index")
-local curves = require("utils.Curves")
+local curves = require("tekite_core.number.curves")
 local frames = require("corona_utils.frames")
 local timers = require("corona_utils.timers")
 

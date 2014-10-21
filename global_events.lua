@@ -31,7 +31,7 @@ local pairs = pairs
 local rawequal = rawequal
 
 -- Modules --
-local bind_utils = require("utils.Bind")
+local bind_utils = require("tektite_core.bind")
 local config = require("config.GlobalEvents")
 
 -- Corona globals --

@@ -26,7 +26,7 @@
 -- Standard library imports --
 
 -- Modules --
-local bind_utils = require("utils.Bind")
+local bind_utils = require("tektite_core.bind")
 
 -- Exports --
 local M = {}
