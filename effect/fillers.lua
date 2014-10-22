@@ -34,7 +34,6 @@ local pairs = pairs
 local audio = require("corona_utils.audio")
 local circle = require("s3_utils.fill.circle")
 local length = require("tektite_core.number.length")
-local pixels = require("utils.Pixels") -- TODO: DEFUNCT!
 local sheet = require("corona_ui.utils.sheet")
 local stash = require("s3_utils.effect.stash")
 local timers = require("corona_utils.timers")
@@ -80,11 +79,6 @@ local FillParams = {
 		Sounds:PlaySound("shape_filled")
 	end
 }
-
---
-local function NewPixelRect (group)
-	return display.newImage(group, pixels.GetPixelSheet(), 1)
-end
 
 --
 local function StashPixels (event)
