@@ -24,7 +24,9 @@
 --
 
 -- Standard library imports --
+local error = error
 local pairs = pairs
+local pcall = pcall
 local print = print
 local setmetatable = setmetatable
 
@@ -139,4 +141,17 @@ end
 -- @uint limit As per @{tektite_core.var.dump.Print}.
 function vdumpx (var, name, limit)
 	var_dump.Print(var, { hex_uints = true, name = name, limit = limit })
+end
+
+-- Make require report the vicinity of its call site, in case of error.
+local old_require = require
+
+function require (modname)
+	local ok, res = pcall(old_require, modname)
+
+	if ok then
+		return res
+	else
+		error(res, 2)
+	end
 end
