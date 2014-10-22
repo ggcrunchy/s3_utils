@@ -40,6 +40,7 @@ local sort = table.sort
 -- Modules --
 local collision = require("corona_utils.collision")
 local require_ex = require("tektite_core.require_ex")
+local shapes = require("s3_utils.shapes")
 local tile_maps = require("s3_utils.tile_maps")
 local timers = require("corona_utils.timers")
 
@@ -71,6 +72,9 @@ local function NoOp () end
 -- If the **"is_counted"** property is true, the dot will count toward the remaining dots
 -- total. If this count falls to 0, the **all\_dots\_removed** event is dispatched.
 --
+-- If the **"add\_to\_shapes"** property is true, the dot will be added to / may be removed from
+-- shapes, and assumes that its **is_counted** property is true.
+--
 -- Unless the **"omit\_from\_event\_blocks"** property is true, a dot will be added to any event
 -- block that it happens to occupy.
 --
@@ -83,7 +87,7 @@ local function NoOp () end
 -- * **type**: Name of dot type, q.v. _name_, above. This is also assigned as the dot's collision type.
 --
 -- Instance-specific data may also be passed in other fields.
--- @see corona_utils.collision.GetType
+-- @see corona_utils.collision.GetType, s3_utils.shapes.RemoveAt
 function M.AddDot (group, info)
 	local dot = DotList[info.type](group, info)
 	local index = tile_maps.GetTileIndex(info.col, info.row)
@@ -94,7 +98,15 @@ function M.AddDot (group, info)
 	collision.MakeSensor(dot, dot:GetProperty("body_type"), dot:GetProperty("body"))
 	collision.SetType(dot, info.type)
 
-	local is_counted = dot:GetProperty("is_counted")
+	local is_counted
+
+	if dot:GetProperty("add_to_shapes") then
+		shapes.AddPoint(index)
+
+		is_counted = true
+	else
+		is_counted = dot:GetProperty("is_counted")
+	end
 
 	dot.m_count = is_counted and 1 or 0
 	dot.m_index = index
@@ -183,6 +195,9 @@ end
 for k, v in pairs{
 	-- Act On Dot --
 	act_on_dot = function(event)
+		-- Remove the dot from any shapes it's in.
+		shapes.RemoveAt(event.dot.m_index)
+
 		-- If this dot counts toward the "dots remaining", deduct it. If it was the last
 		-- dot, fire off an alert to that effect.
 		if event.dot.m_count > 0 then
