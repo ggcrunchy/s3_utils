@@ -256,7 +256,7 @@ local function TryLoop (attempted, dots, corners, tile, facing, pref, alt)
 		-- If there's a corner or junction on this tile, add its index to the list. Indices
 		-- are easy to sort, and the actual corners aren't important, only that a unique
 		-- sequence was recorded for later comparison.
-		if not tile_maps.IsStraight(tile) then
+		if not tile_flags.IsStraight(tile) then
 			corners[#corners + 1] = tile
 		end
 
