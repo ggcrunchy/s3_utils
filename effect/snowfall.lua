@@ -35,7 +35,7 @@ local unpack = unpack
 
 -- Modules --
 local array_index = require("tektite_core.array.index")
-local curves = require("tekite_core.number.curves")
+local curves = require("tektite_core.number.curves")
 local frames = require("corona_utils.frames")
 local timers = require("corona_utils.timers")
 
@@ -43,7 +43,7 @@ local timers = require("corona_utils.timers")
 local display = display
 
 -- Classes --
-local TimerClass = require("class.Timer")
+local TimerClass = require("tektite_base_classes.Timer")
 
 -- Exports --
 local M = {}
