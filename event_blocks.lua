@@ -43,7 +43,7 @@ local yield = coroutine.yield
 
 -- Modules --
 local require_ex = require("tektite_core.require_ex")
-local bind_utils = require("tektite_core.bind")
+local bind = require("tektite_core.bind")
 local fx = require("s3_utils.fx")
 local range = require("tektite_core.number.range")
 local tile_flags = require("s3_utils.tile_flags")
@@ -385,7 +385,7 @@ function M.AddBlock (info)
 	local block = NewBlock(info.col1, info.row1, info.col2, info.row2)
 	local event = assert(EventBlockList[info.type], "Invalid event block")(info, block)
 
-	bind_utils.Publish("loading_level", event, info.uid, "fire")
+	bind.Publish("loading_level", event, info.uid, "fire")
 
 	Events[#Events + 1] = event -- TODO: Forgo this when not debugging?
 end

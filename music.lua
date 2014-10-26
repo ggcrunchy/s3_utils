@@ -26,7 +26,7 @@
 -- Standard library imports --
 
 -- Modules --
-local bind_utils = require("tektite_core.bind")
+local bind = require("tektite_core.bind")
 
 -- Exports --
 local M = {}
@@ -46,7 +46,7 @@ end
 
 --
 local function LinkMusic (music, other, gsub, osub)
---	bind_utils.LinkActionsAndEvents(music, other, gsub, osub, GetEvent, Actions, "actions")
+--	bind.LinkActionsAndEvents(music, other, gsub, osub, GetEvent, Actions, "actions")
 end
 
 --- DOCME

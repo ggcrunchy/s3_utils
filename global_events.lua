@@ -31,7 +31,7 @@ local pairs = pairs
 local rawequal = rawequal
 
 -- Modules --
-local bind_utils = require("tektite_core.bind")
+local bind = require("tektite_core.bind")
 local config = require("config.GlobalEvents")
 
 -- Corona globals --
@@ -50,11 +50,11 @@ local Defaults, Events
 local GetEvent = {}
 
 for _, v in ipairs(config.events) do
-	GetEvent[v] = bind_utils.BroadcastBuilder(v)
+	GetEvent[v] = bind.BroadcastBuilder(v)
 
 	Runtime:addEventListener(v, function()
 		--
-		for _, event in bind_utils.IterEvents(Events[v]) do
+		for _, event in bind.IterEvents(Events[v]) do
 			event("fire", false)
 		end
 
@@ -71,7 +71,7 @@ end
 function M.AddEvents (events)
 	--
 	for k, v in pairs(GetEvent) do
-		bind_utils.Subscribe("loading_level", events and events[k], v, Events)
+		bind.Subscribe("loading_level", events and events[k], v, Events)
 	end
 	
 	--
@@ -79,7 +79,7 @@ function M.AddEvents (events)
 
 	if actions then
 		for k in pairs(actions) do
-			bind_utils.Publish("loading_level", Actions[k], events.uid, k)
+			bind.Publish("loading_level", Actions[k], events.uid, k)
 		end
 	end
 
@@ -91,7 +91,7 @@ end
 
 --
 local function LinkGlobal (global, other, gsub, osub)
-	bind_utils.LinkActionsAndEvents(global, other, gsub, osub, GetEvent, Actions, "actions")
+	bind.LinkActionsAndEvents(global, other, gsub, osub, GetEvent, Actions, "actions")
 end
 
 --- DOCME
