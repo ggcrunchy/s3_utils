@@ -1,0 +1,389 @@
+********************************************************************************
+CBEffects Parameter Reference
+********************************************************************************
+This is the overwhelmingly large containing all of the parameters you can possibly put in a Data Table for CBEffects.
+
+You can use this as a reference for parameters or to get to sleep at night - whichever you find it most useful for. Unless you're looking for a certain parameter, this won't be a very interesting read.
+
+********************************************************************************
+********************************************************************************
+
+Vent Parameters
+
+********************************************************************************
+********************************************************************************
+
+Newly Changed or Added:
+	Added -
+		* scaleX
+		* scaleY
+
+"title"
+Type: String
+Description: A unique title for the vent, so that you can access it with the “start”, “stop”, “destroy”, and “get” commands.
+
+
+“x” and “y”
+Types: Numbers
+Descriptions: X and Y of the vent.
+
+
+“isActive”
+Type: Boolean
+Description: Whether the vent starts when startMaster command is called, true means it does start, false means it doesn’t.
+Note: Not used very often.
+
+
+“build”
+Type: Function
+Description: Function that returns a display object to use as a particle.
+
+
+“color”
+Types: Table, Function
+Description (table): Table with nested tables inside of it, each with RGB format.
+Description (function): Function that returns anything that can be used as a color.
+
+
+"iterateColor"
+Type: Boolean
+Description: Whether colors are chosen randomly from the color table or are iterated through one by one.
+
+
+"curColor"
+Type: Number
+Description: The color to start with if iterateColor = true.
+
+
+"colorIncr"
+Type: Number
+Description: The increment by which the current color will be changed. Wraps to the number of available colors.
+
+
+"hasColor"
+Type: Boolean
+Description: Whether to color particles from a vent or not. If hasColor = false, vent's color will be white, and particles will not appear colored.
+
+
+“emitDelay”
+Type: Number
+Description: How long the delay between each emission is.
+
+
+“perEmit”
+Type: Number
+Description: How many particles are emitted on each emission.
+
+
+“emissionNum”
+Type: Number
+Description: How many times the vent emits particles when started. Set to zero to be infinite.
+Note: Do not set both “emissionNum” and “emitDelay” to zero.
+
+
+"parentGroup"
+Type: Table, Corona Display Group
+Description: The group that the vent's content group will be inserted into.
+
+
+“lifeSpan”
+Types: Number, Function
+Description (number): How long a particle takes to transition to endAlpha and be removed.
+Description (function): A function that returns how long the particle takes to transition to endAlpha and be removed.
+
+
+"contentX" and "contentY"
+Types: Numbers
+Description: X and Y of the vent's content group.
+
+
+“startAlpha”
+Type: Number
+Description: Alpha the particle is when it is created.
+
+
+“alpha”
+Type: Number
+Description: Alpha the particle will be as the life transition starts.
+
+
+“endAlpha”
+Type: Number
+Description: Alpha the particle is when it is removed.
+
+
+“onCreation”
+Type: Function
+Description: A function called on creation of each particle. The particle, the parent vent, and the parent vent's "content" group are each function arguments.
+
+
+"onUpdate"
+Type: Function
+Description: A function called each time ParticlePhysics updates the position of each particle; generally executed on each frame. The particle, the parent vent, and the parent vent's "content" group are each function arguments.
+
+
+“onDeath”
+Type: Function
+Description: A function called on death of each particle. The particle, the parent vent, and the parent vent's "content" group are each function arguments.
+
+
+"offsetAlongLine"
+Type: Boolean
+Description: If set to true, vents using alongLine emissionTypes will offset particles by their X and Y.
+
+
+"onVentInit"
+Type: Function
+Description: A function called when the vent itself is created.
+
+
+“propertyTable”
+Type: Table
+Description: A table of values, each of which is copied to each particle.
+
+
+“scale”
+Type: Number
+Description: The master scale of the vent.
+
+
+"scaleX"
+Type: Number
+Description: The scaling factor X of the vent. Defaults to "scale" if not provided.
+
+
+"scaleY"
+Type: Number
+Description: The scaling factor Y of the vent. Defaults to "scale" if not provided.
+
+
+“lifeStart”
+Types: Number, Function
+Description (number): The delay before the particle begins its life span.
+Description: (function): A function that returns the delay before the particle begins its life span.
+
+
+“fadeInTime”
+Type: Number
+Description: The time it takes a particle to go from startAlpha to alpha and start the life start/life span transition.
+
+
+“positionType”
+Types: String, Function
+Possible Values: “inRect”, “inRadius”, “alongLine”, “atPoint”, "fromPointList"
+Description (string): The way CBEffects positions particles onCreation. 
+Description (function): A function that returns X and Y values to position the particle on creation. Values must be returned separately; i.e. function() return x, y end
+
+
+"pointList"
+Type: Table
+Description: A table of {x, y} values to choose from if positionType = "fromPointList".
+
+
+"iteratePoint"
+Type: Boolean
+Description: Whether to choose randomly from the point list or iterate through them if positionType = "fromPointList".
+
+
+"curPoint"
+Type: Number
+Description: The point to start with if iteratePoint = true and positionType = "fromPointList".
+
+
+"pointIncr"
+Type: Number
+Description: The increment by which the current point will be changed. Wraps to the number of available points.
+
+
+“posRadius”
+Type: Number
+Description: The radius the particles will appear inside of for “inRadius” position type.
+
+
+“posInner”
+Type: Number
+Description: The radius the particles will appear outside of for “inRadius” position type.
+Note: Must be smaller than posRadius.
+
+
+“point1” and “point2”
+Types: Tables
+Description: Tables containing two values, X and Y, so that if the position type is “alongLine” particles will appear along a line drawn from point1 to point2.
+
+
+"lineDensity"
+Type: Number
+Description: Number of points on the line drawn from point1 to point2. If lineDensity = "total", it defaults to the length from point1 to point2.
+
+
+“rectLeft”, “rectTop”, “rectWidth”, and “rectHeight”
+Types: Numbers
+Descriptions: Dimensions of the rectangle particles will appear inside of is “inRect” is the position type.
+
+
+“physics”
+Type: Table
+Description: Table that contains the physics properties of the vent. Uses the built-in ParticlePhysics, not Corona’s Box2D physics.
+
+
+
+********************************************************************************
+********************************************************************************
+
+Inside the Physics Table
+
+********************************************************************************
+********************************************************************************
+
+“linearDamping”
+Type: Number
+Description: How the velocity of the particle changes. Positive values decay the velocity, negative values grow it.
+
+
+“velocity”
+Type: Number
+Description: How fast the particle moves.
+
+
+“angularVelocity”
+Type: Number
+Description: How fast the particle rotates.
+
+
+“angularDamping”
+Type: Number
+Description: How the angular velocity of the particle changes. Positive values decay the angular velocity, negative values grow it.
+
+
+“velFunction”
+Type: Function
+Description: Returns X and Y velocity for a particle on creation.
+
+
+“useFunction”
+Type: Boolean
+Description: Whether to use the velFunction to set velocity (true) or to use the pre-defined angles to set velocity (false).
+
+
+“autoAngle”
+Type: Boolean 
+Description: Whether the values in the angle table are single numbers or auto-fill tables.
+
+
+“angles”
+Type: Table
+Description: Contains the angles for particles to travel at. 0 is pointing right, and it goes counter-clockwise around - in other words, 90 is straight up, 180 is left, etc. If autoAngle = true then it includes angle high and low bounds, low to high.
+
+
+"iterateAngle"
+Type: Boolean
+Description: Whether to go through the angle table one by one or pick randomly from it.
+
+
+"curAngle"
+Type: Number
+Description: The angle to start with if iterateAngle = true.
+
+
+"angleIncr"
+Type: Number
+Description: The increment by which the current angle will be changed. Wraps to the number of available angles.
+
+
+"preCalculate"
+Type: Boolean
+Description: Whether CBEffects calculates the forces needed for the angles beforehand or not. If set to false, each time a particle is created it performs an equation to see the X and Y velocity it needs to travel in an angle, using more memory - only set it to false if you're going to be changing the vent's velocity and/or angles after creating it.
+
+
+“sizeX” and “sizeY”
+Types: Numbers
+Descriptions: How fast the particles grow X and Y scale. Negative values shrink particles.
+
+
+“minX”, “minY”, “maxX”, “maxY”
+Types: Numbers
+Descriptions: The minimum and maximum X and Y scale the particles can grow or shrink to.
+
+
+“gravityX” and “gravityY”
+Types: Numbers
+Descriptions: The X- and Y-gravity of the vent.
+
+
+"divisionDamping"
+Type: Boolean
+Description: Whether ParticlePhysics divides velocity by damping or subtracts damping from velocity.
+Note: When set to the boolean value of "true", set linearDamping, xDamping, or yDamping to 1 to keep velocity in that direction constant.
+
+
+"scale"
+Type: Number
+Description: Physics-specific scale of the vent.
+
+
+********************************************************************************
+********************************************************************************
+
+End of Vent Parameters
+
+********************************************************************************
+********************************************************************************
+
+
+
+********************************************************************************
+********************************************************************************
+
+Field Parameters
+
+********************************************************************************
+********************************************************************************
+
+Newly Changed or Added -
+	Added -
+		* onFieldInit
+
+“title”
+Type: String
+Description: A unique title for the field.
+
+
+“onCollision”
+Type: Function
+Description: A function that is called when a particle collides with the field. The particle and the field are both arguments.
+
+
+“x” and “y”
+Types: Numbers
+Descriptions: The X and Y of the field. If the field’s shape is a rectangle, then it is the top left of the field.
+
+
+“rectLeft”, “rectTop”, “rectWidth”, and “rectHeight”
+Types: Numbers
+Descriptions: Dimensions of the rectangle if the collision shape is set to “rect”.
+
+
+“radius”
+Type: Number
+Description: Radius of the field if the collision shape is set to “circle”.
+
+
+“points”
+Type: Table
+Description: Table containing pairs of coordinates for the polygon if the collision shape is set to “polygon”.
+
+
+“targetVent”
+Type: Special - must be a CBVentGroup’s vent.
+Description: A vent that the field will be connected to. Particles from it will be modified or moved. Easiest specified with the “get” function for a CBVentGroup.
+Note: Without this parameter, errors will occur.
+
+
+“singleEffect”
+Type: Boolean
+Description: Whether the particles that collide with the field are then blocked from the onCollision with other fields (or the same one) with singleEffect set to true. If it’s set to false, then the onCollision function will continue to fire until the particle leaves the bounds, even if the particle previously collided with a singleEffect field.
+
+
+"onFieldInit"
+Type: Function
+Description: A function called when the field itself is created.

@@ -1,0 +1,81 @@
+--------------------------------------------------------------------------------
+--------------------------------------------------------------------------------
+CBEffects CBInfo Document
+--------------------------------------------------------------------------------
+--------------------------------------------------------------------------------
+
+--------------------------------------------------------------------------------
+General Info
+
+CBEffects is an extremely powerful, infinitely flexible, and entirely open-source Corona SDK library to create extraordinary and advanced effects with ease.
+
+Made by Caleb Place of Gymbyl Coding
+www.gymbyl.com
+
+When completing your project, don't forget to delete...
+	A) The CBReference file
+	B) The CBInfo file (this file)
+	C) Any unused textures from the built-in texture set
+This helps keep your production-grade project smaller in size.
+
+
+--------------------------------------------------------------------------------
+--------------------------------------------------------------------------------
+Current Release Info/Changes (for a full changelog, check in the CBResources Etc folder)
+
+CBEffects 2.0.1
+Date Released: Aug 21, 2013
+
+CHANGES/UPDATES:
+	New Library Methods -
+		- Added NewField library function
+		- Added FieldX library function
+	Issue and Bug Fixes -
+		- Fixed issue with "scale" parameter not working correctly
+	Parameters -
+		- Added scaleX
+		- Added scaleY
+
+
+--------------------------------------------------------------------------------
+--------------------------------------------------------------------------------
+CBEffects is distributed under the TSL (Truffle Software License). Here it is reproduced in full:
+
+- This project is free to get
+- This project is free to edit
+- This project is free to use in a game
+- This project is free to use in an app
+- This project is free to use without crediting the author (credits are still appreciated)
+- This project is free to use without crediting the project (credits are still appreciated)
+- This project is NOT free to sell for any amount of money
+- This project is NOT free to sell for anything
+- This project is NOT free to credit yourself with
+
+
+--------------------------------------------------------------------------------
+--------------------------------------------------------------------------------
+Links
+
+Connect -
+	facebook.com/CBEffects
+	forums.coronalabs.com/forum/604-cbeffects
+Download -
+	github.com/GymbylCoding/CBEffects
+	gymbyl.com/programming/cbeffects.html
+Enhance -
+	gymbyl.com/assets/cbtextures
+	gymbyl.com/programming/cbresources.html
+
+--------------------------------------------------------------------------------
+--------------------------------------------------------------------------------
+Contents of this Folder
+	Lua Files -
+		- Library.lua (The main CBEffects file, I wrote it)
+		- ParticleHelper.lua (The helper library, I wrote some of it and compiled some of it)
+
+	PNG Files -
+		- Basic Texture Set (folder containing .png textures for particle presets)
+
+	Text Files -
+		- CBInfo.txt (This file)
+		- CBReference.txt (parameter reference)
