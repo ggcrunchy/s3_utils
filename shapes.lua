@@ -39,6 +39,7 @@ local tile_maps = require("s3_utils.tile_maps")
 
 -- Corona globals --
 local display = display
+local Runtime = Runtime
 
 -- Imports --
 local GetTilePos = tile_maps.GetTilePos

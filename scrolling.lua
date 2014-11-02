@@ -29,6 +29,7 @@ local min = math.min
 
 -- Corona globals --
 local display = display
+local Runtime = Runtime
 
 -- Imports --
 local contentHeight = display.contentHeight

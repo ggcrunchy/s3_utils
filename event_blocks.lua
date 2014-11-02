@@ -52,6 +52,7 @@ local wrapper = require("coroutine_ops.wrapper")
 
 -- Corona globals --
 local display = display
+local Runtime = Runtime
 
 -- Imports --
 local GetFlags = tile_flags.GetFlags

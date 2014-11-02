@@ -44,6 +44,9 @@ local shapes = require("s3_utils.shapes")
 local tile_maps = require("s3_utils.tile_maps")
 local timers = require("corona_utils.timers")
 
+-- Corona globals --
+local Runtime = Runtime
+
 -- Exports --
 local M = {}
 
