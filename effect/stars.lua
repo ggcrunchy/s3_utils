@@ -98,6 +98,17 @@ local StarFuncs = {
 	end
 }
 
+-- --
+local StarSets = {
+	default = { "T1", "T5", "T7" }
+}
+
+for _, set in pairs(StarSets) do
+	for k, v in pairs(set) do
+		set[k] = "s3_utils/assets/fx/Star-" .. v .. ".png"
+	end
+end
+
 --- DOCME
 -- @pgroup group
 -- @uint nstars
@@ -125,6 +136,8 @@ function M.RingOfStars (group, nstars, x, y, dx, dy, options)
 		func = options.func
 		func = StarFuncs[func] or func
 	end
+
+	file = StarSets[file] or file
 
 	--
 	local function Update (star, angle, index)
