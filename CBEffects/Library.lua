@@ -14,7 +14,7 @@ math.randomseed(os.time())
 local mrand = math.random
 
 --Localization
-local ParticleHelper = require("CBEffects.ParticleHelper")
+local ParticleHelper = require("s3_utils.CBEffects.ParticleHelper")
 ParticleHelper.setCalcDeltaTime(CBEffects.calcDeltaTime)
 
 local masterPresets				 =  ParticleHelper.presets
