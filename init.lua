@@ -25,10 +25,8 @@
 
 -- Standard library imports --
 local error = error
-local pairs = pairs
 local pcall = pcall
 local print = print
-local setmetatable = setmetatable
 
 -- Modules --
 local debug = require("debug")
