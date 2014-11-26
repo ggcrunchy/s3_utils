@@ -2,7 +2,8 @@
 -- The nomenclature is based on _Amazing Penguin_, this game's spiritual prequel, in which
 -- such things looked like dots.
 --
--- All dots support an **ActOn** method, which defines what happens if So So acts on them.
+-- All dots support an **ActOn** method, which defines how the dot responds if acted on by
+-- the player.
 --
 -- A dot may optionally provide other methods: **Reset** and **Update** define how the dot
 -- changes state when the level resets and per-frame, respectively; **GetProperty**, called
@@ -64,11 +65,12 @@ local function NoOp () end
 
 --- Adds a new _name_-type sensor dot to the level.
 --
--- For each name, there must be a corresponding module **"dot.Name"** (e.g. for _name_ of
--- **"acorn"**, the module is **"dot.Acorn"**), the value of which is a constructor function,
--- called as
+-- For each name, there must be a corresponding module, the value of which will be a
+-- constructor function, called as
 --    cons(group, info)
 -- and which returns the new dot, which must be a display object without physics.
+--
+-- These modules are loaded through @{tektite_core.require_ex.DoList} from **config.Dots**.
 --
 -- Various dot properties are important:
 --

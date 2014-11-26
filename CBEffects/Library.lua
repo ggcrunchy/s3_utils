@@ -10,11 +10,12 @@ local CBEffects = {}
 CBEffects.calcDeltaTime = true
 
 --Set up random generator
-math.randomseed(os.time())
+--math.randomseed(os.time())
 local mrand = math.random
 
 --Localization
-local ParticleHelper = require("s3_utils.CBEffects.ParticleHelper")
+local ParticleHelper = require((...):gsub("Library", "ParticleHelper"))
+
 ParticleHelper.setCalcDeltaTime(CBEffects.calcDeltaTime)
 
 local masterPresets				 =  ParticleHelper.presets

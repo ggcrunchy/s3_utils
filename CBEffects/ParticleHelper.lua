@@ -4,6 +4,19 @@ CBEffects ParticleHelper Library
 The master helper library.
 --]]
 
+local Tex
+
+do
+	local path = ...
+
+	path = path:gsub("%.", "/")
+	path = path:gsub("ParticleHelper", "textures/texture-%%i.png")
+
+	function Tex (num)
+		return path:format(num)
+	end
+end
+
 -- Create public library
 local ParticleHelper = {physics = {}, presets = {vents = {}, fields = {}}, functions = {}}
 
@@ -406,7 +419,7 @@ ParticleHelper.physics={
 -- Contains data for the vent and field presets
 
 -- Miscellaneous
-local cloudTable={"CBEffects/textures/texture-1.png","CBEffects/textures/texture-2.png"}
+local cloudTable={ Tex(1), Tex(2) }
 local burnColors={{1, 1, 10/255},{1, 155/255, 10/255},{1, 10/255, 10/255}}
 local function velNil()	return 0, 0 end
 
@@ -416,26 +429,26 @@ local function buildDefault() return newRect(0, 0, 20, 20) end
 local function buildHyperspace() local b = newRect(0, 0, 10, 5) b:setReferencePoint(display.CenterLeftReferencePoint) return b end
 local function buildPixelWheel() return newRect(0, 0, 50, 50) end
 local function buildCircles() local size = mrand(5, 30) return newCircle(0, 0, size) end
-local function buildEmbers() local size = mrand(10, 20) return newImageRect("CBEffects/textures/texture-5.png", size, size) end
+local function buildEmbers() local size = mrand(10, 20) return newImageRect(Tex(5), size, size) end
 local function buildFlame() local size = mrand(100, 300) return newImageRect(either(cloudTable), size, size) end
 local function buildSmoke() local size = mrand(200, 300) return newImageRect(either(cloudTable), size, size) end
 local function buildSteam() local size = mrand(50, 100) return newImageRect(either(cloudTable), size, size) end
-local function buildSparks() local size = mrand(10,20) return newImageRect("CBEffects/textures/texture-5.png", size, size) end
+local function buildSparks() local size = mrand(10,20) return newImageRect(Tex(5), size, size) end
 local function buildRain() return newRect(0, 0, mrand(2,4), mrand(6,25)) end
 local function buildConfetti() local width = mrand(10, 15) local height = mrand(10, 15) return newRect(0, 0, width, height) end
-local function buildSnow() local size = mrand(10,40) return newImageRect("CBEffects/textures/texture-5.png", size, size) end
+local function buildSnow() local size = mrand(10,40) return newImageRect(Tex(5), size, size) end
 local function velSnow() return mrand(-1,1), mrand(10) end
 local function buildBeams() local beam = newRect(0, 0, mrand(800), 20) beam:setReferencePoint(display.CenterLeftReferencePoint) return beam end
-local function buildBurn() local size = mrand(50, 150) return newImageRect("CBEffects/textures/texture-5.png", size, size) end
+local function buildBurn() local size = mrand(50, 150) return newImageRect(Tex(5), size, size) end
 local function onBurnCreation(p) p.colorChange(burnColors[mrand(2)], 200) end
-local function buildFountain() local size = mrand(50, 80) return newImageRect("CBEffects/textures/texture-5.png", size, size) end
-local function buildEvil() local size = mrand(80, 120) return newImageRect("CBEffects/textures/texture-5.png", size, size) end
-local function buildLGun() return newImageRect("CBEffects/textures/texture-5.png", 150, 10) end
-local function buildWisp() local s = mrand(20, 180)return newImageRect("CBEffects/textures/texture-5.png", s, s) end
-local function buildFluid() local s = mrand(100, 400)return newImageRect("CBEffects/textures/texture-5.png", s, s) end
-local function buildWater() return newImageRect("CBEffects/textures/texture-5.png", 160, 20) end
-local function buildAurora() local p = newImageRect("CBEffects/textures/texture-5.png", mrand(80,150), mrand(160,550)) p:setReferencePoint(display.BottomCenterReferencePoint) return p end
-local function buildPoison() local p = newImageRect("CBEffects/textures/texture-5.png", 40, 40) return p end
+local function buildFountain() local size = mrand(50, 80) return newImageRect(Tex(5), size, size) end
+local function buildEvil() local size = mrand(80, 120) return newImageRect(Tex(5), size, size) end
+local function buildLGun() return newImageRect(Tex(5), 150, 10) end
+local function buildWisp() local s = mrand(20, 180)return newImageRect(Tex(5), s, s) end
+local function buildFluid() local s = mrand(100, 400)return newImageRect(Tex(5), s, s) end
+local function buildWater() return newImageRect(Tex(5), 160, 20) end
+local function buildAurora() local p = newImageRect(Tex(5), mrand(80,150), mrand(160,550)) p:setReferencePoint(display.BottomCenterReferencePoint) return p end
+local function buildPoison() local p = newImageRect(Tex(5), 40, 40) return p end
 
 
 -- Vent Presets
