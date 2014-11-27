@@ -69,7 +69,7 @@ local FadeInParams = {
 }
 
 -- Sound played when shape is filled --
-local Sounds = audio.NewSoundGroup{ shape_filled = { file = "ShapeFilled.mp3", wait = 1000 } }
+local Sounds = audio.NewSoundGroup{ _prefix = "SFX", shape_filled = { file = "ShapeFilled.mp3", wait = 1000 } }
 
 -- Fill transition --
 local FillParams = {
