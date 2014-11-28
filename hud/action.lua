@@ -184,7 +184,7 @@ end
 
 -- Helper to enqueue a dot image
 local function MergeDotIntoSequence (dot, touch)
-	local name = dot:GetProperty("touch_image") or "HUD_Assets/Kick.png"
+	local name = dot:GetProperty("touch_image") or "s3_utils/assets/hud/Kick.png"
 	local index, item = IndexOf(name)
 
 	if touch then
