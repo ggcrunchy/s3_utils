@@ -29,6 +29,7 @@ local ipairs = ipairs
 
 -- Modules --
 local require_ex = require("tektite_core.require_ex")
+local _ = require("s3_utils.controls")
 local dots = require("s3_utils.dots")
 local enemies_ok, enemies = pcall(require, "game.Enemies")
 local event_blocks = require("s3_utils.event_blocks")
