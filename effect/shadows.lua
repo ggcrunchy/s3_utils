@@ -103,7 +103,7 @@ function M.Shadow (func, arg)
 		shadow[k] = v
 	end
 
-	shadow:setFillColor(0, 0, 0)
+	shadow:setFillColor(0)
 
 	local result = func(shadow, arg, true)
 
@@ -112,7 +112,7 @@ function M.Shadow (func, arg)
 	end
 
 	timers.RepeatEx(function()
-		if shadow.parent and func(shadow, arg) == "quit" then
+		if shadow.parent and not DecalsLayer or func(shadow, arg) == "quit" then
 			shadow:removeSelf()
 		end
 
