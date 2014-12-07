@@ -112,7 +112,7 @@ function M.Shadow (func, arg)
 	end
 
 	timers.RepeatEx(function()
-		if shadow.parent and not DecalsLayer or func(shadow, arg) == "quit" then
+		if shadow.parent and (not DecalsLayer or func(shadow, arg) == "quit") then
 			shadow:removeSelf()
 		end
 
