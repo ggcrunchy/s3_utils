@@ -31,7 +31,7 @@ local ipairs = ipairs
 local require_ex = require("tektite_core.require_ex")
 local _ = require("s3_utils.controls")
 local dots = require("s3_utils.dots")
-local enemies_ok, enemies = pcall(require, "game.Enemies")
+local enemies = require("s3_utils.enemies")
 local event_blocks = require("s3_utils.event_blocks")
 local global_events = require("s3_utils.global_events")
 local loop = require_ex.Lazy("corona_boilerplate.game.loop")
@@ -81,7 +81,7 @@ function M.AddThings (current_level, level)
 	player.AddPlayer(current_level.things_layer, level.start_col, level.start_row)
 
 	-- ...and the enemies...
-	for _, enemy in Ipairs(enemies_ok and level.enemies) do
+	for _, enemy in Ipairs(level.enemies) do
 		enemies.SpawnEnemy(current_level.things_layer, enemy)
 	end
 
