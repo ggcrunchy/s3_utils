@@ -34,7 +34,7 @@ local pairs = pairs
 local audio = require("corona_utils.audio")
 local circle = require("s3_utils.fill.circle")
 local length = require("tektite_core.number.length")
-local sheet = require("corona_ui.utils.sheet")
+local sheet = require("corona_utils.sheet")
 local stash = require("s3_utils.effect.stash")
 local timers = require("corona_utils.timers")
 

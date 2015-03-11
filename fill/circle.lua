@@ -27,7 +27,7 @@
 local min = math.min
 
 -- Modules --
-local grid_iterators = require("iterator_ops.grid")
+local circle = require("iterator_ops.grid.circle")
 
 -- Exports --
 local M = {}
@@ -90,7 +90,7 @@ function M.SpreadOut (halfx, halfy, func)
 	-- newly expanded cells. We exploit the circle's many symmetries, beginning with the
 	-- diagonal in order to iterate only the first octant.
 	return function(radius)
-		for x, y in grid_iterators.CircleOctant(radius) do
+		for x, y in circle.CircleOctant(radius) do
 			TryRow(x, y, radius)
 			TryRow(y, x, radius)
 		end

@@ -31,7 +31,7 @@ local setmetatable = setmetatable
 local array_index = require("tektite_core.array.index")
 local collision = require("corona_utils.collision")
 local range = require("tektite_core.number.range")
-local sheet = require("corona_ui.utils.sheet")
+local sheet = require("corona_utils.sheet")
 local tile_flags = require("s3_utils.tile_flags")
 
 -- Corona globals --
