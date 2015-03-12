@@ -385,7 +385,7 @@ end
 -- In order to generate the display object, _enemy_, one of the following must be provided:
 --
 -- * **image**: A filename, as per `display.newImage`.
--- * **sprite_factory**: A factory returned by @{corona_ui.utils.sheet.NewSpriteFactory}.
+-- * **sprite_factory**: A factory returned by @{corona_utils.sheet.NewSpriteFactory}.
 -- @pgroup group Display group that will hold the enemy.
 -- @ptable info Information about the new enemy. Required fields:
 --
