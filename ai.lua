@@ -213,7 +213,7 @@ function M.StartWithGenerator (enemy)
 	local life = enemy.m_life
 
 	enemy.m_life = (life or 0) + 1
-	enemy.m_gen = mwc_rng.MakeGenerator(enemy.m_tile or 0, enemy.m_life)
+	enemy.m_gen = mwc_rng.MakeGenerator{ z = enemy.m_tile or 0, w = enemy.m_life }
 
 	return life == nil
 end
