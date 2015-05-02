@@ -30,6 +30,7 @@ local setmetatable = setmetatable
 -- Modules --
 local array_index = require("tektite_core.array.index")
 local collision = require("corona_utils.collision")
+local grid = require("tektite_core.array.grid")
 local range = require("tektite_core.number.range")
 local sheet = require("corona_utils.sheet")
 local tile_flags = require("s3_utils.tile_flags")
@@ -40,11 +41,11 @@ local graphics = graphics
 local system = system
 
 -- Imports --
-local CellToIndex = array_index.CellToIndex
+local CellToIndex = grid.CellToIndex
 local FitToSlot = array_index.FitToSlot
 local GetNameByFlags = tile_flags.GetNameByFlags
 local GetResolvedFlags = tile_flags.GetResolvedFlags
-local IndexToCell = array_index.IndexToCell
+local IndexToCell = grid.IndexToCell
 local IsFlagSet = tile_flags.IsFlagSet
 local SetFlags = tile_flags.SetFlags
 
