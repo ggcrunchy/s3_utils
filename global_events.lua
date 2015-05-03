@@ -31,6 +31,7 @@ local pairs = pairs
 local rawequal = rawequal
 
 -- Modules --
+local adaptive = require("tektite_core.table.adaptive")
 local bind = require("tektite_core.bind")
 local config = require("config.GlobalEvents")
 
@@ -77,14 +78,12 @@ function M.AddEvents (events)
 	--
 	local actions = events and events.actions
 
-	if actions then
-		for k in pairs(actions) do
-			bind.Publish("loading_level", Actions[k], events.uid, k)
-		end
+	for k in adaptive.IterSet(actions) do
+		bind.Publish("loading_level", Actions[k], events.uid, k)
 	end
 
 	--
-	if not (actions and actions.win) then
+	if not adaptive.InSet(actions, "win") then
 		Defaults = { all_dots_removed = "win" }
 	end
 end

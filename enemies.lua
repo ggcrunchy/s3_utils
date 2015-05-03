@@ -34,6 +34,7 @@ local sin = math.sin
 
 -- Modules --
 local require_ex = require("tektite_core.require_ex")
+local adaptive = require("tektite_core.table.adaptive")
 local bind = require("tektite_core.bind")
 local collision = require("corona_utils.collision")
 local enemy_events = require("annex.EnemyEvents")
@@ -423,12 +424,8 @@ function M.SpawnEnemy (group, info)
 	end
 
 	--
-	local actions = info.actions
-
-	if actions then
-		for k in pairs(actions) do
-			bind.Publish("loading_level", Actions[k](enemy), info.uid, k)
-		end
+	for k in adaptive.IterSet(info.actions) do
+		bind.Publish("loading_level", Actions[k](enemy), info.uid, k)
 	end
 
 	--- Allows an enemy to send an alert to other enemies.

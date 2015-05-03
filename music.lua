@@ -26,6 +26,7 @@
 -- Standard library imports --
 
 -- Modules --
+local adaptive = require("tektite_core.table.adaptive")
 local bind = require("tektite_core.bind")
 
 -- Exports --
