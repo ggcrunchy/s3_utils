@@ -30,10 +30,32 @@
 -- Exports --
 local M = {}
 
+--
+local function LinkSound (sound, other, gsub, osub)
+--	bind.LinkActionsAndEvents(sound, other, gsub, osub, GetEvent, Actions, "actions")
+end
+
 --- DOCME
 function M.EditorEvent (_, what, arg1, arg2)
+	-- Enumerate Defaults --
+	-- arg1: Defaults
+	if what == "enum_defs" then
+		arg1.reciprocal_link = true
+
+	-- Enumerate Properties --
+	-- arg1: Dialog
+	-- arg2: Representative object
+	elseif what == "enum_props" then
+		arg1:StockElements(nil, "sound")
+		arg1:AddSeparator()
+		arg1:AddSoundPicker{ text = "Sound file", value_name = "filename" }
+	--	arg1:AddLink{ text = "Link from source warp", rep = arg2, sub = "from", tags = "warp" }
+	--	arg1:AddLink{ text = "Link to target (warp or position)", rep = arg2, sub = "to", tags = { "warp", "position" } }
+	--	arg1:AddCheckbox{ text = "Two-way link, if one is blank?", value_name = "reciprocal_link" }
+		-- Polarity? Can be rotated?
+
 	-- Get Tag --
-	if what == "get_tag" then
+	elseif what == "get_tag" then
 		return "sound"
 
 	-- New Tag --
@@ -44,7 +66,7 @@ function M.EditorEvent (_, what, arg1, arg2)
 
 	-- Prep Link --
 	elseif what == "prep_link" then
-	--	return LinkSound
+		return LinkSound
 	end
 end
 
