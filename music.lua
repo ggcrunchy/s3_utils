@@ -24,9 +24,11 @@
 --
 
 -- Standard library imports --
+local pairs = pairs
 
 -- Modules --
 local adaptive = require("tektite_core.table.adaptive")
+local audio = require("corona_utils.audio")
 local bind = require("tektite_core.bind")
 
 -- Exports --
@@ -37,17 +39,76 @@ function M.AddMenuMusic (info)
 	-- How much can actually be done here? (probably a config file thing...)
 end
 
+-- --
+local Actions = {
+	-- Play --
+	do_play = function(music)
+		return function(what)
+			-- Fire --
+			if what == "fire" then
+				-- music
+
+			-- Is Done? --
+			elseif what == "is_done" then
+				return true
+			end
+		end
+	end,
+
+	-- Play (No Cancel) --
+	do_play_no_cancel = function(music)
+		--
+	end,
+
+	-- Pause --
+	do_pause = function(music)
+		--
+	end,
+
+	-- Resume --
+	do_resume = function(music)
+		--
+	end,
+
+	-- Rewind --
+	do_rewind = function(music)
+		--
+	end,
+
+	-- Stop --
+	do_stop = function(music)
+		--
+	end
+}
+
+-- --
+local Events = {
+	on_done = bind.BroadcastBuilder_Helper("loading_level")
+}
+
 --- DOCME
 function M.AddMusic (info)
+	local music = {}
+
 	-- filename: required
 	-- is playing: probably automatic, if only one (though should that decision be made here?)...
 	-- looping or play count (default to looping)...
 	-- Detection for disabled audio option
+
+	--
+	for k, event in pairs(Events) do
+		event.Subscribe(music, info[k])
+	end
+
+	--
+	for k in adaptive.IterSet(info.actions) do
+		bind.Publish("loading_level", Actions[k](music), info.uid, k)
+	end
 end
 
 --
 local function LinkMusic (music, other, gsub, osub)
---	bind.LinkActionsAndEvents(music, other, gsub, osub, GetEvent, Actions, "actions")
+	bind.LinkActionsAndEvents(music, other, gsub, osub, Events, Actions, "actions")
 end
 
 --- DOCME
@@ -55,7 +116,7 @@ function M.EditorEvent (_, what, arg1, arg2)
 	-- Enumerate Defaults --
 	-- arg1: Defaults
 	if what == "enum_defs" then
-	--	arg1.reciprocal_link = true
+		arg1.looping = true
 
 	-- Enumerate Properties --
 	-- arg1: Dialog
@@ -64,10 +125,15 @@ function M.EditorEvent (_, what, arg1, arg2)
 		arg1:StockElements(nil, "music")
 		arg1:AddSeparator()
 		arg1:AddMusicPicker{ text = "Music file", value_name = "filename" }
-	--	arg1:AddLink{ text = "Link from source warp", rep = arg2, sub = "from", tags = "warp" }
-	--	arg1:AddLink{ text = "Link to target (warp or position)", rep = arg2, sub = "to", tags = { "warp", "position" } }
-	--	arg1:AddCheckbox{ text = "Two-way link, if one is blank?", value_name = "reciprocal_link" }
-		-- Polarity? Can be rotated?
+		arg1:AddLink{ text = "Event links: On(done)", rep = arg2, sub = "on_done", interfaces = "event_target" }
+		arg1:AddLink{ text = "Action links: Do(play)", rep = arg2, sub = "do_play", interfaces = "event_source" }
+		arg1:AddLink{ text = "Action links: Do(play, no cancel)", rep = arg2, sub = "do_play_no_cancel", interfaces = "event_source" }
+		arg1:AddLink{ text = "Action links: Do(pause)", rep = arg2, sub = "do_pause", interfaces = "event_source" }
+		arg1:AddLink{ text = "Action links: Do(resume)", rep = arg2, sub = "do_resume", interfaces = "event_source" }
+		arg1:AddLink{ text = "Action links: Do(rewind)", rep = arg2, sub = "do_rewind", interfaces = "event_source" }
+		arg1:AddLink{ text = "Action links: Do(stop)", rep = arg2, sub = "do_stop", interfaces = "event_source" }
+		arg1:AddCheckbox{ text = "Looping?", value_name = "looping" }
+		arg1:AddSpinner{ before = "Loop count: ", min = 1, value_name = "loop_count" }
 
 	-- Get Tag --
 	elseif what == "get_tag" then
@@ -75,9 +141,7 @@ function M.EditorEvent (_, what, arg1, arg2)
 
 	-- New Tag --
 	elseif what == "new_tag" then
-	--	return "sources_and_targets", GetEvent, Actions
-	-- GetEvent: music finished, etc.
-	-- Actions: Play, Pause, Resume, Stop, Change...
+		return "sources_and_targets", Events, Actions
 
 	-- Prep Link --
 	elseif what == "prep_link" then
@@ -92,7 +156,8 @@ end
 for k, v in pairs{
 	-- Enter Level --
 	enter_level = function(level)
-		--
+		-- boolean?
+			-- launch!
 	end,
 
 	-- Enter Menus --
@@ -102,7 +167,7 @@ for k, v in pairs{
 
 	-- Leave Level --
 	leave_level = function()
-		--
+		-- cancel
 	end,
 
 	-- Leave Menus --
@@ -112,7 +177,8 @@ for k, v in pairs{
 
 	-- Reset Level --
 	reset_level = function()
-		--
+		-- boolean?
+			-- reset playing one
 	end
 } do
 	Runtime:addEventListener(k, v)

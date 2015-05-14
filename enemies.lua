@@ -135,6 +135,7 @@ local function Alive (enemy, type_info)
 		end
 	end
 end
+
 -- Behavior of an enemy once killed and while in its death throes
 local function Die (enemy, type_info)
 	--

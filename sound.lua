@@ -26,13 +26,22 @@
 -- Standard library imports --
 
 -- Modules --
+local adaptive = require("tektite_core.table.adaptive")
+local audio = require("corona_utils.audio")
+local bind = require("tektite_core.bind")
 
 -- Exports --
 local M = {}
 
+-- --
+local Actions = {} -- Play, etc.
+
+-- --
+local Events = {} -- Finished
+
 --
 local function LinkSound (sound, other, gsub, osub)
---	bind.LinkActionsAndEvents(sound, other, gsub, osub, GetEvent, Actions, "actions")
+	bind.LinkActionsAndEvents(sound, other, gsub, osub, Events, Actions, "actions")
 end
 
 --- DOCME
@@ -52,7 +61,7 @@ function M.EditorEvent (_, what, arg1, arg2)
 	--	arg1:AddLink{ text = "Link from source warp", rep = arg2, sub = "from", tags = "warp" }
 	--	arg1:AddLink{ text = "Link to target (warp or position)", rep = arg2, sub = "to", tags = { "warp", "position" } }
 	--	arg1:AddCheckbox{ text = "Two-way link, if one is blank?", value_name = "reciprocal_link" }
-		-- Polarity? Can be rotated?
+		-- Channel?
 
 	-- Get Tag --
 	elseif what == "get_tag" then
@@ -60,7 +69,7 @@ function M.EditorEvent (_, what, arg1, arg2)
 
 	-- New Tag --
 	elseif what == "new_tag" then
-	--	return "sources_and_targets", GetEvent, Actions
+		return "sources_and_targets", Events, Actions
 	-- GetEvent: sound finished, etc.
 	-- Actions: Play... Pause, Resume, Stop (these assume singletons... also, fairly meaningless for short sounds!)
 
@@ -75,6 +84,13 @@ end
 
 -- Listen to events.
 for k, v in pairs{
+	enter_level = function()
+		-- load sound groups
+	end,
+
+	leave_level = function()
+		-- remove sound groups
+	end
 	-- ??
 	-- reset_level, leave_level: cancel / fade / etc. long-running (relatively speaking, sometimes) sounds,
 	-- e.g. voice, background audio (wind, rain, ...)
