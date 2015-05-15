@@ -96,6 +96,20 @@ function M.AddMusic (info)
 	-- Detection for disabled audio option
 
 	--
+	if info.on_done ~= nil then
+		-- Use onComplete logic...
+	end
+
+	--
+	if info.play_on_enter then
+		--
+	end
+
+	if info.play_on_leave then
+		--
+	end
+
+	--
 	for k, event in pairs(Events) do
 		event.Subscribe(music, info[k])
 	end

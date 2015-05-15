@@ -35,8 +35,10 @@ local enemies = require("s3_utils.enemies")
 local event_blocks = require("s3_utils.event_blocks")
 local global_events = require("s3_utils.global_events")
 local loop = require_ex.Lazy("corona_boilerplate.game.loop")
+local music = require("s3_utils.music")
 local persistence = require("corona_utils.persistence")
 local player = require("game.Player")
+local sound = require("s3_utils.sound")
 local tile_maps = require("s3_utils.tile_maps")
 
 -- Corona globals --
@@ -85,8 +87,16 @@ function M.AddThings (current_level, level)
 		enemies.SpawnEnemy(current_level.things_layer, enemy)
 	end
 
-	-- ...and any global events.
+	-- ...and any global events...
 	global_events.AddEvents(level.global_events)
+
+	-- ...and music...
+	for _, track in Ipairs(level.music) do
+		music.AddMusic(track)
+	end
+
+	-- ...and sounds.
+	-- TODO!
 end
 
 -- Primary display groups --
