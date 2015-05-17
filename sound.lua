@@ -62,6 +62,9 @@ function M.EditorEvent (_, what, arg1, arg2)
 	--	arg1:AddLink{ text = "Link to target (warp or position)", rep = arg2, sub = "to", tags = { "warp", "position" } }
 	--	arg1:AddCheckbox{ text = "Two-way link, if one is blank?", value_name = "reciprocal_link" }
 		-- Channel?
+		-- Streaming?
+		-- Looping, count
+		-- Hook to position??
 
 	-- Get Tag --
 	elseif what == "get_tag" then
@@ -84,12 +87,18 @@ end
 
 -- Listen to events.
 for k, v in pairs{
+	-- Enter Level --
 	enter_level = function()
 		-- load sound groups
 	end,
 
+	-- Leave Level --
 	leave_level = function()
 		-- remove sound groups
+	end,
+
+	-- Reset Level --
+	reset_level = function()
 	end
 	-- ??
 	-- reset_level, leave_level: cancel / fade / etc. long-running (relatively speaking, sometimes) sounds,

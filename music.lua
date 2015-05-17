@@ -24,6 +24,7 @@
 --
 
 -- Standard library imports --
+local ipairs = ipairs
 local pairs = pairs
 
 -- Modules --
@@ -40,13 +41,53 @@ function M.AddMenuMusic (info)
 end
 
 -- --
+local Music
+
+--
+local function PlayNewTrack (group)
+	for _, track in ipairs(Music) do
+		track.group:StopAll()
+	end -- ^^ TODO: Fade?
+
+	group:PlaySound("track")
+end
+
+-- --
 local Actions = {
 	-- Play --
 	do_play = function(music)
 		return function(what)
 			-- Fire --
 			if what == "fire" then
-				-- music
+				PlayNewTrack(music.group)
+
+			-- Is Done? --
+			elseif what == "is_done" then
+				return not music.group:IsActive()
+			end
+		end
+	end,
+
+	-- Play (No Cancel) --
+	do_play_no_cancel = function(music)
+		return function(what)
+			-- Fire --
+			if what == "fire" then
+				music.group:PlaySound("track")
+
+			-- Is Done? --
+			elseif what == "is_done" then
+				return not music.group:IsActive()
+			end
+		end
+	end,
+
+	-- Pause --
+	do_pause = function(music)
+		return function(what)
+			-- Fire --
+			if what == "fire" then
+				music.group:PauseAll()
 
 			-- Is Done? --
 			elseif what == "is_done" then
@@ -55,58 +96,65 @@ local Actions = {
 		end
 	end,
 
-	-- Play (No Cancel) --
-	do_play_no_cancel = function(music)
-		--
-	end,
-
-	-- Pause --
-	do_pause = function(music)
-		--
-	end,
-
 	-- Resume --
 	do_resume = function(music)
-		--
-	end,
+		return function(what)
+			-- Fire --
+			if what == "fire" then
+				music.group:ResumeAll()
 
-	-- Rewind --
-	do_rewind = function(music)
-		--
+			-- Is Done? --
+			elseif what == "is_done" then
+				return true
+			end
+		end
 	end,
 
 	-- Stop --
 	do_stop = function(music)
-		--
+		return function(what)
+			-- Fire --
+			if what == "fire" then
+				music.group:StopAll()
+
+			-- Is Done? --
+			elseif what == "is_done" then
+				return true
+			end
+		end
 	end
 }
 
 -- --
-local Events = {
-	on_done = bind.BroadcastBuilder_Helper("loading_level")
-}
+local Events = {}
+
+for _, v in ipairs{ "on_done", "on_stop" } do
+	Events[v] = bind.BroadcastBuilder_Helper("loading_level")
+end
+
+-- --
+local PlayOnEnter, PlayOnReset
 
 --- DOCME
 function M.AddMusic (info)
-	local music = {}
-
-	-- filename: required
-	-- is playing: probably automatic, if only one (though should that decision be made here?)...
-	-- looping or play count (default to looping)...
-	-- Detection for disabled audio option
-
 	--
-	if info.on_done ~= nil then
-		-- Use onComplete logic...
+	local music, track = {}, { file = info.filename, is_streaming = true, loops = info.looping and "forever" or info.loop_count }
+
+	if info.on_done or info.on_stop then
+		function track.on_complete (done)
+			Events[done and "on_done" or "on_stop"](music, "fire", false)
+		end
 	end
+
+	music.group = audio.NewSoundGroup{ track = track }
 
 	--
 	if info.play_on_enter then
-		--
+		PlayOnEnter = music.group
 	end
 
 	if info.play_on_leave then
-		--
+		PlayOnReset = music.group
 	end
 
 	--
@@ -118,6 +166,9 @@ function M.AddMusic (info)
 	for k in adaptive.IterSet(info.actions) do
 		bind.Publish("loading_level", Actions[k](music), info.uid, k)
 	end
+
+	--
+	Music[#Music + 1] = music
 end
 
 --
@@ -130,6 +181,7 @@ function M.EditorEvent (_, what, arg1, arg2)
 	-- Enumerate Defaults --
 	-- arg1: Defaults
 	if what == "enum_defs" then
+		arg1.filename = ""
 		arg1.looping = true
 
 	-- Enumerate Properties --
@@ -140,13 +192,12 @@ function M.EditorEvent (_, what, arg1, arg2)
 		arg1:AddSeparator()
 		arg1:AddMusicPicker{ text = "Music file", value_name = "filename" }
 		arg1:AddLink{ text = "Event links: On(done)", rep = arg2, sub = "on_done", interfaces = "event_target" }
-		arg1:AddLink{ text = "Action links: Do(play)", rep = arg2, sub = "do_play", interfaces = "event_source" }
-		arg1:AddLink{ text = "Action links: Do(play, no cancel)", rep = arg2, sub = "do_play_no_cancel", interfaces = "event_source" }
+		arg1:AddLink{ text = "Action links: Do(play, remove others)", rep = arg2, sub = "do_play", interfaces = "event_source" }
+		arg1:AddLink{ text = "Action links: Do(play, leave others)", rep = arg2, sub = "do_play_no_cancel", interfaces = "event_source" }
 		arg1:AddLink{ text = "Action links: Do(pause)", rep = arg2, sub = "do_pause", interfaces = "event_source" }
 		arg1:AddLink{ text = "Action links: Do(resume)", rep = arg2, sub = "do_resume", interfaces = "event_source" }
-		arg1:AddLink{ text = "Action links: Do(rewind)", rep = arg2, sub = "do_rewind", interfaces = "event_source" }
 		arg1:AddLink{ text = "Action links: Do(stop)", rep = arg2, sub = "do_stop", interfaces = "event_source" }
-		arg1:AddCheckbox{ text = "Looping?", value_name = "looping" }
+		arg1:AddCheckbox{ text = "Loop forever?", value_name = "looping" }
 		arg1:AddSpinner{ before = "Loop count: ", min = 1, value_name = "loop_count" }
 
 	-- Get Tag --
@@ -163,15 +214,13 @@ function M.EditorEvent (_, what, arg1, arg2)
 	end
 end
 
--- Some default score (perhaps in LevelMap, if not here), if one not present
--- Default reset_level behavior (global action?), override
+-- Some default score (perhaps in LevelMap, if not here), if one not present?
 
 -- Listen to events.
 for k, v in pairs{
 	-- Enter Level --
 	enter_level = function(level)
-		-- boolean?
-			-- launch!
+		Music = {}
 	end,
 
 	-- Enter Menus --
@@ -181,7 +230,11 @@ for k, v in pairs{
 
 	-- Leave Level --
 	leave_level = function()
-		-- cancel
+		for _, music in ipairs(Music) do
+			music.group:Remove()
+		end
+
+		Music, PlayOnEnter, PlayOnLeave = nil
 	end,
 
 	-- Leave Menus --
@@ -191,8 +244,20 @@ for k, v in pairs{
 
 	-- Reset Level --
 	reset_level = function()
-		-- boolean?
-			-- reset playing one
+		if PlayOnReset then
+			PlayNewTrack(PlayOnReset)
+		end
+	end,
+
+	-- Things Loaded --
+	things_loaded = function()
+		for _, music in ipairs(Music) do
+			music.group:Load()
+		end
+
+		if PlayOnEnter then
+			PlayOnEnter:PlaySound("track")
+		end
 	end
 } do
 	Runtime:addEventListener(k, v)
