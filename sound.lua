@@ -24,6 +24,8 @@
 --
 
 -- Standard library imports --
+local ipairs = ipairs
+local pairs = pairs
 
 -- Modules --
 local adaptive = require("tektite_core.table.adaptive")
@@ -34,10 +36,106 @@ local bind = require("tektite_core.bind")
 local M = {}
 
 -- --
-local Actions = {} -- Play, etc.
+local Sounds
 
 -- --
-local Events = {} -- Finished
+local Actions = {
+	-- Play --
+	do_play = function(sound)
+		return function(what)
+			-- Fire --
+			if what == "fire" then
+				sound.group:PlaySound("sample")
+
+			-- Is Done? --
+			elseif what == "is_done" then
+				return not sound.group:IsActive()
+			end
+		end
+	end,
+
+	-- Pause --
+	do_pause = function(sound)
+		return function(what)
+			-- Fire --
+			if what == "fire" then
+				sound.group:PauseAll()
+
+			-- Is Done? --
+			elseif what == "is_done" then
+				return true
+			end
+		end
+	end,
+
+	-- Resume --
+	do_resume = function(sound)
+		return function(what)
+			-- Fire --
+			if what == "fire" then
+				sound.group:ResumeAll()
+
+			-- Is Done? --
+			elseif what == "is_done" then
+				return true
+			end
+		end
+	end,
+
+	-- Stop --
+	do_stop = function(sound)
+		return function(what)
+			-- Fire --
+			if what == "fire" then
+				sound.group:StopAll()
+
+			-- Is Done? --
+			elseif what == "is_done" then
+				return true
+			end
+		end
+	end
+}
+
+-- --
+local Events = {}
+
+for _, v in ipairs{ "on_done", "on_stop" } do
+	Events[v] = bind.BroadcastBuilder_Helper("loading_level")
+end
+
+--- DOCME
+function M.AddSound (info)
+	--
+	local sample, sound = {
+		file = info.filename,
+		is_streaming = info.streaming,
+		loops = info.looping and "forever" or info.loop_count
+	}, { stop_on_reset = not info.persist_on_reset }
+
+	if info.on_done or info.on_stop then
+		function sample.on_complete (done)
+			if Sounds then
+				Events[done and "on_done" or "on_stop"](sound, "fire", false)
+			end
+		end
+	end
+
+	sound.group = audio.NewSoundGroup{ sample = sample }
+
+	--
+	for k, event in pairs(Events) do
+		event.Subscribe(sound, info[k])
+	end
+
+	--
+	for k in adaptive.IterSet(info.actions) do
+		bind.Publish("loading_level", Actions[k](sound), info.uid, k)
+	end
+
+	--
+	Sounds[#Sounds + 1] = sound
+end
 
 --
 local function LinkSound (sound, other, gsub, osub)
@@ -49,7 +147,11 @@ function M.EditorEvent (_, what, arg1, arg2)
 	-- Enumerate Defaults --
 	-- arg1: Defaults
 	if what == "enum_defs" then
-		arg1.reciprocal_link = true
+		arg1.delay = 0
+		arg1.loop_count = 1
+		arg1.looping = false
+		arg1.persist_on_reset = false
+		arg1.streaming = false
 
 	-- Enumerate Properties --
 	-- arg1: Dialog
@@ -58,13 +160,26 @@ function M.EditorEvent (_, what, arg1, arg2)
 		arg1:StockElements(nil, "sound")
 		arg1:AddSeparator()
 		arg1:AddSoundPicker{ text = "Sound file", value_name = "filename" }
-	--	arg1:AddLink{ text = "Link from source warp", rep = arg2, sub = "from", tags = "warp" }
-	--	arg1:AddLink{ text = "Link to target (warp or position)", rep = arg2, sub = "to", tags = { "warp", "position" } }
-	--	arg1:AddCheckbox{ text = "Two-way link, if one is blank?", value_name = "reciprocal_link" }
-		-- Channel?
-		-- Streaming?
-		-- Looping, count
+		arg1:AddLink{ text = "Event links: On(done)", rep = arg2, sub = "on_done", interfaces = "event_target" }
+		arg1:AddLink{ text = "Event links: On(stop)", rep = arg2, sub = "on_stop", interfaces = "event_target" }
+		arg1:AddLink{ text = "Action links: Do(play, remove others)", rep = arg2, sub = "do_play", interfaces = "event_source" }
+		arg1:AddLink{ text = "Action links: Do(pause)", rep = arg2, sub = "do_pause", interfaces = "event_source" }
+		arg1:AddLink{ text = "Action links: Do(resume)", rep = arg2, sub = "do_resume", interfaces = "event_source" }
+		arg1:AddLink{ text = "Action links: Do(stop)", rep = arg2, sub = "do_stop", interfaces = "event_source" }
+		arg1:AddCheckbox{ text = "Streaming?", value_name = "streaming" }
+		arg1:AddCheckbox{ text = "Persist over reset?", value_name = "persist_on_reset" }
+		arg1:AddCheckbox{ text = "Loop forever?", value_name = "looping" }
+		-- volume, panning, etc...
+
+		local loop_count_section = arg1:BeginSection()
+
+		arg1:AddSpinner{ before = "Loop count: ", min = 1, value_name = "loop_count" }
+		arg1:EndSection()
+		arg1:AddSpinner{ before = "Delay between sounds: ", min = 0, inc = 50, value_name = "delay" }
 		-- Hook to position??
+
+		--
+		arg1:SetStateFromValue_Watch(loop_count_section, "looping", true)
 
 	-- Get Tag --
 	elseif what == "get_tag" then
@@ -73,8 +188,6 @@ function M.EditorEvent (_, what, arg1, arg2)
 	-- New Tag --
 	elseif what == "new_tag" then
 		return "sources_and_targets", Events, Actions
-	-- GetEvent: sound finished, etc.
-	-- Actions: Play... Pause, Resume, Stop (these assume singletons... also, fairly meaningless for short sounds!)
 
 	-- Prep Link --
 	elseif what == "prep_link" then
@@ -89,16 +202,34 @@ end
 for k, v in pairs{
 	-- Enter Level --
 	enter_level = function()
-		-- load sound groups
+		Sounds = {}
 	end,
 
 	-- Leave Level --
 	leave_level = function()
-		-- remove sound groups
+		local sounds = Sounds
+
+		Sounds = nil
+
+		for _, sound in ipairs(sounds) do
+			sound.group:Remove()
+		end
 	end,
 
 	-- Reset Level --
 	reset_level = function()
+		for _, sound in ipairs(Sounds) do
+			if sound.stop_on_reset then
+				sound.group:StopAll()
+			end
+		end
+	end,
+
+	-- Things Loaded --
+	things_loaded = function()
+		for _, sound in ipairs(Sounds) do
+			sound.group:Load()
+		end
 	end
 	-- ??
 	-- reset_level, leave_level: cancel / fade / etc. long-running (relatively speaking, sometimes) sounds,

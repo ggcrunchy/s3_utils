@@ -96,7 +96,9 @@ function M.AddThings (current_level, level)
 	end
 
 	-- ...and sounds.
-	-- TODO!
+	for _, sample in Ipairs(level.sound) do
+		sound.AddSound(sample)
+	end
 end
 
 -- Primary display groups --

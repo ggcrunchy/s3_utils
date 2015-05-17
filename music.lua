@@ -32,6 +32,9 @@ local adaptive = require("tektite_core.table.adaptive")
 local audio = require("corona_utils.audio")
 local bind = require("tektite_core.bind")
 
+-- Corona globals --
+local timer = timer
+
 -- Exports --
 local M = {}
 
@@ -142,7 +145,9 @@ function M.AddMusic (info)
 
 	if info.on_done or info.on_stop then
 		function track.on_complete (done)
-			Events[done and "on_done" or "on_stop"](music, "fire", false)
+			if Music then
+				Events[done and "on_done" or "on_stop"](music, "fire", false)
+			end
 		end
 	end
 
@@ -182,6 +187,7 @@ function M.EditorEvent (_, what, arg1, arg2)
 	-- arg1: Defaults
 	if what == "enum_defs" then
 		arg1.filename = ""
+		arg1.loop_count = 1
 		arg1.looping = true
 
 	-- Enumerate Properties --
@@ -192,13 +198,23 @@ function M.EditorEvent (_, what, arg1, arg2)
 		arg1:AddSeparator()
 		arg1:AddMusicPicker{ text = "Music file", value_name = "filename" }
 		arg1:AddLink{ text = "Event links: On(done)", rep = arg2, sub = "on_done", interfaces = "event_target" }
+		arg1:AddLink{ text = "Event links: On(stop)", rep = arg2, sub = "on_stop", interfaces = "event_target" }
 		arg1:AddLink{ text = "Action links: Do(play, remove others)", rep = arg2, sub = "do_play", interfaces = "event_source" }
 		arg1:AddLink{ text = "Action links: Do(play, leave others)", rep = arg2, sub = "do_play_no_cancel", interfaces = "event_source" }
 		arg1:AddLink{ text = "Action links: Do(pause)", rep = arg2, sub = "do_pause", interfaces = "event_source" }
 		arg1:AddLink{ text = "Action links: Do(resume)", rep = arg2, sub = "do_resume", interfaces = "event_source" }
 		arg1:AddLink{ text = "Action links: Do(stop)", rep = arg2, sub = "do_stop", interfaces = "event_source" }
 		arg1:AddCheckbox{ text = "Loop forever?", value_name = "looping" }
+
+		local loop_count_section = arg1:BeginSection()
+
 		arg1:AddSpinner{ before = "Loop count: ", min = 1, value_name = "loop_count" }
+		arg1:EndSection()
+
+		-- volume?
+
+		--
+		arg1:SetStateFromValue_Watch(loop_count_section, "looping", true)
 
 	-- Get Tag --
 	elseif what == "get_tag" then
@@ -230,11 +246,13 @@ for k, v in pairs{
 
 	-- Leave Level --
 	leave_level = function()
-		for _, music in ipairs(Music) do
-			music.group:Remove()
-		end
+		local music_list = Music
 
 		Music, PlayOnEnter, PlayOnLeave = nil
+
+		for _, music in ipairs(music_list) do
+			music.group:Remove()
+		end
 	end,
 
 	-- Leave Menus --
