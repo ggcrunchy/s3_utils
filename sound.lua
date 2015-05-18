@@ -162,7 +162,7 @@ function M.EditorEvent (_, what, arg1, arg2)
 		arg1:AddSoundPicker{ text = "Sound file", value_name = "filename" }
 		arg1:AddLink{ text = "Event links: On(done)", rep = arg2, sub = "on_done", interfaces = "event_target" }
 		arg1:AddLink{ text = "Event links: On(stop)", rep = arg2, sub = "on_stop", interfaces = "event_target" }
-		arg1:AddLink{ text = "Action links: Do(play, remove others)", rep = arg2, sub = "do_play", interfaces = "event_source" }
+		arg1:AddLink{ text = "Action links: Do(play)", rep = arg2, sub = "do_play", interfaces = "event_source" }
 		arg1:AddLink{ text = "Action links: Do(pause)", rep = arg2, sub = "do_pause", interfaces = "event_source" }
 		arg1:AddLink{ text = "Action links: Do(resume)", rep = arg2, sub = "do_resume", interfaces = "event_source" }
 		arg1:AddLink{ text = "Action links: Do(stop)", rep = arg2, sub = "do_stop", interfaces = "event_source" }

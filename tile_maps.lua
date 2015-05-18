@@ -99,7 +99,7 @@ function M.AddTiles (group, names)
 	local i, y = 1, .5 * TileH
 
 	while i <= #names do
-		local x =.5 * TileW
+		local x = .5 * TileW
 
 		for _ = 1, NCols do
 			local what = names[i]

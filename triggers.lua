@@ -24,25 +24,237 @@
 --
 
 -- Standard library imports --
+local pairs = pairs
+local ipairs = ipairs
 
 -- Modules --
+local adaptive = require("tektite_core.table.adaptive")
+local bind = require("tektite_core.bind")
 local collision = require("corona_utils.collision")
+local operators = require("bitwise_ops.operators")
+local tile_maps = require("s3_utils.tile_maps")
+
+-- Corona globals --
+local display = display
 
 -- Exports --
 local M = {}
 
---- DOCME
-function M.EditorEvent (_, what, arg1, arg2)
+-- --
+local Triggers
 
+-- --
+local Events = {}
+
+for _, v in ipairs{ "on_enter", "on_leave" } do
+	Events[v] = bind.BroadcastBuilder_Helper("loading_level")
 end
 
--- Player? (or enemy name / flags) (enter, leave, ...)
--- Entering / leaving from (any, left, right, etc. side) (Bitfield widget?)
+--
+local function Enter (trigger)
+	if not trigger.off then
+		trigger.off = trigger.deactivate
+
+		Events.on_enter(trigger, "fire", false)
+	end
+end
+
+--
+local function Leave (trigger)
+	if not trigger.off then
+		Events.on_leave(trigger, "fire", false)
+	end
+end
+
+-- --
+local Actions = {
+	-- Play --
+	do_enter = function(trigger)
+		return function(what)
+			-- Fire --
+			if what == "fire" then
+				Enter(trigger)
+
+			-- Is Done? --
+			elseif what == "is_done" then
+				return true
+			end
+		end
+	end,
+
+	-- Pause --
+	do_leave = function(trigger)
+		return function(what)
+			-- Fire --
+			if what == "fire" then
+				Leave(trigger)
+
+			-- Is Done? --
+			elseif what == "is_done" then
+				return true
+			end
+		end
+	end,
+
+	-- Resume --
+	do_impulse = function(trigger)
+		return function(what)
+			-- Fire --
+			if what == "fire" then
+				Enter(trigger)
+				Leave(trigger)
+
+			-- Is Done? --
+			elseif what == "is_done" then
+				return true
+			end
+		end
+	end
+}
+
+-- --
+local FlagGroups = { "player", "enemy", "projectile" }
+
+--- DOCME
+function M.AddTrigger (group, info)
+	--
+	local trigger, detect = { deactivate = info.deactivate, restore = info.restore }, info.detect_when
+
+	if detect > 0 then
+		local flags, handles = 0, {}
+
+		for _, name in ipairs(FlagGroups) do
+			local bits = operators.band(detect, 0x3)
+
+			if bits ~= 0 then
+				flags = flags + collision.FilterBits(name)
+
+				if bits == 0x3 then
+					handles[name] = "both"
+				else
+					handles[name] = bits == 0x1 and "began" or "ended"
+				end
+			end
+
+			detect = .25 * (detect - bits)
+		end
+
+		-- 
+		local w, h = tile_maps.GetSizes()
+		local rect = display.newRect(group, (info.col - .5) * w, (info.row - .5) * h, w, h)
+
+		rect:addEventListener("collision", function(event)
+			local phase, which = event.phase, handles[collision.GetType(event.other)]
+
+			if which == "both" or which == phase then
+				if phase == "began" then
+					Enter(trigger)
+				else
+					Leave(trigger)
+				end
+			end
+		end)
+
+		rect.isVisible = false
+
+		collision.MakeSensor(rect, "static", { filter = { categoryBits = flags, maskBits = 0xFFFF } })
+	end
+
+	--
+	for k, event in pairs(Events) do
+		event.Subscribe(trigger, info[k])
+	end
+
+	--
+	for k in adaptive.IterSet(info.actions) do
+		bind.Publish("loading_level", Actions[k](trigger), info.uid, k)
+	end
+
+	--
+	Triggers[#Triggers + 1] = trigger
+end
+
+--
+local function LinkTrigger (trigger, other, gsub, osub)
+	bind.LinkActionsAndEvents(trigger, other, gsub, osub, Events, Actions, "actions")
+end
+
+--- DOCME
+function M.EditorEvent (_, what, arg1, arg2)
+	-- Build --
+	-- arg1: Level
+	-- arg2: Original entry
+	-- arg3: Item to build
+	if what == "build" then
+		-- TODO: Versioning to keep the bitfield in sync?
+
+	-- Enumerate Defaults --
+	-- arg1: Defaults
+	elseif what == "enum_defs" then
+		arg1.deactivate = false
+		arg1.detect_when = 0x3
+		arg1.restore = true
+
+	-- Enumerate Properties --
+	-- arg1: Dialog
+	-- arg2: Representative object
+	elseif what == "enum_props" then
+		arg1:StockElements(nil, "trigger")
+		arg1:AddSeparator()
+		arg1:AddLink{ text = "Event links: On(enter)", rep = arg2, sub = "on_enter", interfaces = "event_target" }
+		arg1:AddLink{ text = "Event links: On(leave)", rep = arg2, sub = "on_leave", interfaces = "event_target" }
+		arg1:AddLink{ text = "Action links: Do(enter)", rep = arg2, sub = "do_enter", interfaces = "event_source" }
+		arg1:AddLink{ text = "Action links: Do(leave)", rep = arg2, sub = "do_leave", interfaces = "event_source" }
+		arg1:AddLink{ text = "Action links: Do(impulse)", rep = arg2, sub = "do_impulse", interfaces = "event_source" }
+		arg1:AddBitfield{
+			text = "Detect when?", strs = {
+				"player enter", "player leave", "enemy enter", "enemy leave", "projectile enter", "projectile leave"
+			}, value_name = "detect_when"
+		}
+		arg1:AddCheckbox{ text = "Deactivate on enter?", value_name = "deactivate" }
+
+		local restore_section = arg1:BeginSection()
+
+		arg1:AddCheckbox{ text = "Restore on reset?", value_name = "restore" }
+		arg1:EndSection()
+
+		--
+		arg1:SetStateFromValue_Watch(restore_section, "deactivate")
+
+	-- Get Tag --
+	elseif what == "get_tag" then
+		return "trigger"
+
+	-- New Tag --
+	elseif what == "new_tag" then
+		return "sources_and_targets", Events, Actions
+
+	-- Prep Link --
+	elseif what == "prep_link" then
+		return LinkTrigger
+	end
+end
 
 -- Listen to events.
 for k, v in pairs{
-	-- This might not even need anything?
-	-- Just the "touching" state, but collision might take care of that
+	-- Enter Level --
+	enter_level = function()
+		Triggers = {}
+	end,
+
+	--
+	leave_level = function()
+		Triggers = nil
+	end,
+
+	-- Reset Level --
+	reset_level = function()
+		for _, trigger in ipairs(Triggers) do
+			if trigger.restore then
+				trigger.off = false
+			end
+		end
+	end
 } do
 	Runtime:addEventListener(k, v)
 end
