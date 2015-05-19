@@ -40,6 +40,7 @@ local persistence = require("corona_utils.persistence")
 local player = require("game.Player")
 local sound = require("s3_utils.sound")
 local tile_maps = require("s3_utils.tile_maps")
+local triggers = require("s3_utils.triggers")
 
 -- Corona globals --
 local display = display
@@ -89,6 +90,11 @@ function M.AddThings (current_level, level)
 
 	-- ...and any global events...
 	global_events.AddEvents(level.global_events)
+
+	-- ...and any triggers...
+	for _, trigger in Ipairs(level.triggers) do
+		triggers.AddTrigger(current_level.things_layer, trigger)
+	end
 
 	-- ...and music...
 	for _, track in Ipairs(level.music) do
