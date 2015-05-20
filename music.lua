@@ -248,7 +248,7 @@ for k, v in pairs{
 	leave_level = function()
 		local music_list = Music
 
-		Music, PlayOnEnter, PlayOnLeave = nil
+		Music, PlayOnEnter, PlayOnReset = nil
 
 		for _, music in ipairs(music_list) do
 			music.group:Remove()
