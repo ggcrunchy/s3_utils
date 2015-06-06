@@ -30,6 +30,7 @@
 
 -- Modules --
 local array_index = require("tektite_core.array.index")
+local grid_funcs = require("tektite_core.array.grid")
 local powers_of_2 = require("bitwise_ops.powers_of_2")
 local range = require("tektite_core.number.range")
 local table_funcs = require("tektite_core.table.funcs")
@@ -276,7 +277,7 @@ function M.WipeFlags (col1, row1, col2, row2)
 	col1, col2 = range.MinMax_N(col1, col2, NCols)
 	row1, row2 = range.MinMax_N(row1, row2, NRows)
 
-	local index = array_index.CellToIndex(col1, row1, NCols)
+	local index = grid_funcs.CellToIndex(col1, row1, NCols)
 
 	for _ = row1, row2 do
 		for i = 0, col2 - col1 do

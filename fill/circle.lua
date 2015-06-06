@@ -62,12 +62,12 @@ function M.SpreadOut (halfx, halfy, func)
 		-- If a row is missing from the half-widths list, we have stepped outside the target
 		-- region, and so stop. Otherwise, we expand the row as far right as the given x, and
 		-- record the new current half-width.
-		local xrange = rows[y + 1]
+		local xrange = rows[1 - y] -- iterator gives negative values for y
 
 		if xrange and x > xrange then
-			rows[y + 1] = x
+			rows[1 - y] = x
 
-			for _ = 1, y > 0 and 2 or 1 do
+			for _ = 1, y < 0 and 2 or 1 do
 				-- If the row had not yet been expanded, visit its center cell.
 				if xrange == 0 then
 					func(0, y, radius)
