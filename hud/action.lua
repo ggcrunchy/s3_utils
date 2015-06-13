@@ -96,7 +96,7 @@ function FadeIconParams.onComplete (icon)
 	local n = #Sequence
 
 	-- No items left: kill the sequence.
-	if n == 0 or not icon.parent then
+	if n == 0 or icon.removeSelf == nil then -- icon no longer valid?
 		Current = nil
 
 	-- On fade out: Try to fade in the next icon (which may be the icon itself).
@@ -222,7 +222,7 @@ local ScaleToNormal = {
 
 -- Completes the pulse sequence: normal -> out -> normal -> in -> normal -> out...
 function ScaleInOut.onComplete (object)
-	if object.parent then
+	if object.removeSelf ~= nil then -- object still valid?
 		Scaling = transition.to(object, ScaleToNormal)
 	end
 end

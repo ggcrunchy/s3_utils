@@ -112,11 +112,11 @@ function M.Shadow (func, arg)
 	end
 
 	timers.RepeatEx(function()
-		if shadow.parent and (not DecalsLayer or func(shadow, arg) == "quit") then
+		if shadow.removeSelf ~= nil and (not DecalsLayer or func(shadow, arg) == "quit") then -- shadow still valid? (TODO: use display.remove()...)
 			shadow:removeSelf()
 		end
 
-		if not shadow.parent then
+		if shadow.removeSelf == nil then -- shadow no longer valid?
 			if result == "report_quit" then
 				func("quitting", arg)
 			end

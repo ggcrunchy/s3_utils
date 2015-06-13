@@ -174,8 +174,10 @@ function M.RingOfStars (group, nstars, x, y, dx, dy, options)
 
 	--
 	timers.RepeatEx(function(event)
+		local front_valid, back_valid = front.removeSelf ~= nil, back.removeSelf ~= nil
+
 		--
-		if front.parent and back.parent then
+		if front_valid and back_valid then
 			local t = event.m_elapsed * RotateSpeed / 1000
 			local dt = _2pi / #stars
 
@@ -186,12 +188,12 @@ function M.RingOfStars (group, nstars, x, y, dx, dy, options)
 			end
 
 		--
-		else
-			if front.parent then
+		else -- TODO: Replace these with display.remove(), if possible (still seeking confirmation that it's just a synonym)
+			if front_valid then
 				front:removeSelf()
 			end
 
-			if back.parent then
+			if back_valid then
 				back:removeSelf()
 			end
 

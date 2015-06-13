@@ -195,7 +195,7 @@ function M.Fill (group, how, ulx, uly, lrx, lry)
 		filler.isVisible = false
 
 		timers.RepeatEx(function()
-			if filler.parent then
+			if filler.removeSelf ~= nil then -- filler still valid?
 				local radius = length.ToBin_RoundUp(filler.width / dw, filler.height / dh, 1.15, .01)
 
 				spread(radius)
@@ -255,7 +255,7 @@ for k, v in pairs{
 
 	-- Reset Level --
 	reset_level = function()
-		for k, v in pairs(ImageCache) do
+		for k in pairs(ImageCache) do
 			ImageCache[k] = nil
 		end
 	end

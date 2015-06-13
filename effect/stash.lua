@@ -103,7 +103,7 @@ local function AddToCache (cache, object)
 		cache[#cache + 1] = object
 
 		Stash:insert(object)
-	elseif object.parent then
+	elseif object.removeSelf ~= nil then -- object still valid? (TODO: can replace with display.remove()?)
 		object:removeSelf()
 	end
 end
@@ -124,7 +124,7 @@ local function Push (list, what, object, how)
 			object.isVisible = false
 
 			timers.RepeatEx(function()
-				if object.parent then
+				if object.removeSelf ~= nil then -- object still valid?
 					AddFromGroup(cache, object, object.numChildren - 10)
 
 					if object.numChildren > 0 then
