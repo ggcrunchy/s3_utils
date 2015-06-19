@@ -237,9 +237,7 @@ for k, v in pairs{
 	player_stunned = PlayerKilled,
 
 	-- Player Unstunned --
-	player_unstunned = function()
-		Active = true
-	end,
+	player_unstunned = ResetLevel,
 
 	-- Reset Level --
 	reset_level = ResetLevel,
