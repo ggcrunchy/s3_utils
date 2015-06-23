@@ -27,9 +27,11 @@
 local atan2 = math.atan2
 local cos = math.cos
 local deg = math.deg
+local max = math.max
 local pairs = pairs
 local pi = math.pi
 local sin = math.sin
+local sqrt = math.sqrt
 
 -- Modules --
 local glow = require("s3_utils.effect.glow")
@@ -131,14 +133,6 @@ local Arrows = {
 local ArrowGroup = {}
 
 --- DOCME
--- @number alpha
-function ArrowGroup:SetAlpha (alpha)
-	for i = 1, self.numChildren do
-		self[i].alpha = alpha
-	end
-end
-
---- DOCME
 -- @byte r
 -- @byte g
 -- @byte b
@@ -160,7 +154,11 @@ function ArrowGroup:SetEndPoints (x1, y1, x2, y2, offset)
 	local dx, dy = x2 - x1, y2 - y1
 	local angle = deg(atan2(dy, dx))
 	local dfunc = self.m_dfunc
-	local n = self.numChildren
+	local n, len, fade_from = self.numChildren, sqrt(dx^2 + dy^2)
+
+	if self.m_is_line then
+		fade_from = len - self[1].height
+	end
 
 	for i = 1, n do
 		local arrow = self[i]
@@ -169,6 +167,13 @@ function ArrowGroup:SetEndPoints (x1, y1, x2, y2, offset)
 		arrow.x = x1 + dx2
 		arrow.y = y1 + dy2
 		arrow.rotation = angle
+
+		--
+		if fade_from then
+			local dist = max(sqrt(dx2^2 + dy2^2) - fade_from, 0)
+
+			arrow.alpha = 1 - (dist / (len - fade_from))^3
+		end
 	end
 end
 
@@ -217,7 +222,11 @@ end)
 -- @number offset
 -- @treturn DisplayGroup G
 function M.LineOfArrows (group, x1, y1, x2, y2, width, offset)
-	return MakeLine(group, "right", x1, y1, x2, y2, width, offset)
+	local arrow_group = MakeLine(group, "right", x1, y1, x2, y2, width, offset)
+
+	arrow_group.m_is_line = true
+
+	return arrow_group
 end
 
 -- Current arrow glow color --
@@ -243,7 +252,8 @@ function M.PointFromTo (group, from, to, width, alpha, dir)
 
 	--
 	aline:SetColor(ArrowRGB())
-	aline:SetAlpha(alpha)
+
+	aline.alpha = alpha
 
 	timers.RepeatEx(function(event)
 		if aline.removeSelf ~= nil then -- aline still valid?

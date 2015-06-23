@@ -27,6 +27,7 @@
 local cos = math.cos
 local deg = math.deg
 local ipairs = ipairs
+local max = math.max
 local min = math.min
 local pi = math.pi
 local random = math.random
@@ -116,10 +117,23 @@ end
 -- @number y
 -- @number dx
 -- @number dy
--- @ptable[opt] options
+-- @ptable[opt] opts
 -- @treturn DisplayGroup X
 -- @treturn DisplayGroup Y
-function M.RingOfStars (group, nstars, x, y, dx, dy, options)
+function M.RingOfStars (group, nstars, x, y, dx, dy, opts)
+	--
+	local square, file, func
+
+	if opts then
+		file = opts.file
+		func = opts.func
+		func = StarFuncs[func] or func
+		square = not opts.skew
+	end
+
+	file = StarSets[file] or file
+
+	--
 	local front = display.newGroup()
 	local back = display.newGroup()
 
@@ -127,17 +141,6 @@ function M.RingOfStars (group, nstars, x, y, dx, dy, options)
 	group:insert(back)
 
 	back:toBack()
-
-	--
-	local file, func
-
-	if options then
-		file = options.file
-		func = options.func
-		func = StarFuncs[func] or func
-	end
-
-	file = StarSets[file] or file
 
 	--
 	local function Update (star, angle, index)
@@ -154,22 +157,27 @@ function M.RingOfStars (group, nstars, x, y, dx, dy, options)
 	end
 
 	--
-	local stars = {}
+	local w, h = dx, dy
+
+	if square then
+		local size = .75 * min(dx, dy) + .25 * (dx + dy)
+
+		w, h = size, size
+	end
+
+	--
+	local stars, is_table = {}, type(file) == "table"
 
 	for i = 1, nstars do
 		if file then
-			local name = type(file) == "table" and file[random(#file)] or file
-			local size = .75 * min(dx, dy) + .25 * (dx + dy)
+			local name = is_table and file[random(#file)] or file
 
-			stars[i] = display.newImage(front, name)
-
-			stars[i].width, stars[i].height = size, size
-
+			stars[i] = display.newImageRect(name, w, h)
 		else
 			stars[i] = M.Star(front, x, y, 10, 0)
 		end
 
-		Update(stars[i], 0, i)
+		Update(stars[i], (i - 1) * _2pi / nstars, i)
 	end
 
 	--
