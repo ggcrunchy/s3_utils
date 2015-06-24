@@ -28,6 +28,7 @@ local abs = math.abs
 local assert = assert
 local max = math.max
 local min = math.min
+local next = next
 
 -- Modules --
 local tile_flags = require("s3_utils.tile_flags")
@@ -35,6 +36,10 @@ local tile_maps = require("s3_utils.tile_maps")
 
 -- Imports --
 local IsFlagSet = tile_flags.IsFlagSet
+
+-- Cached module references --
+local _CanGo_
+local _NextDirection_
 
 -- Exports --
 local M = {}
@@ -61,7 +66,7 @@ local Directions = {
 -- @see NextDirection
 function M.CanGo (index, dir, facing)
 	if facing ~= nil then
-		dir = M.NextDirection(facing, dir)
+		dir = _NextDirection_(facing, dir)
 	end
 
 	assert(Directions[dir], "Invalid direction")
@@ -106,7 +111,7 @@ function M.MoveFrom (x, y, dist, dir)
 	-- operator and check whether we can exit the tile in the direction we want.
 	local inc = (dir == "up" or dir == "left") and Sub or Add
 
-	if M.CanGo(tile, dir) then
+	if _CanGo_(tile, dir) then
 		local adx = abs(x - px)
 
 		-- If we can't make it to the corner / junction yet, close some of the distance.
@@ -214,17 +219,21 @@ end
 -- @see CanGo, NextDirection
 function M.WayToGo (index, dir1, dir2, dir3, facing)
 	-- Try the provided directions, in order of preference.
-	if M.CanGo(index, dir1, facing) then
+	if _CanGo_(index, dir1, facing) then
 		return dir1
-	elseif M.CanGo(index, dir2, facing) then
+	elseif _CanGo_(index, dir2, facing) then
 		return dir2
-	elseif M.CanGo(index, dir3, facing) then
+	elseif _CanGo_(index, dir3, facing) then
 		return dir3
 	end
 
 	-- As a last resort, just turn around.
 	return "backward"
 end
+
+-- Cache module members.
+_CanGo_ = M.CanGo
+_NextDirection_ = M.NextDirection
 
 -- Export the module.
 return M
