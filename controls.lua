@@ -225,10 +225,18 @@ for k, v in pairs{
 	end,
 
 	-- Leave Level --
-	leave_level = function()
+--	leave_level = function()
+	-- Level Done --
+	level_done = function()
 		Runtime:removeEventListener("enterFrame", UpdatePlayer)
 		Runtime:removeEventListener("key", KeyEvent)
 	end,
+
+	-- Move Done --
+	move_done = ResetLevel,
+
+	-- Move Prepare --
+	move_prepare = PlayerKilled,
 
 	-- Player Killed --
 	player_killed = PlayerKilled,
