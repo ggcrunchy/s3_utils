@@ -44,7 +44,6 @@ local triggers = require("s3_utils.triggers")
 
 -- Corona globals --
 local display = display
-local timer = timer
 
 -- Exports --
 local M = {}
@@ -172,9 +171,7 @@ end
 -- On(win): unload the level and do win-related logic
 function M.ExtendWinEvent ()
 	global_events.ExtendAction("win", function()
-		timer.performWithDelay(loop.GetWaitToEndTime(), function()
-			loop.UnloadLevel("won")
-		end)
+		loop.UnloadLevel("won")
 	end)
 end
 
