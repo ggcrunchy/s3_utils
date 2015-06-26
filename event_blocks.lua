@@ -111,6 +111,9 @@ local BlockIDs
 -- Creation-time values of flags within the block region, for restoration --
 local OldFlags
 
+-- Layer into which dust is added --
+local MarkersLayer
+
 -- Layers into which block groups are added --
 local TilesLayer
 
@@ -196,12 +199,11 @@ local function NewBlock (col1, row1, col2, row2)
 	end
 
 	--- Triggers a dust effect over the block's region.
-	-- @pgroup group Group to which dust particles are added.
 	-- @uint nmin Minimum number of clouds to randomly throw up...
 	-- @uint nmax ...and maximum.
 	-- @treturn uint Total time elapsed, in milliseconds, by effect.
 	-- @see s3_utils.fx.Poof
-	function block:Dust (group, nmin, nmax)
+	function block:Dust (nmin, nmax)
 		local total = 0
 
 		for _ = 1, random(nmin, nmax) do
@@ -209,7 +211,7 @@ local function NewBlock (col1, row1, col2, row2)
 			local index = tile_maps.GetTileIndex(col, row)
 			local x, y = tile_maps.GetTilePos(index)
 
-			total = max(total, fx.Poof(group, x, y))
+			total = max(total, fx.Poof(MarkersLayer, x, y))
 		end
 
 		return total
@@ -512,12 +514,13 @@ for k, v in pairs{
 		BlockIDs = {}
 		Events = {}
 		OldFlags = {}
+		MarkersLayer = level.markers_layer
 		TilesLayer = level.tiles_layer
 	end,
 
 	-- Leave Level --
 	leave_level = function()
-		Blocks, BlockIDs, Events, OldFlags, TilesLayer = nil
+		Blocks, BlockIDs, Events, MarkersLayer, OldFlags, TilesLayer = nil
 	end,
 
 	-- Pre-Reset --
