@@ -166,7 +166,7 @@ function M.Thought (group, x, y, text, ndots)
 
 	-- Update the balloon until it has been removed.
 	timers.RepeatEx(function(event)
-		if tgroup.removeSelf ~= nil then -- tgroup still valid?
+		if display.isValid(tgroup) then
 			local nshown = ceil(event.m_elapsed / DotTime)
 
 			-- Fade in any dots for which time has elapsed.

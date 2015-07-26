@@ -195,7 +195,7 @@ function M.Fill (group, how, ulx, uly, lrx, lry)
 		filler.isVisible = false
 
 		timers.RepeatEx(function()
-			if filler.removeSelf ~= nil then -- filler still valid?
+			if display.isValid(filler) then
 				local radius = length.ToBin_RoundUp(filler.width / dw, filler.height / dh, 1.15, .01)
 
 				spread(radius)

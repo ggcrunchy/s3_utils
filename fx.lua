@@ -137,7 +137,7 @@ do -- POW! effect
 		time = 350, alpha = 1, transition = easing.inOutExpo,
 
 		onComplete = function(object)
-			if object.removeSelf ~= nil then -- object still valid?
+			if display.isValid(object) then
 				transition.to(object, Done)
 			end
 		end

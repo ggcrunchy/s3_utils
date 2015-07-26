@@ -182,7 +182,7 @@ function M.RingOfStars (group, nstars, x, y, dx, dy, opts)
 
 	--
 	timers.RepeatEx(function(event)
-		local front_valid, back_valid = front.removeSelf ~= nil, back.removeSelf ~= nil
+		local front_valid, back_valid = display.isValid(front), display.isValid(back)
 
 		--
 		if front_valid and back_valid then
