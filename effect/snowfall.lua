@@ -138,7 +138,7 @@ function M.Snowfall (group, images, max)
 	local nslots = ceil(max / 3)
 
 	timers.RepeatEx(function()
-		if snowfall.removeSelf == nil then -- snowfall no longer valid?
+		if not display.isValid(snowfall) then
 			return "cancel"
 		end
 

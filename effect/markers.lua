@@ -256,7 +256,7 @@ function M.PointFromTo (group, from, to, width, alpha, dir)
 	aline.alpha = alpha
 
 	timers.RepeatEx(function(event)
-		if aline.removeSelf ~= nil then -- aline still valid?
+		if display.isValid(aline) then
 			local dt = event.m_elapsed % delay
 
 			aline:SetColor(ArrowRGB())
