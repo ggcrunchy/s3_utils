@@ -126,6 +126,15 @@ function M.IsFlagSet (index, name)
 	return IsSet(ResolvedFlags[index] or 0, DirFlags[name])
 end
 
+--- Variant of @{IsFlagSet} that refers to the working flags, rather than resolved ones.
+-- @int index Tile index.
+-- @string name One of **"left"**, **"right"**, **"up"**, or **"down"**.
+-- @treturn boolean _index_ is valid and the working flag is set for the tile?
+-- @see IsFlagSet
+function M.IsFlagSet_Working (index, name)
+	return IsSet(Flags[index] or 0, DirFlags[name])
+end
+
 --- Predicate.
 -- @int index Tile index.
 -- @treturn boolean Is _index_ valid, and did it resolve to neighboring more than two tiles?
