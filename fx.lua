@@ -83,13 +83,18 @@ local function Vent (params, group, x, y, time)
 	if #(cache or "") > 0 then
 		vent = remove(cache)
 
-		group:insert(vent.content)
+		if display.isValid(vent.content) then
+			group:insert(vent.content)
 
-		vent.content.x = x
-		vent.content.y = y
+			vent.content.x = x
+			vent.content.y = y
+		else
+			vent = nil
+		end
+	end
 
 	-- Create a new vent.
-	else
+	if not vent then
 		params.parentGroup = group
 		params.contentX = x
 		params.contentY = y

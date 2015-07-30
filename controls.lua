@@ -118,34 +118,36 @@ local PushDir = {}
 
 -- Processes direction keys or similar input, by pretending to push GUI buttons
 local function KeyEvent (event)
-	local key = event.keyName
-	local phase = event.phase
+	if Active then
+		local key = event.keyName
+		local phase = event.phase
 
-	-- Directional keys from D-pad or trackball: move in the corresponding direction.
-	-- The trackball seems to produce the "down" phase followed immediately by "up",
-	-- so we let the player coast along for a few frames unless interrupted.
-	-- TODO: Secure a Play or at least a tester, try out the D-pad (add bindings)
-	if key == "up" or key == "down" or key == "left" or key == "right" then
-		PushDir.m_dir = key
+		-- Directional keys from D-pad or trackball: move in the corresponding direction.
+		-- The trackball seems to produce the "down" phase followed immediately by "up",
+		-- so we let the player coast along for a few frames unless interrupted.
+		-- TODO: Secure a Play or at least a tester, try out the D-pad (add bindings)
+		if key == "up" or key == "down" or key == "left" or key == "right" then
+			PushDir.m_dir = key
 
-		if phase == "down" then
-			FramesLeft = 6
+			if phase == "down" then
+				FramesLeft = 6
 
-			BeginDir(nil, PushDir)
+				BeginDir(nil, PushDir)
+			else
+				EndDir(nil, PushDir)
+			end
+
+		-- Confirm key or trackball press: attempt to perform player actions.
+		-- TODO: Add bindings
+		elseif key == "center" or key == "space" then
+			if phase == "down" then
+				DoActions()
+			end
+
+		-- Propagate other / unknown keys; otherwise, indicate that we consumed the input.
 		else
-			EndDir(nil, PushDir)
+			return
 		end
-
-	-- Confirm key or trackball press: attempt to perform player actions.
-	-- TODO: Add bindings
-	elseif key == "center" or key == "space" then
-		if phase == "down" then
-			DoActions()
-		end
-
-	-- Propagate other / unknown keys; otherwise, indicate that we consumed the input.
-	else
-		return
 	end
 
 	return true
@@ -191,8 +193,8 @@ local function PlayerKilled ()
 end
 
 -- Reset Level response
-local function ResetLevel ()
-	Active = true
+local function ResetLevel (how)
+	Active = how ~= "stop"
 	FramesLeft = 0
 	Dir, Was = nil
 	ChangeTo = nil
@@ -224,10 +226,10 @@ for k, v in pairs{
 		Runtime:addEventListener("key", KeyEvent)
 	end,
 
-	-- Leave Level --
---	leave_level = function()
 	-- Level Done --
 	level_done = function()
+		ResetLevel("stop")
+
 		Runtime:removeEventListener("enterFrame", UpdatePlayer)
 		Runtime:removeEventListener("key", KeyEvent)
 	end,
