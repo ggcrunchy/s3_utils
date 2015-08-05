@@ -85,6 +85,35 @@ local function StashPixels (event)
 	stash.PushRect("filler", event.m_object, "is_group")
 end
 
+do
+	-- Kernel --
+	local kernel = { category = "filter", group = "fill", name = "circle" }
+
+	kernel.vertexData = {
+		{
+			name = "dist",
+			default = 0, min = 0, max = math.sqrt(2),
+			index = 0
+		},
+		{
+			name = "upper",
+			default = 0, min = 0, max = 1,
+			index = 1
+		},
+	}
+
+	kernel.fragment = [[
+		P_COLOR vec4 FragmentKernel (P_UV vec2 uv)
+		{
+			P_UV float len = length(uv - .5);
+
+			return CoronaColorScale(texture2D(CoronaSampler0, uv) * smoothstep(-.017, CoronaVertexUserData.y, CoronaVertexUserData.x - len));
+		}
+	]]
+
+	graphics.defineEffect(kernel)
+end
+
 --- Fills a rectangular region gradually over time, according to a fill process.
 --
 -- If an image has been assigned with @{SetImage}, it will be used to fill the region.
@@ -192,6 +221,7 @@ function M.Fill (group, how, ulx, uly, lrx, lry)
 
 		-- The final object begins hidden, since it will be built up visually from the fill
 		-- components. Over time, fit its current shape to a circle and act in that region.
+--[[
 		filler.isVisible = false
 
 		timers.RepeatEx(function()
@@ -215,7 +245,10 @@ function M.Fill (group, how, ulx, uly, lrx, lry)
 			timers.DeferIf(cur_image and "remove" or StashPixels, rgroup)
 
 			return "cancel"
-		end, 45)
+		end, 45)]]
+		filler.fill.effect = "filter.fill.circle"
+
+		transition.to(filler.fill.effect, { dist = math.sqrt(2), upper = .557, time = 1100 })
 
 	-- Other options: random fill, cross-fade, Hilbert...
 	else
