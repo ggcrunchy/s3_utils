@@ -26,6 +26,7 @@
 --
 
 -- Standard library imports --
+local assert = assert
 local ceil = math.ceil
 local format = string.format
 local pairs = pairs
@@ -33,6 +34,7 @@ local pairs = pairs
 -- Modules --
 local audio = require("corona_utils.audio")
 local circle = require("s3_utils.fill.circle")
+local color = require("corona_ui.utils.color")
 local grid = require("tektite_core.array.grid")
 local length = require("tektite_core.number.length")
 local powers_of_2 = require("bitwise_ops.powers_of_2")
@@ -52,6 +54,64 @@ local TileW, TileH
 
 -- Image sheets, cached from fill images used on this level --
 local ImageCache
+
+
+
+-- --
+local Batch = {}
+
+--- DOCME
+-- @pgroup group
+-- @param ... ARGS
+function M.Begin_Color (group, ...)
+	assert(not Batch.group, "Batch already begun")
+
+	Batch.group, Batch.color = group, color.PackColor_Number(...)
+end
+
+--- DOCME
+-- @pgroup group
+-- @string name
+function M.Begin_Image (group, name)
+	assert(not Batch.group, "Batch already begun")
+end
+
+--- DOCME
+-- @number ulx
+-- @number uly
+-- @number lrx
+-- @number lry
+function M.AddRegion (ulx, uly, lrx, lry)
+	local group = assert(Batch.group, "No batch running")
+
+	if display.isValid(group) then
+		local color, name = Batch.color, Batch.name
+
+		if color then
+			--
+		else
+			--
+		end
+	end
+end
+
+--- DOCME
+-- @string[opt="flood_fill"] how X
+function M.End (how)
+	assert(#Batch > 0, "No regions added")
+
+	--
+	local color, group, name = Batch.color, Batch.group, Batch.name
+
+	if color then
+		--
+	else
+		--
+	end
+
+	Batch.color, Batch.group, Batch.name = nil
+end
+
 
 -- Current fill color for non-images --
 local R, G, B = 1, 1, 1
