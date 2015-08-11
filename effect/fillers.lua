@@ -101,7 +101,7 @@ function M.End (how)
 	assert(n and n > 0, "No regions added")
 
 	--
-	local midc, midr, maxc, maxr, minc, minr = 0, 0, 1, 1, tile_maps.GetCounts()
+	local maxc, maxr, minc, minr = 0, 0, 1, 1, tile_maps.GetCounts()
 
 	for i = 1, n, 2 do
 		local ulc, ulr = tile_maps.GetCell(Batch[i])
@@ -109,21 +109,26 @@ function M.End (how)
 
 		minc, maxc = min(ulc, minc), max(lrc, maxc)
 		minr, maxr = min(ulr, minr), max(lrr, maxr)
-		midc, midr = midc + ulc + lrc, midr + ulr + lrr -- Implicitly, each contribution, being an average, is divided by 2...
 	end
 
-	local scale = 1 / n -- ...whereas the final results are divided by n / 2, so some cancellation occurs.
-
-	midc, midr = scale * midc, scale * midr
-
 	--
-	local rgba, image = Batch.rgba
+	local nx, ny, rgba, image = maxc - minc + 1, maxr - minr + 1, Batch.rgba
 
 	if not rgba then
-		image = sheet.TileImage(Batch.name, maxc - midc + 1, maxr - midr + 1)
+		image = sheet.TileImage(Batch.name, nx, ny)
 	end
 
 	-- Prepare work, idle, used
+	-- TODO: Other methods?
+	local method
+
+	if how == "flood_fill" then
+		method = flood
+	else
+		assert("Unknown method!")
+	end
+
+	method.Prepare(nx, ny)
 
 	--
 	local closest, group, c0, r0 = 1 / 0, Batch.group
@@ -134,22 +139,12 @@ function M.End (how)
 		--
 		local ulc, ulr = tile_maps.GetCell(ul)
 		local lrc, lrr = tile_maps.GetCell(lr)
-
-		--
-		local ccol, crow = .5 * (ulc + lrc), .5 * (ulr + lrr)
-		local sq_dist = (midc - ccol)^2 + (midr - crow)^2
-
-		if sq_dist < closest then
-			closest, c0, r0 = sq_dist, ccol, crow
-		end
-
-		--
 		local left, y = tile_maps.GetTilePos(ul)
 
-		for _ = ulr, lrr do
+		for dr = 0, lrr - ulr do
 			local x = left
 
-			for _ = ulc, lrc do
+			for dc = 0, lrc - ulc do
 				local rect
 
 				if rgba then
@@ -163,9 +158,7 @@ function M.End (how)
 				--	rect.yScale = dh / rect.height
 				end
 
-				-- Add to set...
-
-				rect.fill.effect = "filter.filler.grid4x4"
+				method.Add(ulc + dc, ulr + dr, rect)
 
 				x = x + TileW
 			end
@@ -174,9 +167,7 @@ function M.End (how)
 		end
 	end
 
-	c0, r0 = ceil(c0), ceil(r0)
-
-	-- Fire it off!
+	method.Run()
 
 	Batch.n, Batch.group, Batch.name, Batch.rgba = 0
 end

@@ -23,14 +23,19 @@
 -- [ MIT license: http://www.opensource.org/licenses/mit-license.php ]
 --
 
+-- Standard library imports --
+local floor = math.floor
+local remove = table.remove
+
 -- Modules --
 local grid = require("tektite_core.array.grid")
+local match_slot_id = require("tektite_core.array.match_slot_id")
 local powers_of_2 = require("bitwise_ops.powers_of_2")
 
 -- Exports --
 local M = {}
 
---[[
+-- --
 local Funcs = {
 	-- Left --
 	function(x, y, xoff, yoff, xmax)
@@ -61,22 +66,63 @@ local Funcs = {
 		if yoff > 0 then
 			return index
 		elseif y > 1 then
-			return index, -nx, 2^xoff, 2^(12 + xoff)
+			return index, -.25 * xmax, 2^xoff, 2^(12 + xoff)
 		end
 	end,
 
 	-- Down --
-	function(x, y, xoff, yoff, ymax)
+	function(x, y, xoff, yoff, xmax, ymax)
 		local index = grid.CellToIndex(x, y + 1, xmax)
 
 		if yoff < 3 then
 			return index
 		elseif y < ymax then
-			return index, nx, 2^(12 + xoff), 2^xoff
+			return index, .25 * xmax, 2^(12 + xoff), 2^xoff
 		end
 	end
 }
 
+-- --
+local Cells, Nx
+
+-- --
+local Closest, CX, CY
+
+--- DOCME
+function M.Add (col, row, cell)
+	cell.fill.effect = "filter.filler.grid4x4"
+
+	local dist_sq = (col - CX)^2 + (row - CY)^2
+
+	if dist_sq < Closest then
+		--
+	end
+
+	Cells[grid.CellToIndex(col, row, Nx)] = cell
+end
+
+-- --
+local Arrays = {}
+
+--- DOCME
+function M.Prepare (nx, ny)
+	Cells = remove(Arrays) or {}
+
+	for i = 1, nx * ny do
+		Cells[i] = false
+	end
+
+	Nx, Closest, CX, CY = nx, 1 / 0, floor(nx / 2), floor(ny / 2)
+end
+
+--- DOCME
+function M.Run ()
+	local work, idle = remove(Arrays) or {}, remove(Arrays) or {}
+
+	-- Find "center"?
+end
+
+--[[
 timer.performWithDelay(100, coroutine.wrap(function(e)
 	--
 	local cw, ch = display.contentWidth, display.contentHeight
@@ -86,26 +132,6 @@ timer.performWithDelay(100, coroutine.wrap(function(e)
 	local nx, ny = math.ceil(cw / SpriteDim), math.ceil(ch / SpriteDim) -- use TileW, TileH, and... contentBounds?
 	local xmax, ymax = nx * CellCount, ny * CellCount
 	local xx, yy = math.floor(xmax / 2), math.floor(ymax / 2)
-
-	setmetatable(cells, {
-		__index = function(t, k)
-			local rect = display.newRect(0, 0, SpriteDim, SpriteDim)
-
-			rect.anchorX, rect.anchorY = 0, 0
-
-			rect:setFillColor(...)
-
-			rect.fill.effect = "filter.custom.grid4x4"
-
-			local col, row = grid.IndexToCell(k, nx)
-			rect.x, rect.y = (col - 1) * SpriteDim, (row - 1) * SpriteDim
-
-			t[k] = rect
-
-			return rect
-		end
-	})
-	-- ^^^ Most, if not all, of this will be unneeded, on account of being done in AddRegion()
 
 	local work, idle, used = {}, {}, {} -- Just keep a cache? match_id_slot on used?
 	local i1 = grid.CellToIndex(xx, yy, xmax) -- better idea: choose middle-most of regions, then center of that
