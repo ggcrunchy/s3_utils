@@ -29,17 +29,19 @@
 local assert = assert
 local ceil = math.ceil
 local format = string.format
+local max = math.max
+local min = math.min
 local pairs = pairs
 
 -- Modules --
 local audio = require("corona_utils.audio")
 local circle = require("s3_utils.fill.circle")
 local color = require("corona_ui.utils.color")
-local grid = require("tektite_core.array.grid")
+local flood = require("s3_utils.fill.flood")
 local length = require("tektite_core.number.length")
-local powers_of_2 = require("bitwise_ops.powers_of_2")
 local sheet = require("corona_utils.sheet")
 local stash = require("s3_utils.effect.stash")
+local tile_maps = require("s3_utils.tile_maps")
 local timers = require("corona_utils.timers")
 
 -- Corona globals --
@@ -64,7 +66,7 @@ local Batch = {}
 -- @pgroup group
 -- @param ... ARGS
 function M.Begin_Color (group, ...)
-	assert(not Batch.group, "Batch already begun")
+	assert(not Batch.group, "Batch already in progress")
 
 	Batch.group, Batch.color = group, color.PackColor_Number(...)
 end
@@ -73,44 +75,112 @@ end
 -- @pgroup group
 -- @string name
 function M.Begin_Image (group, name)
-	assert(not Batch.group, "Batch already begun")
+	assert(not Batch.group, "Batch already in progress")
+
+	Batch.group, Batch.name = group, name
 end
 
 --- DOCME
--- @number ulx
--- @number uly
--- @number lrx
--- @number lry
-function M.AddRegion (ulx, uly, lrx, lry)
+-- @uint ul
+-- @uint lr
+function M.AddRegion (ul, lr)
 	local group = assert(Batch.group, "No batch running")
 
 	if display.isValid(group) then
-		local color, name = Batch.color, Batch.name
+		local n = Batch.n or 0
 
-		if color then
-			--
-		else
-			--
-		end
+		Batch[n + 1], Batch[n + 2], Batch.n = ul, lr, n + 2
 	end
 end
 
 --- DOCME
 -- @string[opt="flood_fill"] how X
 function M.End (how)
-	assert(#Batch > 0, "No regions added")
+	local n = Batch.n
+
+	assert(n and n > 0, "No regions added")
 
 	--
-	local color, group, name = Batch.color, Batch.group, Batch.name
+	local midc, midr, maxc, maxr, minc, minr = 0, 0, 1, 1, tile_maps.GetCounts()
 
-	if color then
-		--
-	else
-		--
+	for i = 1, n, 2 do
+		local ulc, ulr = tile_maps.GetCell(Batch[i])
+		local lrc, lrr = tile_maps.GetCell(Batch[i + 1])
+
+		minc, maxc = min(ulc, minc), max(lrc, maxc)
+		minr, maxr = min(ulr, minr), max(lrr, maxr)
+		midc, midr = midc + ulc + lrc, midr + ulr + lrr -- Implicitly, each contribution, being an average, is divided by 2...
 	end
 
-	Batch.color, Batch.group, Batch.name = nil
+	local scale = 1 / n -- ...whereas the final results are divided by n / 2, so some cancellation occurs.
+
+	midc, midr = scale * midc, scale * midr
+
+	--
+	local rgba, image = Batch.rgba
+
+	if not rgba then
+		image = sheet.TileImage(Batch.name, maxc - midc + 1, maxr - midr + 1)
+	end
+
+	-- Prepare work, idle, used
+
+	--
+	local closest, group, c0, r0 = 1 / 0, Batch.group
+
+	for i = 1, n, 2 do
+		local ul, lr = Batch[i], Batch[i + 1]
+
+		--
+		local ulc, ulr = tile_maps.GetCell(ul)
+		local lrc, lrr = tile_maps.GetCell(lr)
+
+		--
+		local ccol, crow = .5 * (ulc + lrc), .5 * (ulr + lrr)
+		local sq_dist = (midc - ccol)^2 + (midr - crow)^2
+
+		if sq_dist < closest then
+			closest, c0, r0 = sq_dist, ccol, crow
+		end
+
+		--
+		local left, y = tile_maps.GetTilePos(ul)
+
+		for _ = ulr, lrr do
+			local x = left
+
+			for _ = ulc, lrc do
+				local rect
+
+				if rgba then
+					rect = display.newRect(group, x, y, TileW, TileH)
+
+					rect:setFillColor(color.UnpackNumber(rgba))
+				else
+				--	rect = sheet.NewImageAtFrame(group, image, index, x, y)
+
+				--	rect.xScale = dw / rect.width
+				--	rect.yScale = dh / rect.height
+				end
+
+				-- Add to set...
+
+				rect.fill.effect = "filter.filler.grid4x4"
+
+				x = x + TileW
+			end
+
+			y = y + TileH
+		end
+	end
+
+	c0, r0 = ceil(c0), ceil(r0)
+
+	-- Fire it off!
+
+	Batch.n, Batch.group, Batch.name, Batch.rgba = 0
 end
+
 
 
 -- Current fill color for non-images --
@@ -328,15 +398,6 @@ function M.SetColor (r, g, b)
 	R, G, B = r or R, g or G, b or B
 end
 
---[[
-	-- Version 2 API:
-
-	M.Begin_Color (...) -- puts into tile collection mode, using a color (various Corona formats); asserts "Not begun"
-	M.Begin_Image (name) -- alternative, using an image; asserts "Not begun"
-	M.AddRegion (ulx, uly, lrx, lry) -- as in Fill(); populates underlying cells() structure, rather than via __index; asserts "Begun"
-	M.End (how) -- commit all regions, use whatever method (at first, just flood fill); asserts "Begun", regions added and connected
-]]
-
 --- Setter.
 -- @string name Filename of fill image, or **nil** to clear the image.
 function M.SetImage (name)
@@ -369,153 +430,3 @@ end
 
 -- Export the module.
 return M
-
---[[
-local Funcs = {
-	-- Left --
-	function(x, y, xoff, yoff, xmax)
-		local index = grid.CellToIndex(x - 1, y, xmax)
-
-		if xoff > 0 then
-			return index
-		elseif if x > 1 then
-			return index, -1, 2^(4 + yoff), 2^(8 + yoff)
-		end
-	end,
-
-	-- Right --
-	function(x, y, xoff, yoff, xmax)
-		local index = grid.CellToIndex(x + 1, y, xmax)
-
-		if xoff < 3 then
-			return index
-		elseif x < xmax then
-			return index, 1, 2^(8 + yoff), 2^(4 + yoff)
-		end
-	end,
-
-	-- Up --
-	function(x, y, xoff, yoff, xmax)
-		local index = grid.CellToIndex(x, y - 1, xmax)
-
-		if yoff > 0 then
-			return index
-		elseif y > 1 then
-			return index, -nx, 2^xoff, 2^(12 + xoff)
-		end
-	end,
-
-	-- Down --
-	function(x, y, xoff, yoff, ymax)
-		local index = grid.CellToIndex(x, y + 1, xmax)
-
-		if yoff < 3 then
-			return index
-		elseif y < ymax then
-			return index, nx, 2^(12 + xoff), 2^xoff
-		end
-	end
-}
-
-timer.performWithDelay(100, coroutine.wrap(function(e)
-	--
-	local cw, ch = display.contentWidth, display.contentHeight
-
-	local cells = {}
-
-	local nx, ny = math.ceil(cw / SpriteDim), math.ceil(ch / SpriteDim) -- use TileW, TileH, and... contentBounds?
-	local xmax, ymax = nx * CellCount, ny * CellCount
-	local xx, yy = math.floor(xmax / 2), math.floor(ymax / 2)
-
-	setmetatable(cells, {
-		__index = function(t, k)
-			local rect = display.newRect(0, 0, SpriteDim, SpriteDim)
-
-			rect.anchorX, rect.anchorY = 0, 0
-
-			rect:setFillColor(...)
-
-			rect.fill.effect = "filter.custom.grid4x4"
-
-			local col, row = grid.IndexToCell(k, nx)
-			rect.x, rect.y = (col - 1) * SpriteDim, (row - 1) * SpriteDim
-
-			t[k] = rect
-
-			return rect
-		end
-	})
-	-- ^^^ Most, if not all, of this will be unneeded, on account of being done in AddRegion()
-
-	local work, idle, used = {}, {}, {} -- Just keep a cache? match_id_slot on used?
-	local i1 = grid.CellToIndex(xx, yy, xmax) -- better idea: choose middle-most of regions, then center of that
-
-	work[#work + 1], used[i1] = i1, true
-
-	--
-	local max, random, ipairs = math.max, math.random, ipairs
-
-	while true do -- TODO: Make this a boring old timer
-		local nwork, nidle = #work, #idle
-
-		for _ = 1, 35 do -- NumIterations
-			--
-			local to_process = random(40, 50) -- NumToProcess
-
-			if nwork < to_process then
-				for _ = nidle, max(1, nidle - to_process), -1 do
-					local index = random(nidle)
-
-					nwork, work[nwork + 1] = nwork + 1, s2[index]
-					idle[index] = idle[nidle]
-					nidle, idle[nidle] = nidle - 1
-				end
-			end
-
-			--
-			for _ = nwork, max(1, nwork - to_process), -1 do
-				--
-				local index = random(nwork)
-				local x, y = grid.IndexToCell(work[index], xmax)
-				local xb, yb = floor((x - 1) * .25), floor((y - 1) * .25)
-				local xoff, yoff = x - xb * 4 - 1, y - yb * 4 - 1
-				local bit = 2^(yoff * 4 + xoff)
-				local ci = yb * nx + xb + 1
-				local ceffect = cells[ci].fill.effect
-
-				ceffect.bits = ceffect.bits + bit
-
-				--
-				for _, func in ipairs(Funcs) do
-					local si, delta, nbit_self, nbit_other = func(x, y, xoff, yoff)
-
-					if si then
-						if delta then
-							local neffect = cells[ci + delta].fill.effect
-							local cn, nn = ceffect.neighbors, neffect.neighbors
-
-							if not powers_of_2.IsSet(cn, nbit_self) then
-								ceffect.neighbors = cn + nbit_self
-							end
-
-							if not powers_of_2.IsSet(nn, nbit_other) then
-								neffect.neighbors = nn + nbit_other
-							end
-						end
-
-						if not used[si] then
-							idle[nidle + 1], used[si], nidle = si, true, nidle + 1
-						end
-					end
-				end
-
-				--
-				work[index] = work[nwork]
-				nwork, work[nwork] = nwork - 1
-			end
-		end
-
-		coroutine.yield()
-	end
-end), 0)
-]]

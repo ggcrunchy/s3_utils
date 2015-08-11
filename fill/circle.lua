@@ -1,4 +1,4 @@
---- Circle-type space filling operations.
+--- Circle-type space-filling operations.
 
 --
 -- Permission is hereby granted, free of charge, to any person obtaining
