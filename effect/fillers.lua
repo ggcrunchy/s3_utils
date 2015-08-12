@@ -68,7 +68,7 @@ local Batch = {}
 function M.Begin_Color (group, ...)
 	assert(not Batch.group, "Batch already in progress")
 
-	Batch.group, Batch.color = group, color.PackColor_Number(...)
+	Batch.group, Batch.rgba = group, color.PackColor_Number(...)
 end
 
 --- DOCME
@@ -93,6 +93,12 @@ function M.AddRegion (ul, lr)
 	end
 end
 
+-- --
+local FloodFillOpts = {}
+
+-- --
+local Methods = { flood_fill = flood }
+
 --- DOCME
 -- @string[opt="flood_fill"] how X
 function M.End (how)
@@ -101,7 +107,7 @@ function M.End (how)
 	assert(n and n > 0, "No regions added")
 
 	--
-	local maxc, maxr, minc, minr = 0, 0, 1, 1, tile_maps.GetCounts()
+	local maxc, maxr, minc, minr = 1, 1, tile_maps.GetCounts()
 
 	for i = 1, n, 2 do
 		local ulc, ulr = tile_maps.GetCell(Batch[i])
@@ -112,21 +118,14 @@ function M.End (how)
 	end
 
 	--
-	local nx, ny, rgba, image = maxc - minc + 1, maxr - minr + 1, Batch.rgba
+	local nx, ny, rgba, image = maxc - minc, maxr - minr, Batch.rgba
 
 	if not rgba then
 		image = sheet.TileImage(Batch.name, nx, ny)
 	end
 
-	-- Prepare work, idle, used
-	-- TODO: Other methods?
-	local method
-
-	if how == "flood_fill" then
-		method = flood
-	else
-		assert("Unknown method!")
-	end
+	-- 
+	local method = Methods[how] or flood
 
 	method.Prepare(nx, ny)
 
@@ -141,10 +140,12 @@ function M.End (how)
 		local lrc, lrr = tile_maps.GetCell(lr)
 		local left, y = tile_maps.GetTilePos(ul)
 
-		for dr = 0, lrr - ulr do
+		left, y = left + TileW / 2, y + TileH / 2
+
+		for dr = ulr - minr, lrr - minr - 1 do
 			local x = left
 
-			for dc = 0, lrc - ulc do
+			for dc = ulc - minc, lrc - minc - 1 do
 				local rect
 
 				if rgba then
@@ -158,7 +159,7 @@ function M.End (how)
 				--	rect.yScale = dh / rect.height
 				end
 
-				method.Add(ulc + dc, ulr + dr, rect)
+				method.Add(dc + 1, dr + 1, rect)
 
 				x = x + TileW
 			end

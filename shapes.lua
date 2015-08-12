@@ -105,7 +105,7 @@ local function FillShape (_, tiles)
 			end
 		end
 	end
-
+fillers.Begin_Color(FillLayer, 1, 0, 0)
 	-- Backtrack to the first occupied row, then iterate through each row and its spans.
 	left = left - (row - 1) * ncols
 
@@ -133,13 +133,14 @@ local function FillShape (_, tiles)
 			-- Fill the rect.
 			local ulx, uly = GetTilePos(left + from)
 			local lrx, lry = GetTilePos(bleft + to)
-
-			fillers.SetColor(1, 0, 0)
-			fillers.Fill(FillLayer, "circle", ulx, uly, lrx, lry)
+fillers.AddRegion(left + from, bleft + to)
+		--	fillers.SetColor(1, 0, 0)
+		--	fillers.Fill(FillLayer, "circle", ulx, uly, lrx, lry)
 		end
 
 		left = left + ncols
 	end
+fillers.End("flood_fill")
 end
 
 --- DOCME

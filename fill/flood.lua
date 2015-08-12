@@ -36,6 +36,9 @@ local match_slot_id = require("tektite_core.array.match_slot_id")
 local powers_of_2 = require("bitwise_ops.powers_of_2")
 local timers = require("corona_utils.timers")
 
+-- Kernels --
+require("s3_utils.kernel.grid4x4")
+
 -- Exports --
 local M = {}
 
@@ -47,7 +50,7 @@ local Funcs = {
 
 		if xoff > 0 then
 			return index
-		elseif if x > 1 then
+		elseif x > 1 then
 			return index, -1, 2^(4 + yoff), 2^(8 + yoff)
 		end
 	end,
@@ -85,7 +88,6 @@ local Funcs = {
 		end
 	end
 }
--- ^^^ TODO: Looks like these will need nx and ny, after all
 
 -- --
 local Cells, Nx, Ny
@@ -98,7 +100,7 @@ local MidCol, MidRow
 
 --- DOCME
 function M.Add (col, row, cell)
-	cell.fill.effect = "filter.filler.grid4x4"
+	cell.fill.effect = "filter.filler.grid4x4_neighbors"
 
 	local dist_sq = (col - CX)^2 + (row - CY)^2
 
@@ -123,7 +125,7 @@ function M.Prepare (nx, ny)
 	end
 
 	--
-	Nx, Ny, Closest, CX, CY = nx, ny, 1 / 0, floor(nx / 2), floor(ny / 2)
+	Nx, Ny, Closest, CX, CY = nx, ny, 1 / 0, floor(.5 * (nx + 1)), floor(.5 * (ny + 1))
 end
 
 -- --
@@ -143,8 +145,8 @@ function M.Run (opts)
 	Cells = nil
 
 	--
-	local niters = opts and opts.iters or 35
-	local nprocess = opts and opts.to_process or 45
+	local niters = opts and opts.iters or 5
+	local nprocess = opts and opts.to_process or 13
 	local nvar = opts and opts.to_process_var or 5
 	local nlow, nhigh = nprocess - nvar, nprocess + nvar
 	local nx, xmax, ymax = Nx, Nx * 4, Ny * 4
@@ -156,7 +158,7 @@ function M.Run (opts)
 
 	used("mark", i1)
 
-	return timers.RepeatEx(function()
+	return timers.RepeatEx(function(e)
 		--
 		if nwork + nidle == 0 then
 			for i = #cells, 1, -1 do
@@ -195,17 +197,21 @@ function M.Run (opts)
 				local xoff, yoff = x - xb * 4 - 1, y - yb * 4 - 1
 				local bit = 2^(yoff * 4 + xoff)
 				local ci = yb * nx + xb + 1
+
 				local ceffect = cells[ci].fill.effect
 
 				ceffect.bits = ceffect.bits + bit
 
 				--
 				for _, func in ipairs(Funcs) do
-					local wi, delta, nbit_self, nbit_other = func(x, y, xoff, yoff)
+					local wi, delta, nbit_self, nbit_other = func(x, y, xoff, yoff, xmax, ymax)
 
 					if wi then
-						if delta then
-							local neffect = cells[ci + delta].fill.effect
+						--
+						local neighbor = delta and cells[ci + delta]
+
+						if neighbor then
+							local neffect = neighbor.fill.effect
 							local cn, nn = ceffect.neighbors, neffect.neighbors
 
 							if not powers_of_2.IsSet(cn, nbit_self) then
@@ -217,7 +223,8 @@ function M.Run (opts)
 							end
 						end
 
-						if used("mark", wi) then
+						--
+						if neighbor ~= false and used("mark", wi) then
 							idle[nidle + 1], nidle = wi, nidle + 1
 						end
 					end
