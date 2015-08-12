@@ -25,12 +25,16 @@
 
 -- Standard library imports --
 local floor = math.floor
+local ipairs = ipairs
+local max = math.max
+local random = math.random
 local remove = table.remove
 
 -- Modules --
 local grid = require("tektite_core.array.grid")
 local match_slot_id = require("tektite_core.array.match_slot_id")
 local powers_of_2 = require("bitwise_ops.powers_of_2")
+local timers = require("corona_utils.timers")
 
 -- Exports --
 local M = {}
@@ -81,12 +85,16 @@ local Funcs = {
 		end
 	end
 }
+-- ^^^ TODO: Looks like these will need nx and ny, after all
 
 -- --
-local Cells, Nx
+local Cells, Nx, Ny
 
 -- --
 local Closest, CX, CY
+
+-- --
+local MidCol, MidRow
 
 --- DOCME
 function M.Add (col, row, cell)
@@ -95,7 +103,7 @@ function M.Add (col, row, cell)
 	local dist_sq = (col - CX)^2 + (row - CY)^2
 
 	if dist_sq < Closest then
-		--
+		Closest, MidCol, MidRow = dist_sq, col, row
 	end
 
 	Cells[grid.CellToIndex(col, row, Nx)] = cell
@@ -106,53 +114,73 @@ local Arrays = {}
 
 --- DOCME
 function M.Prepare (nx, ny)
+	--
 	Cells = remove(Arrays) or {}
 
+	--
 	for i = 1, nx * ny do
 		Cells[i] = false
 	end
 
-	Nx, Closest, CX, CY = nx, 1 / 0, floor(nx / 2), floor(ny / 2)
+	--
+	Nx, Ny, Closest, CX, CY = nx, ny, 1 / 0, floor(nx / 2), floor(ny / 2)
 end
+
+-- --
+local Used = {}
 
 --- DOCME
-function M.Run ()
+function M.Run (opts)
+	--
+	local used = remove(Used) or match_slot_id.Wrap{}
+
+	used("begin_generation")
+
+	-- 
+	local cells, col, row = Cells, MidCol, MidRow
 	local work, idle = remove(Arrays) or {}, remove(Arrays) or {}
 
-	-- Find "center"?
-end
-
---[[
-timer.performWithDelay(100, coroutine.wrap(function(e)
-	--
-	local cw, ch = display.contentWidth, display.contentHeight
-
-	local cells = {}
-
-	local nx, ny = math.ceil(cw / SpriteDim), math.ceil(ch / SpriteDim) -- use TileW, TileH, and... contentBounds?
-	local xmax, ymax = nx * CellCount, ny * CellCount
-	local xx, yy = math.floor(xmax / 2), math.floor(ymax / 2)
-
-	local work, idle, used = {}, {}, {} -- Just keep a cache? match_id_slot on used?
-	local i1 = grid.CellToIndex(xx, yy, xmax) -- better idea: choose middle-most of regions, then center of that
-
-	work[#work + 1], used[i1] = i1, true
+	Cells = nil
 
 	--
-	local max, random, ipairs = math.max, math.random, ipairs
+	local niters = opts and opts.iters or 35
+	local nprocess = opts and opts.to_process or 45
+	local nvar = opts and opts.to_process_var or 5
+	local nlow, nhigh = nprocess - nvar, nprocess + nvar
+	local nx, xmax, ymax = Nx, Nx * 4, Ny * 4
 
-	while true do -- TODO: Make this a boring old timer
-		local nwork, nidle = #work, #idle
+	--
+	local i1, nwork, nidle = grid.CellToIndex(MidCol * 4 - 2, MidRow * 4 - 2, xmax), 1, 0
 
-		for _ = 1, 35 do -- NumIterations
+	work[nwork] = i1
+
+	used("mark", i1)
+
+	return timers.RepeatEx(function()
+		--
+		if nwork + nidle == 0 then
+			for i = #cells, 1, -1 do
+				cells[i] = nil
+			end
+
+			Arrays[#Arrays + 1] = cells
+			Arrays[#Arrays + 1] = work
+			Arrays[#Arrays + 1] = idle
+			Used[#Used + 1] = used
+
+			return "cancel"
+		end
+
+		--
+		for _ = 1, niters do
 			--
-			local to_process = random(40, 50) -- NumToProcess
+			local to_process = random(nlow, nhigh)
 
 			if nwork < to_process then
 				for _ = nidle, max(1, nidle - to_process), -1 do
 					local index = random(nidle)
 
-					nwork, work[nwork + 1] = nwork + 1, s2[index]
+					nwork, work[nwork + 1] = nwork + 1, idle[index]
 					idle[index] = idle[nidle]
 					nidle, idle[nidle] = nidle - 1
 				end
@@ -173,9 +201,9 @@ timer.performWithDelay(100, coroutine.wrap(function(e)
 
 				--
 				for _, func in ipairs(Funcs) do
-					local si, delta, nbit_self, nbit_other = func(x, y, xoff, yoff)
+					local wi, delta, nbit_self, nbit_other = func(x, y, xoff, yoff)
 
-					if si then
+					if wi then
 						if delta then
 							local neffect = cells[ci + delta].fill.effect
 							local cn, nn = ceffect.neighbors, neffect.neighbors
@@ -189,8 +217,8 @@ timer.performWithDelay(100, coroutine.wrap(function(e)
 							end
 						end
 
-						if not used[si] then
-							idle[nidle + 1], used[si], nidle = si, true, nidle + 1
+						if used("mark", wi) then
+							idle[nidle + 1], nidle = wi, nidle + 1
 						end
 					end
 				end
@@ -200,11 +228,8 @@ timer.performWithDelay(100, coroutine.wrap(function(e)
 				nwork, work[nwork] = nwork - 1
 			end
 		end
-
-		coroutine.yield()
-	end
-end), 0)
-]]
+	end, 100)
+end
 
 -- Export the module.
 return M
