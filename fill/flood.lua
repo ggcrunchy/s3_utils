@@ -152,15 +152,19 @@ function M.Run (opts)
 	local nx, xmax, ymax = Nx, Nx * 4, Ny * 4
 
 	--
+	local on_done, should_cancel = opts and opts.on_done, opts and opts.should_cancel
+
+	--
 	local i1, nwork, nidle = grid.CellToIndex(MidCol * 4 - 2, MidRow * 4 - 2, xmax), 1, 0
 
 	work[nwork] = i1
 
 	used("mark", i1)
 
+	--
 	return timers.RepeatEx(function(e)
-		--
-		if nwork + nidle == 0 then
+		if nwork + nidle == 0 or (should_cancel and should_cancel()) then
+			--
 			for i = #cells, 1, -1 do
 				cells[i] = nil
 			end
@@ -169,6 +173,11 @@ function M.Run (opts)
 			Arrays[#Arrays + 1] = work
 			Arrays[#Arrays + 1] = idle
 			Used[#Used + 1] = used
+
+			--
+			if on_done then
+				on_done()
+			end
 
 			return "cancel"
 		end

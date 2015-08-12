@@ -42,7 +42,6 @@ local display = display
 local Runtime = Runtime
 
 -- Imports --
-local GetTilePos = tile_maps.GetTilePos
 local IsFlagSet = tile_flags.IsFlagSet
 
 -- Exports --
@@ -105,7 +104,10 @@ local function FillShape (_, tiles)
 			end
 		end
 	end
-fillers.Begin_Color(FillLayer, 1, 0, 0)
+
+	-- Start a new shape fill.
+	fillers.Begin_Color(FillLayer, 1, 0, 0)
+
 	-- Backtrack to the first occupied row, then iterate through each row and its spans.
 	left = left - (row - 1) * ncols
 
@@ -130,17 +132,15 @@ fillers.Begin_Color(FillLayer, 1, 0, 0)
 				end
 			end
 
-			-- Fill the rect.
-			local ulx, uly = GetTilePos(left + from)
-			local lrx, lry = GetTilePos(bleft + to)
-fillers.AddRegion(left + from, bleft + to)
-		--	fillers.SetColor(1, 0, 0)
-		--	fillers.Fill(FillLayer, "circle", ulx, uly, lrx, lry)
+			-- Add the rectangular component to the fill.
+			fillers.AddRegion(left + from, bleft + to)
 		end
 
 		left = left + ncols
 	end
-fillers.End("flood_fill")
+
+	-- Commit the fill.
+	fillers.End("flood_fill")
 end
 
 --- DOCME
