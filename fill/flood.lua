@@ -42,7 +42,7 @@ require("s3_utils.kernel.grid4x4")
 -- Exports --
 local M = {}
 
--- --
+-- Helpers to look at next unit over --
 local Funcs = {
 	-- Left --
 	function(x, y, xoff, yoff, xmax)
@@ -89,16 +89,19 @@ local Funcs = {
 	end
 }
 
--- --
+-- Current cells list to populate; horizontal, vertical cell counts --
 local Cells, Nx, Ny
 
--- --
+-- Current closest squared distance to center cell; center cell coordinates --
 local Closest, CX, CY
 
--- --
+-- Center cell coordinates (or current closest) --
 local MidCol, MidRow
 
 --- DOCME
+-- @uint col
+-- @uint row
+-- @pobject cell
 function M.Add (col, row, cell)
 	cell.fill.effect = "filter.filler.grid4x4_neighbors"
 
@@ -111,60 +114,60 @@ function M.Add (col, row, cell)
 	Cells[grid.CellToIndex(col, row, Nx)] = cell
 end
 
--- --
+-- Cache of cell / index arrays --
 local Arrays = {}
 
 --- DOCME
+-- @uint nx
+-- @uint ny
 function M.Prepare (nx, ny)
-	--
+	-- Grab a cells array.
 	Cells = remove(Arrays) or {}
 
-	--
+	-- Initially, no cell is occupied.
 	for i = 1, nx * ny do
 		Cells[i] = false
 	end
 
-	--
+	-- Save the cell counts. Initialize state used to incrementally find the center cell.
 	Nx, Ny, Closest, CX, CY = nx, ny, 1 / 0, floor(.5 * (nx + 1)), floor(.5 * (ny + 1))
 end
 
--- --
+-- Cache of grid use wrappers --
 local Used = {}
 
 --- DOCME
+-- @ptable[opt] opts
+-- @treturn TimerHandle T
 function M.Run (opts)
-	--
+	-- Reset the grid-in-use state.
 	local used = remove(Used) or match_slot_id.Wrap{}
 
 	used("begin_generation")
 
-	-- 
-	local cells, col, row = Cells, MidCol, MidRow
-	local work, idle = remove(Arrays) or {}, remove(Arrays) or {}
+	-- Save the cells reference, freeing up the module variable. Grab work and idle arrays.
+	local cells, work, idle = Cells, remove(Arrays) or {}, remove(Arrays) or {}
 
 	Cells = nil
 
-	--
+	--	Set up some parameters and kick the flood-fill off, starting at the centermost unit.
 	local niters = opts and opts.iters or 5
 	local nprocess = opts and opts.to_process or 13
 	local nvar = opts and opts.to_process_var or 5
 	local nlow, nhigh = nprocess - nvar, nprocess + nvar
 	local nx, xmax, ymax = Nx, Nx * 4, Ny * 4
-
-	--
-	local on_done, should_cancel = opts and opts.on_done, opts and opts.should_cancel
-
-	--
 	local i1, nwork, nidle = grid.CellToIndex(MidCol * 4 - 2, MidRow * 4 - 2, xmax), 1, 0
 
 	work[nwork] = i1
 
 	used("mark", i1)
 
-	--
-	return timers.RepeatEx(function(e)
-		if nwork + nidle == 0 or (should_cancel and should_cancel()) then
-			--
+	-- Run a timer until all units are explored.
+	local on_done = opts and opts.on_done
+
+	return timers.RepeatEx(function()
+		if nwork + nidle == 0 then
+			-- Remove any display object references and recache the flood fill state.
 			for i = #cells, 1, -1 do
 				cells[i] = nil
 			end
@@ -174,7 +177,7 @@ function M.Run (opts)
 			Arrays[#Arrays + 1] = idle
 			Used[#Used + 1] = used
 
-			--
+			-- Perform any on-done logic and kill the timer.
 			if on_done then
 				on_done()
 			end
@@ -182,9 +185,10 @@ function M.Run (opts)
 			return "cancel"
 		end
 
-		--
+		-- Run a few flood-fill iterations.
 		for _ = 1, niters do
-			--
+			-- Decide how many units to process on this iteration. If there are too few ready
+			-- to go, try to grab some (randomly) to make up the balance 
 			local to_process = random(nlow, nhigh)
 
 			if nwork < to_process then
@@ -197,49 +201,43 @@ function M.Run (opts)
 				end
 			end
 
-			--
+			-- Process a few units.
 			for _ = nwork, max(1, nwork - to_process), -1 do
-				--
+				-- Choose a random unit and mark the corresponding bit in its cell.
 				local index = random(nwork)
 				local x, y = grid.IndexToCell(work[index], xmax)
 				local xb, yb = floor((x - 1) * .25), floor((y - 1) * .25)
 				local xoff, yoff = x - xb * 4 - 1, y - yb * 4 - 1
-				local bit = 2^(yoff * 4 + xoff)
 				local ci = yb * nx + xb + 1
-
 				local ceffect = cells[ci].fill.effect
 
-				ceffect.bits = ceffect.bits + bit
+				ceffect.bits = ceffect.bits + 2^(yoff * 4 + xoff)
 
-				--
+				-- Update the cell with respect to each cardinal direction.
 				for _, func in ipairs(Funcs) do
 					local wi, delta, nbit_self, nbit_other = func(x, y, xoff, yoff, xmax, ymax)
 
 					if wi then
-						--
+						-- If the next unit over is inside a different cell, update the
+						-- appropriate neighbor bits of both cells.
 						local neighbor = delta and cells[ci + delta]
 
 						if neighbor then
 							local neffect = neighbor.fill.effect
-							local cn, nn = ceffect.neighbors, neffect.neighbors
 
-							if not powers_of_2.IsSet(cn, nbit_self) then
-								ceffect.neighbors = cn + nbit_self
-							end
-
-							if not powers_of_2.IsSet(nn, nbit_other) then
-								neffect.neighbors = nn + nbit_other
-							end
+							ceffect.neighbors = powers_of_2.Set(ceffect.neighbors, nbit_self)
+							neffect.neighbors = powers_of_2.Set(neffect.neighbors, nbit_other)
 						end
 
-						--
+						-- If the non-boundary neighbor unit was unexplored and is not empty,
+						-- add it to the to-be-processed list.
 						if neighbor ~= false and used("mark", wi) then
 							idle[nidle + 1], nidle = wi, nidle + 1
 						end
 					end
 				end
 
-				--
+				-- Backfill the completed unit.
 				work[index] = work[nwork]
 				nwork, work[nwork] = nwork - 1
 			end

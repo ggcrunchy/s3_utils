@@ -27,7 +27,6 @@
 local assert = assert
 local max = math.max
 local min = math.min
-local pairs = pairs
 
 -- Modules --
 local audio = require("corona_utils.audio")
@@ -38,11 +37,12 @@ local tile_maps = require("s3_utils.tile_maps")
 
 -- Corona globals --
 local display = display
+local timer = timer
 
 -- Exports --
 local M = {}
 
--- --
+-- Work-in-progress batch --
 local Batch
 
 --- DOCME
@@ -67,19 +67,14 @@ end
 -- @uint ul
 -- @uint lr
 function M.AddRegion (ul, lr)
-	local group = assert(Batch.group, "No batch running")
+	assert(Batch.group, "No batch running")
 
-	if display.isValid(group) then
-		local n = Batch.n or 0
+	local n = Batch.n or 0
 
-		Batch[n + 1], Batch[n + 2], Batch.n = ul, lr, n + 2
-	end
+	Batch[n + 1], Batch[n + 2], Batch.n = ul, lr, n + 2
 end
 
--- Image sheets, cached from fill images used on this level --
-local ImageCache
-
--- --
+-- Available fill methods --
 local Methods = { flood_fill = flood }
 
 -- Sound played when shape is filled --
@@ -94,6 +89,9 @@ local FillOpts = {
 		Sounds:PlaySound("shape_filled")
 	end
 }
+
+-- --
+local Running
 
 --- DOCME
 -- @string[opt="flood_fill"] how X
@@ -128,7 +126,7 @@ function M.End (how)
 	--
 	local group = Batch.group
 
-	for i = 1, n, 2 do
+	for i = 1, display.isValid(group) and n or 0, 2 do
 		local ul, lr = Batch[i], Batch[i + 1]
 
 		--
@@ -139,9 +137,10 @@ function M.End (how)
 		left, y = left + TileW / 2, y + TileH / 2
 
 		for dr = ulr - minr, lrr - minr - 1 do
-			local x = left
+			local x, ri = left, not rgba and dr * nx + 1
 
 			for dc = ulc - minc, lrc - minc - 1 do
+				--
 				local rect
 
 				if rgba then
@@ -149,10 +148,10 @@ function M.End (how)
 
 					rect:setFillColor(color.UnpackNumber(rgba))
 				else
-				--	rect = sheet.NewImageAtFrame(group, image, index, x, y)
+					rect = sheet.NewImageAtFrame(group, image, ri + dc, x, y)
 
-				--	rect.xScale = dw / rect.width
-				--	rect.yScale = dh / rect.height
+					rect.xScale = TileW / rect.width
+					rect.yScale = TileH / rect.height
 				end
 
 				method.Add(dc + 1, dr + 1, rect)
@@ -164,7 +163,7 @@ function M.End (how)
 		end
 	end
 
-	method.Run(FillOpts)
+	Running[#Running + 1] = method.Run(FillOpts)
 
 	Batch.n, Batch.group, Batch.name, Batch.rgba = 0
 end
@@ -173,23 +172,23 @@ end
 for k, v in pairs{
 	-- Enter Level --
 	enter_level = function(level)
-		Batch, ImageCache = {}, {}
+		Batch, Running = {}, {}
 		TileW = level.w
 		TileH = level.h
 	end,
 
 	-- Leave Level --
 	leave_level = function()
-		Batch, ImageCache = nil
+		Batch, Running = nil
 	end,
 
 	-- Reset Level --
 	reset_level = function()
-		Batch = {}
-
-		for k in pairs(ImageCache) do
-			ImageCache[k] = nil
+		for i = 1, #Running do
+			timer.cancel(Running[i])
 		end
+
+		Batch, Running = {}, {}
 	end
 } do
 	Runtime:addEventListener(k, v)
