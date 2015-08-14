@@ -98,10 +98,12 @@ local Closest, CX, CY
 -- Center cell coordinates (or current closest) --
 local MidCol, MidRow
 
---- DOCME
--- @uint col
--- @uint row
--- @pobject cell
+--- Adds (or overwrites) a cell to the effect being prepared.
+-- @uint col Column of cell, in [1, _nx_] (cf. @{Prepare})...
+-- @uint row ...and row, in [1, _ny_].
+-- @pobject cell Display object found in cell, which will comprise a 4x4 grid of units, all
+-- of them off by default.
+-- @see Run
 function M.Add (col, row, cell)
 	cell.fill.effect = "filter.filler.grid4x4_neighbors"
 
@@ -117,9 +119,10 @@ end
 -- Cache of cell / index arrays --
 local Arrays = {}
 
---- DOCME
--- @uint nx
--- @uint ny
+--- Prepares the effect, allowing cells to be added.
+-- @uint nx Number of cells (whether optimized or not), horizontally...
+-- @uint ny ...and vertically.
+-- @see Add, Run
 function M.Prepare (nx, ny)
 	-- Grab a cells array.
 	Cells = remove(Arrays) or {}
@@ -136,9 +139,18 @@ end
 -- Cache of grid use wrappers --
 local Used = {}
 
---- DOCME
--- @ptable[opt] opts
--- @treturn TimerHandle T
+--- Runs the effect.
+-- @ptable[opt] opts Fill options. Fields:
+--
+-- * **iters**: Number of times to drive the fill along when the timer fires. For the most
+-- part, this is a multiple of **to\_process**, taking into account its randomness.
+-- * **to\_process**: Average number of elements to process (if possible) per iteration.
+-- * **to\_process\_var**: Maximum number of elements to vary from **to\_process**, on a
+-- given iteration.
+-- * **on\_done**: If present, called (with the timer handle as argument) if and when the
+-- fill has completed.
+-- @treturn TimerHandle Timer underlying the effect, which may be canceled.
+-- @see Add, Prepare
 function M.Run (opts)
 	-- Reset the grid-in-use state.
 	local used = remove(Used) or match_slot_id.Wrap{}
@@ -150,22 +162,27 @@ function M.Run (opts)
 
 	Cells = nil
 
-	--	Set up some parameters and kick the flood-fill off, starting at the centermost unit.
+	-- Set up some parameters.
 	local niters = opts and opts.iters or 5
 	local nprocess = opts and opts.to_process or 13
 	local nvar = opts and opts.to_process_var or 5
 	local nlow, nhigh = nprocess - nvar, nprocess + nvar
 	local nx, xmax, ymax = Nx, Nx * 4, Ny * 4
-	local i1, nwork, nidle = grid.CellToIndex(MidCol * 4 - 2, MidRow * 4 - 2, xmax), 1, 0
 
-	work[nwork] = i1
+	-- Kick off the effect, starting at the centermost unit. If the cell list was empty, do
+	-- nothing; the timer will cancel itself on the first go.
+	local i1, nwork, nidle = grid.CellToIndex(MidCol * 4 - 2, MidRow * 4 - 2, xmax), 0, 0
 
-	used("mark", i1)
+	if #cells > 0 then
+		work[1], nwork = i1, 1
+
+		used("mark", i1)
+	end
 
 	-- Run a timer until all units are explored.
 	local on_done = opts and opts.on_done
 
-	return timers.RepeatEx(function()
+	return timers.RepeatEx(function(event)
 		if nwork + nidle == 0 then
 			-- Remove any display object references and recache the flood fill state.
 			for i = #cells, 1, -1 do
@@ -179,7 +196,7 @@ function M.Run (opts)
 
 			-- Perform any on-done logic and kill the timer.
 			if on_done then
-				on_done()
+				on_done(event.source)
 			end
 
 			return "cancel"

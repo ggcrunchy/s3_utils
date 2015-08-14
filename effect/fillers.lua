@@ -28,6 +28,9 @@ local assert = assert
 local max = math.max
 local min = math.min
 
+-- Extension imports --
+local indexOf = table.indexOf
+
 -- Modules --
 local audio = require("corona_utils.audio")
 local color = require("corona_ui.utils.color")
@@ -45,27 +48,27 @@ local M = {}
 -- Work-in-progress batch --
 local Batch
 
---- DOCME
--- @pgroup group
--- @param ... ARGS
+--- Begins a fill batch in color mode.
+-- @pgroup group Group which will receive fill components.
+-- @param ... Color components, as per **object:setFillColor**.
 function M.Begin_Color (group, ...)
 	assert(not Batch.group, "Batch already in progress")
 
 	Batch.group, Batch.rgba = group, color.PackColor_Number(...)
 end
 
---- DOCME
--- @pgroup group
--- @string name
+--- Begins a fill batch in image mode.
+-- @pgroup group Group which will receive fill components.
+-- @string name Filename of image.
 function M.Begin_Image (group, name)
 	assert(not Batch.group, "Batch already in progress")
 
 	Batch.group, Batch.name = group, name
 end
 
---- DOCME
--- @uint ul
--- @uint lr
+--- Adds a region of tiles to the batch, to be filled in by the effect.
+-- @uint ul Index of upper-left tile in region...
+-- @uint lr ...and lower-left tile.
 function M.AddRegion (ul, lr)
 	assert(Batch.group, "No batch running")
 
@@ -83,19 +86,25 @@ local Sounds = audio.NewSoundGroup{ _prefix = "SFX", shape_filled = { file = "Sh
 -- Tile dimensions --
 local TileW, TileH
 
--- --
+-- Running fill effect timers --
+local Running
+
+-- Fill options --
 local FillOpts = {
-	on_done = function()
+	on_done = function(timer)
 		Sounds:PlaySound("shape_filled")
+
+		local index, n = indexOf(Running, timer), #Running
+
+		Running[index] = Running[n]
+		Running[n] = nil
 	end
 }
 
--- --
-local Running
-
---- DOCME
--- @string[opt="flood_fill"] how X
-function M.End (how)
+--- Commits the batch, launching an effect.
+-- @string[opt="flood_fill"] how Fill method applied to added regions.
+-- @bool is_offset Are the cells offset by a half-tile in each direction?
+function M.End (how, is_offset)
 	local n, method = Batch.n, assert(Methods[how or "flood_fill"], "Invalid fill method")
 
 	assert(n and n > 0, "No regions added")
@@ -103,7 +112,7 @@ function M.End (how)
 	-- Lazily load sounds on first fill.
 	Sounds:Load()
 
-	--
+	-- Find the extents of the amalgamated regions.
 	local maxc, maxr, minc, minr = 1, 1, tile_maps.GetCounts()
 
 	for i = 1, n, 2 do
@@ -114,8 +123,16 @@ function M.End (how)
 		minr, maxr = min(ulr, minr), max(lrr, maxr)
 	end
 
-	--
-	local nx, ny, rgba, image = maxc - minc, maxr - minr, Batch.rgba
+	-- Get the cell-wise dimensions, adjusting these or the lower-right corner offsets
+	-- depending on whether the cells use half-tile offsets. Get the color or image data, do
+	-- any initialization on it, and prepare the effect.
+	local nx, ny, rgba, image, minc2, minr2 = maxc - minc, maxr - minr, Batch.rgba
+
+	if is_offset then
+		minc2, minr2 = minc + 1, minr + 1
+	else
+		minc2, minr2, nx, ny = minc, minr, nx + 1, ny + 1
+	end
 
 	if not rgba then
 		image = sheet.TileImage(Batch.name, nx, ny)
@@ -123,38 +140,37 @@ function M.End (how)
 
 	method.Prepare(nx, ny)
 
-	--
+	-- Turn each region into cells and submit them to the effect.
 	local group = Batch.group
 
 	for i = 1, display.isValid(group) and n or 0, 2 do
 		local ul, lr = Batch[i], Batch[i + 1]
-
-		--
 		local ulc, ulr = tile_maps.GetCell(ul)
 		local lrc, lrr = tile_maps.GetCell(lr)
 		local left, y = tile_maps.GetTilePos(ul)
 
-		left, y = left + TileW / 2, y + TileH / 2
+		if is_offset then
+			left, y = left + TileW / 2, y + TileH / 2
+		end
 
-		for dr = ulr - minr, lrr - minr - 1 do
+		for dr = ulr - minr, lrr - minr2 do
 			local x, ri = left, not rgba and dr * nx + 1
 
-			for dc = ulc - minc, lrc - minc - 1 do
-				--
-				local rect
+			for dc = ulc - minc, lrc - minc2 do
+				local cell
 
 				if rgba then
-					rect = display.newRect(group, x, y, TileW, TileH)
+					cell = display.newRect(group, x, y, TileW, TileH)
 
-					rect:setFillColor(color.UnpackNumber(rgba))
+					cell:setFillColor(color.UnpackNumber(rgba))
 				else
-					rect = sheet.NewImageAtFrame(group, image, ri + dc, x, y)
+					cell = sheet.NewImageAtFrame(group, image, ri + dc, x, y)
 
-					rect.xScale = TileW / rect.width
-					rect.yScale = TileH / rect.height
+					cell.xScale = TileW / cell.width
+					cell.yScale = TileH / cell.height
 				end
 
-				method.Add(dc + 1, dr + 1, rect)
+				method.Add(dc + 1, dr + 1, cell)
 
 				x = x + TileW
 			end
@@ -163,6 +179,7 @@ function M.End (how)
 		end
 	end
 
+	-- Launch the effect and clear all temporary state.
 	Running[#Running + 1] = method.Run(FillOpts)
 
 	Batch.n, Batch.group, Batch.name, Batch.rgba = 0

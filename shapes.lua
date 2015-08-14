@@ -140,7 +140,7 @@ local function FillShape (_, tiles)
 	end
 
 	-- Commit the fill.
-	fillers.End("flood_fill")
+	fillers.End("flood_fill", true)
 end
 
 --- DOCME
