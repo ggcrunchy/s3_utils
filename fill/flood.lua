@@ -46,45 +46,45 @@ local M = {}
 local Funcs = {
 	-- Left --
 	function(x, y, xoff, yoff, xmax)
-		local index = grid.CellToIndex(x - 1, y, xmax)
+		local index = x > 1 and grid.CellToIndex(x - 1, y, xmax)
 
 		if xoff > 0 then
 			return index
-		elseif x > 1 then
-			return index, -1, 2^(4 + yoff), 2^(8 + yoff)
+		else
+			return index, index and -1, 4 + yoff, 8 + yoff
 		end
 	end,
 
 	-- Right --
 	function(x, y, xoff, yoff, xmax)
-		local index = grid.CellToIndex(x + 1, y, xmax)
+		local index = x < xmax and grid.CellToIndex(x + 1, y, xmax)
 
 		if xoff < 3 then
 			return index
-		elseif x < xmax then
-			return index, 1, 2^(8 + yoff), 2^(4 + yoff)
+		else
+			return index, index and 1, 8 + yoff, 4 + yoff
 		end
 	end,
 
 	-- Up --
 	function(x, y, xoff, yoff, xmax)
-		local index = grid.CellToIndex(x, y - 1, xmax)
+		local index = y > 1 and grid.CellToIndex(x, y - 1, xmax)
 
 		if yoff > 0 then
 			return index
-		elseif y > 1 then
-			return index, -.25 * xmax, 2^xoff, 2^(12 + xoff)
+		else
+			return index, index and -.25 * xmax, xoff, 12 + xoff
 		end
 	end,
 
 	-- Down --
 	function(x, y, xoff, yoff, xmax, ymax)
-		local index = grid.CellToIndex(x, y + 1, xmax)
+		local index = y < ymax and grid.CellToIndex(x, y + 1, xmax)
 
 		if yoff < 3 then
 			return index
-		elseif y < ymax then
-			return index, .25 * xmax, 2^(12 + xoff), 2^xoff
+		else
+			return index, index and .25 * xmax, 12 + xoff, xoff
 		end
 	end
 }
@@ -149,6 +149,7 @@ local Used = {}
 -- given iteration.
 -- * **on\_done**: If present, called (with the timer handle as argument) if and when the
 -- fill has completed.
+-- * **snapshot**: If present, snapshot to invalidate after updating cells.
 -- @treturn TimerHandle Timer underlying the effect, which may be canceled.
 -- @see Add, Prepare
 function M.Run (opts)
@@ -180,7 +181,7 @@ function M.Run (opts)
 	end
 
 	-- Run a timer until all units are explored.
-	local on_done = opts and opts.on_done
+	local on_done, snapshot = opts and opts.on_done, opts and opts.snapshot
 
 	return timers.RepeatEx(function(event)
 		if nwork + nidle == 0 then
@@ -202,7 +203,6 @@ function M.Run (opts)
 			return "cancel"
 		end
 
-		-- Run a few flood-fill iterations.
 		for _ = 1, niters do
 			-- Decide how many units to process on this iteration. If there are too few ready
 			-- to go, try to grab some (randomly) to make up the balance 
@@ -232,18 +232,17 @@ function M.Run (opts)
 
 				-- Update the cell with respect to each cardinal direction.
 				for _, func in ipairs(Funcs) do
-					local wi, delta, nbit_self, nbit_other = func(x, y, xoff, yoff, xmax, ymax)
+					local wi, delta, cbit, nbit = func(x, y, xoff, yoff, xmax, ymax)
 
 					if wi then
 						-- If the next unit over is inside a different cell, update the
-						-- appropriate neighbor bits of both cells.
+						-- appropriate neighbor bit of that cell.
 						local neighbor = delta and cells[ci + delta]
 
 						if neighbor then
 							local neffect = neighbor.fill.effect
 
-							ceffect.neighbors = powers_of_2.Set(ceffect.neighbors, nbit_self)
-							neffect.neighbors = powers_of_2.Set(neffect.neighbors, nbit_other)
+							neffect.neighbors = powers_of_2.Set(neffect.neighbors, 2^nbit)
 						end
 
 						-- If the non-boundary neighbor unit was unexplored and is not empty,
@@ -252,12 +251,22 @@ function M.Run (opts)
 							idle[nidle + 1], nidle = wi, nidle + 1
 						end
 					end
+
+					-- If this is a unit along a cell's fringe, update its neighbor bit.
+					if cbit then
+						ceffect.neighbors = powers_of_2.Set(ceffect.neighbors, 2^cbit)
+					end
 				end
 
 				-- Backfill the completed unit.
 				work[index] = work[nwork]
 				nwork, work[nwork] = nwork - 1
 			end
+		end
+
+		-- Update any underlying snapshot.
+		if snapshot then
+			snapshot:invalidate()
 		end
 	end, 100)
 end

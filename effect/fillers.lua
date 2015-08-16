@@ -140,8 +140,12 @@ function M.End (how, is_offset)
 
 	method.Prepare(nx, ny)
 
-	-- Turn each region into cells and submit them to the effect.
-	local group = Batch.group
+	-- Turn each region into cells and submit them to the effect. Snapshots are used for speed.
+	-- TODO: When not offset?
+	local snapshot = display.newSnapshot(Batch.group, (maxc - minc) * TileW, (maxr - minr) * TileH)
+	local group, dx, dy = snapshot.group, (minc + maxc - 1) * TileW / 2, (minr + maxr - 1) * TileH / 2
+
+	snapshot:translate(dx, dy)
 
 	for i = 1, display.isValid(group) and n or 0, 2 do
 		local ul, lr = Batch[i], Batch[i + 1]
@@ -160,7 +164,7 @@ function M.End (how, is_offset)
 				local cell
 
 				if rgba then
-					cell = display.newRect(group, x, y, TileW, TileH)
+					cell = display.newRect(group, x - dx, y - dy, TileW, TileH)
 
 					cell:setFillColor(color.UnpackNumber(rgba))
 				else
@@ -180,9 +184,11 @@ function M.End (how, is_offset)
 	end
 
 	-- Launch the effect and clear all temporary state.
+	FillOpts.snapshot = snapshot
+
 	Running[#Running + 1] = method.Run(FillOpts)
 
-	Batch.n, Batch.group, Batch.name, Batch.rgba = 0
+	Batch.n, Batch.group, Batch.name, Batch.rgba, FillOpts.snapshot = 0
 end
 
 -- Listen to events.
