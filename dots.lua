@@ -214,7 +214,7 @@ for k, v in pairs{
 		end
 
 		-- Do dot-specific logic.
-		event.dot:ActOn(event.facing)
+		event.dot:ActOn(event.facing, event.actor)
 	end,
 
 	-- Enter Level --
