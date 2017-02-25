@@ -27,12 +27,18 @@
 local ceil = math.ceil
 local ipairs = ipairs
 
+-- Corona globals --
+local display = display
+local graphics = graphics
+local Runtime = Runtime
+
 -- Modules --
 local require_ex = require("tektite_core.require_ex")
 local _ = require("s3_utils.controls")
 local dots = require("s3_utils.dots")
 local enemies = require("s3_utils.enemies")
 local event_blocks = require("s3_utils.event_blocks")
+local fx = require("s3_utils.fx")
 local global_events = require("s3_utils.global_events")
 local loop = require_ex.Lazy("corona_boilerplate.game.loop")
 local music = require("s3_utils.music")
@@ -107,13 +113,28 @@ function M.AddThings (current_level, level)
 end
 
 -- Primary display groups --
-local Groups = { "game_group", "hud_group" }
+local Groups = { "game_group", "canvas_group", "game_group_dynamic", "hud_group" }
+
+-- --
+local Canvas
+
+--
+local function InvalidateCanvas ()
+	Canvas:invalidate("cache")
+end
 
 --- DOCME
 function M.Cleanup (current_level)
 	for _, name in ipairs(Groups) do
 		display.remove(current_level and current_level[name])
 	end
+
+	Canvas:releaseSelf()
+	Runtime:removeEventListener("enterFrame", InvalidateCanvas)
+
+	fx.SetCanvas(nil)
+
+	Canvas = nil
 end
 
 --- DOCME
@@ -132,13 +153,29 @@ function M.BeforeEntering (w, h)
 			view:insert(current_level[name])
 		end
 
+		--
+		Canvas = graphics.newTexture{
+			type = "canvas", width = display.contentWidth, height = display.contentHeight
+		}
+		
+		Canvas:draw(current_level.game_group)
+		Runtime:addEventListener("enterFrame", InvalidateCanvas)
+		
+		Canvas.anchorX, Canvas.anchorY = -.5, -.5
+
+		fx.SetCanvas(Canvas)
+
+		local rect = display.newImageRect(current_level.canvas_group, Canvas.filename, Canvas.baseDir, display.contentWidth, display.contentHeight)
+
+		rect.x, rect.y = display.contentCenterX, display.contentCenterY
+
 		-- Add game group sublayers, duplicating them in the level info for convenience.
-		for _, name in ipairs{ "bg_layer", "tiles_layer", "decals_layer", "things_layer", "markers_layer" } do
+		for i, name in ipairs{ "bg_layer", "tiles_layer", "decals_layer", "things_layer", "markers_layer" } do
 			local layer = display.newGroup()
 
 			current_level[name] = layer
 
-			current_level.game_group:insert(layer)
+			current_level[i > 2 and "game_group_dynamic" or "game_group"]:insert(layer)
 		end
 
 		-- Add the level background, falling back to a decent default if none was given.

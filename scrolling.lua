@@ -24,6 +24,7 @@
 --
 
 -- Standard library imports --
+local ipairs = ipairs
 local max = math.max
 local min = math.min
 
@@ -47,8 +48,8 @@ local Left, Right, Top, Bottom
 -- Level dimensions --
 local Width, Height
 
--- Object to follow; group to be scrolled --
-local Object, Group
+-- Object to follow; groups to be scrolled --
+local Object, Groups
 
 -- Fixes scroll amount to prevent tile seams
 local function Fix (scale, n)
@@ -61,26 +62,28 @@ end
 local function FollowObject ()
 	local x, y = Object:localToContent(0, 0)
 
-	-- Scroll horizontally and apply clamping.
-	local xscale = Group.xScale
-	local dx1 = Fix(xscale, Left + XOffset - x)
-	local dx2 = Fix(xscale, x - Right)
+	for _, group in ipairs(Groups) do
+		-- Scroll horizontally and apply clamping.
+		local xscale = group.xScale
+		local dx1 = Fix(xscale, Left + XOffset - x)
+		local dx2 = Fix(xscale, x - Right)
 
-	if dx1 > 0 then
-		Group.x = min(Group.x + dx1, XOffset)
-	elseif dx2 > 0 then
-		Group.x = max(Group.x - dx2, min(contentWidth, Width * xscale) - Width * xscale)
-	end
+		if dx1 > 0 then
+			group.x = min(group.x + dx1, XOffset)
+		elseif dx2 > 0 then
+			group.x = max(group.x - dx2, min(contentWidth, Width * xscale) - Width * xscale)
+		end
 
-	-- Scroll vertically and apply clamping.
-	local yscale = Group.yScale
-	local dy1 = Fix(yscale, Top + YOffset - y)
-	local dy2 = Fix(yscale, y - Bottom)
+		-- Scroll vertically and apply clamping.
+		local yscale = group.yScale
+		local dy1 = Fix(yscale, Top + YOffset - y)
+		local dy2 = Fix(yscale, y - Bottom)
 
-	if dy1 > 0 then
-		Group.y = min(Group.y + dy1, YOffset)
-	elseif dy2 > 0 then
-		Group.y = max(Group.y - dy2, min(contentHeight, Height * yscale) - Height * yscale)
+		if dy1 > 0 then
+			group.y = min(group.y + dy1, YOffset)
+		elseif dy2 > 0 then
+			group.y = max(group.y - dy2, min(contentHeight, Height * yscale) - Height * yscale)
+		end
 	end
 end
 
@@ -89,17 +92,18 @@ end
 -- _group_ is ignored).
 -- @param group Given a value of **"keep"**, no change is made. Otherwise, display
 -- group to be scrolled; if **nil**, uses _object_'s parent.
+-- @param ... Additional groups.
 -- @treturn DisplayObject Object that was being followed, or **nil** if absent.
-function M.Follow (object, group)
+function M.Follow (object, group, ...)
 	local old_object = Object
 
 	Object = object
 
-	-- If we are trying to follow an object, choose a group to scroll.
+	-- If we are trying to follow an object, choose some groups to scroll.
 	if object == nil then
-		Group = nil
+		Groups = nil
 	elseif group ~= "keep" then
-		Group = group or object.parent
+		Groups = { group or object.parent, ... }
 	end
 
 	-- Add or remove the follow listener if we changed between following some object and
