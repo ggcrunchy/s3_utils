@@ -126,7 +126,9 @@ end
 --- DOCME
 function M.Cleanup (current_level)
 	for _, name in ipairs(Groups) do
-		display.remove(current_level and current_level[name])
+		if name ~= "game_group" then
+			display.remove(current_level and current_level[name])
+		end
 	end
 
 	Canvas:releaseSelf()
