@@ -184,6 +184,19 @@ function M.BeforeEntering (w, h)
 		local bg_func = level.background or level_list.DefaultBackground
 
 		bg_func(current_level.bg_layer, current_level.ncols, current_level.nrows, w, h)
+
+		-- Enforce true letterbox mode.
+		if display.actualContentWidth > display.contentWidth then
+			local w = ceil(display.actualContentWidth / 2)
+
+			for i = 1, 2 do
+				local border = display.newRect(0, display.contentCenterY, w, display.contentHeight)
+
+				border:setFillColor(0)
+
+				border.anchorX, border.x = i == 1 and 1 or 0, i == 1 and 0 or display.contentWidth
+			end
+		end
 	end
 end
 
