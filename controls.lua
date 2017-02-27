@@ -194,7 +194,7 @@ end
 
 -- Reset Level response
 local function ResetLevel (how)
-	Active = how ~= "stop" and player.Alive()
+	Active = how ~= "stop" and player.Alive() and not player.Stunned()
 	FramesLeft = 0
 	Dir, Was = nil
 	ChangeTo = nil
