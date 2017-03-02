@@ -123,6 +123,13 @@ local function InvalidateCanvas ()
 	Canvas:invalidate("cache")
 end
 
+local CanvasRect
+
+--
+local function SetCanvasRectAlpha (event)
+	CanvasRect.alpha = event.alpha
+end
+
 --- DOCME
 function M.Cleanup (current_level)
 	for _, name in ipairs(Groups) do
@@ -133,10 +140,9 @@ function M.Cleanup (current_level)
 
 	Canvas:releaseSelf()
 	Runtime:removeEventListener("enterFrame", InvalidateCanvas)
+	Runtime:removeEventListener("set_canvas_alpha", SetCanvasRectAlpha)
 
-	fx.SetCanvas(nil)
-
-	Canvas = nil
+	Canvas, CanvasRect = nil
 end
 
 --- DOCME
@@ -162,14 +168,15 @@ function M.BeforeEntering (w, h)
 		
 		Canvas:draw(current_level.game_group)
 		Runtime:addEventListener("enterFrame", InvalidateCanvas)
+		Runtime:addEventListener("set_canvas_alpha", SetCanvasRectAlpha)
 		
 		Canvas.anchorX, Canvas.anchorY = -.5, -.5
 
-		fx.SetCanvas(Canvas)
+		Runtime:dispatchEvent{ name = "set_canvas", canvas = Canvas }
 
-		local rect = display.newImageRect(current_level.canvas_group, Canvas.filename, Canvas.baseDir, display.contentWidth, display.contentHeight)
+		CanvasRect = display.newImageRect(current_level.canvas_group, Canvas.filename, Canvas.baseDir, display.contentWidth, display.contentHeight)
 
-		rect.x, rect.y = display.contentCenterX, display.contentCenterY
+		CanvasRect.x, CanvasRect.y = display.contentCenterX, display.contentCenterY
 
 		-- Add game group sublayers, duplicating them in the level info for convenience.
 		for i, name in ipairs{ "bg_layer", "tiles_layer", "decals_layer", "things_layer", "markers_layer" } do

@@ -112,21 +112,6 @@ local function Vent (params, group, x, y, time)
 	return vent
 end
 
--- --
-local Canvas
-
---- Get the background canvas.
--- @treturn ?|TextureCanvasResource|nil Canvas, if any.
-function M.GetCanvas ()
-	return Canvas
-end
-
---- Attach the background canvas.
--- @tparam ?|TextureCanvasResource|nil Canvas to attach, or **nil** to clear it.
-function M.SetCanvas (canvas)
-	Canvas = canvas
-end
-
 do -- POOF! effect
 	local ParticleParams = {
 		preset = "smoke", physics = { xDamping = 2, yDamping = 3 },
