@@ -51,14 +51,19 @@ local ChangeTo
 
 -- Begins input in a given direction
 local function BeginDir (_, target)
+	local dir = target.m_dir
+
 	if not Dir then
-		Dir = target.m_dir
-		Was = Dir
+		Dir, Was = dir, dir
 
 		player.CancelPath()
-	elseif not ChangeTo then
-		ChangeTo = target.m_dir
+	elseif Dir ~= dir and not ChangeTo then
+		ChangeTo = dir
+	else
+		return false
 	end
+
+	return true
 end
 
 -- Ends input in a given direction
@@ -118,36 +123,33 @@ local PushDir = {}
 
 -- Processes direction keys or similar input, by pretending to push GUI buttons
 local function KeyEvent (event)
-	if Active then
-		local key = event.keyName
-		local phase = event.phase
+	local key = event.keyName
 
-		-- Directional keys from D-pad or trackball: move in the corresponding direction.
-		-- The trackball seems to produce the "down" phase followed immediately by "up",
-		-- so we let the player coast along for a few frames unless interrupted.
-		-- TODO: Secure a Play or at least a tester, try out the D-pad (add bindings)
-		if key == "up" or key == "down" or key == "left" or key == "right" then
+	-- Directional keys from D-pad or trackball: move in the corresponding direction.
+	-- The trackball seems to produce the "down" phase followed immediately by "up",
+	-- so we let the player coast along for a few frames unless interrupted.
+	-- TODO: Secure a Play or at least a tester, try out the D-pad (add bindings)
+	if key == "up" or key == "down" or key == "left" or key == "right" then
+		if Active then
 			PushDir.m_dir = key
 
-			if phase == "down" then
-				FramesLeft = 6
-
-				BeginDir(nil, PushDir)
-			else
+			if event.phase == "up" then
 				EndDir(nil, PushDir)
+			elseif BeginDir(nil, PushDir) then
+				FramesLeft = 6
 			end
-
-		-- Confirm key or trackball press: attempt to perform player actions.
-		-- TODO: Add bindings
-		elseif key == "center" or key == "space" then
-			if phase == "down" then
-				DoActions()
-			end
-
-		-- Propagate other / unknown keys; otherwise, indicate that we consumed the input.
-		else
-			return
 		end
+
+	-- Confirm key or trackball press: attempt to perform player actions.
+	-- TODO: Add bindings
+	elseif key == "center" or key == "space" then
+		if Active and event.phase == "down" then
+			DoActions()
+		end
+
+	-- Propagate other / unknown keys; otherwise, indicate that we consumed the input.
+	else
+		return false
 	end
 
 	return true
