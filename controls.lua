@@ -32,6 +32,7 @@
 
 -- Modules --
 local action = require("s3_utils.hud.action")
+local device = require("corona_utils.device")
 local move = require("s3_utils.hud.move")
 local player = require("game.Player")
 local touch = require("corona_ui.utils.touch")
@@ -121,9 +122,14 @@ end
 -- Key input passed through BeginDir / EndDir, pretending to be a button --
 local PushDir = {}
 
+-- Map known controller buttons to keys.
+device.MapButtonsToAction("space", {
+	Xbox360 = "A"
+})
+
 -- Processes direction keys or similar input, by pretending to push GUI buttons
 local function KeyEvent (event)
-	local key = event.keyName
+	local key = device.TranslateButton(event) or event.keyName
 
 	-- Directional keys from D-pad or trackball: move in the corresponding direction.
 	-- The trackball seems to produce the "down" phase followed immediately by "up",
@@ -223,6 +229,9 @@ for k, v in pairs{
 		action.AddActionButton(hg, DoActions)
 		move.AddMoveButtons(hg, TouchFunc)
 
+		-- Bind controller input.
+		device.MapAxesToKeyEvents(true)
+
 		-- Track events to maintain input.
 		Runtime:addEventListener("enterFrame", UpdatePlayer)
 		Runtime:addEventListener("key", KeyEvent)
@@ -231,6 +240,8 @@ for k, v in pairs{
 	-- Level Done --
 	level_done = function()
 		ResetLevel("stop")
+
+		device.MapAxesToKeyEvents(false)
 
 		Runtime:removeEventListener("enterFrame", UpdatePlayer)
 		Runtime:removeEventListener("key", KeyEvent)
