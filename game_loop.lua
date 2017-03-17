@@ -38,7 +38,6 @@ local _ = require("s3_utils.controls")
 local dots = require("s3_utils.dots")
 local enemies = require("s3_utils.enemies")
 local event_blocks = require("s3_utils.event_blocks")
-local fx = require("s3_utils.fx")
 local global_events = require("s3_utils.global_events")
 local loop = require_ex.Lazy("corona_boilerplate.game.loop")
 local music = require("s3_utils.music")
@@ -193,11 +192,9 @@ function M.BeforeEntering (w, h)
 		bg_func(current_level.bg_layer, current_level.ncols, current_level.nrows, w, h)
 
 		-- Enforce true letterbox mode.
-		if display.actualContentWidth > display.contentWidth then
-			local w = ceil(display.actualContentWidth / 2)
-
+		if display.screenOriginX ~= 0 then
 			for i = 1, 2 do
-				local border = display.newRect(0, display.contentCenterY, w, display.contentHeight)
+				local border = display.newRect(0, display.contentCenterY, -display.screenOriginX, display.contentHeight)
 
 				border:setFillColor(0)
 
