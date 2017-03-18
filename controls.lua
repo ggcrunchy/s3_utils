@@ -125,8 +125,8 @@ local PushDir = {}
 -- Map known controller buttons to keys.
 device.MapButtonsToAction("space", {
 	Xbox360 = "A",
-  MFiGamepad = "A",
-  MFiExtendedGamepad = "A"
+	MFiGamepad = "A",
+	MFiExtendedGamepad = "A"
 })
 
 -- Processes direction keys or similar input, by pretending to push GUI buttons
