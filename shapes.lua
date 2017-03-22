@@ -155,75 +155,6 @@ function M.RemoveAt (index)
 	end
 end
 
--- Callback if Pepper II-style paths are in effect --
-local PepperFunc
-
--- Pepper II-style path state --
-local PepperPathState
-
---- DOCME
-function M.SetPepperFunc (func)
-	PepperFunc, PepperPathState = func, {}
-end
-
--- --
-local PepperEvent = { name = "pepper_event" }
-
---
-local function SendEvent (index, how)
-	PepperPathState[index], PepperEvent.how, PepperEvent.index = how, how, index
-
-	Runtime:dispatchEvent(PepperEvent)
-end
-
---- DOCME
-function M.TouchPos (index)
-	print("T")
-	if PepperPathState then
-		local cur = PepperPathState[index]
-print("!!!", cur)
-		--
-		if not cur or cur == "off" then
-			SendEvent(index, "on")
-
-		--
-		elseif cur == "on" then
-			local completed
-
-			for _, shape in ipairs(Shapes[index]) do
-				--
-				local scomplete = true
-
-				for i in pairs(shape) do
-					local state = PepperPathState[i]
-
-					if not state or state == "off" then
-						scomplete = false
-
-						break
-					end
-				end
-
-				--
-				if scomplete then
-					for i in pairs(shape) do
-						if PepperPathState[i] == "on" then
-							SendEvent(i, "complete")
-						end
-					end
-
-					completed = true
-				end
-			end
-
-			--
-			if not completed then
-				SendEvent(index, "on")
-			end
-		end
-	end
-end
-
 -- Helper to add intermediate fill layer
 local function AddFillLayer ()
 	FillLayer = display.newGroup()
@@ -309,15 +240,14 @@ local function NewShape (dots, tiles)
 		end
 	end
 
-	--
-	if PepperFunc then
-		--- DOCME
-		function Shape:Visit (context)
-			for index in pairs(tiles) do
-				PepperFunc(index, context)
-			end
+	--- DOCME
+	function Shape:Visit (func, context)
+		for index in pairs(tiles) do
+			func(index, context)
 		end
 	end
+
+	Runtime:dispatchEvent{ name = "new_shape", shape = Shape }
 
 	return Shape
 end
@@ -403,14 +333,6 @@ local function BakeShapes (event)
 			Explore(shapes, i, dot_shapes, dir, "to_right", "to_left")
 		end
 	end
-
-	if PepperFunc then
-		for _, dot_shapes in pairs(Shapes) do
-			for _, shape in ipairs(dot_shapes) do
-				shape:Visit(event)
-			end
-		end
-	end
 end
 
 -- Listen to events.
@@ -426,7 +348,7 @@ for k, v in pairs{
 
 	-- Leave Level --
 	leave_level = function()
-		BG, FillLayer, PepperFunc, Rows, Shapes = nil
+		BG, FillLayer, Rows, Shapes = nil
 	end,
 
 	-- Post-Reset --
@@ -437,8 +359,6 @@ for k, v in pairs{
 		for i in pairs(Shapes) do
 			Shapes[i] = {}
 		end
-
-		PepperPathState = PepperPathState and {}
 
 		FillLayer:removeSelf()
 

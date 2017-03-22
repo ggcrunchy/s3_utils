@@ -78,8 +78,7 @@ local function NoOp () end
 -- total. If this count falls to 0, the **all\_dots\_removed** event is dispatched.
 --
 -- If the **"add\_to\_shapes"** property is true, the dot will be added to / may be removed from
--- shapes, and assumes that its **is_counted** property is true (this may be overridden by
--- returning an explicit **false** for that property).
+-- shapes, and assumes that its **is_counted** property is true.
 --
 -- Unless the **"omit\_from\_event\_blocks"** property is true, a dot will be added to any event
 -- block that it happens to occupy.
@@ -115,7 +114,7 @@ function M.AddDot (group, info)
 	if dot:GetProperty("add_to_shapes") then
 		shapes.AddPoint(index)
 
-		is_counted = dot:GetProperty("is_counted") ~= false
+		is_counted = true
 	else
 		is_counted = dot:GetProperty("is_counted")
 	end
@@ -207,12 +206,14 @@ end
 for k, v in pairs{
 	-- Act On Dot --
 	act_on_dot = function(event)
+		local dot = event.dot
+
 		-- Remove the dot from any shapes it's in.
-		shapes.RemoveAt(event.dot.m_index)
+		shapes.RemoveAt(dot.m_index)
 
 		-- If this dot counts toward the "dots remaining", deduct it. If it was the last
 		-- dot, fire off an alert to that effect.
-		if event.dot.m_count > 0 then
+		if dot.m_count > 0 then
 			Remaining = Remaining - 1
 
 			if Remaining == 0 then
@@ -221,7 +222,9 @@ for k, v in pairs{
 		end
 
 		-- Do dot-specific logic.
-		event.dot:ActOn(event.facing, event.actor)
+		if dot.ActOn then
+			dot:ActOn(event.facing, event.actor)
+		end
 	end,
 
 	-- Enter Level --
