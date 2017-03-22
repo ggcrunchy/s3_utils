@@ -78,12 +78,14 @@ local function NoOp () end
 -- total. If this count falls to 0, the **all\_dots\_removed** event is dispatched.
 --
 -- If the **"add\_to\_shapes"** property is true, the dot will be added to / may be removed from
--- shapes, and assumes that its **is_counted** property is true.
+-- shapes, and assumes that its **is_counted** property is true (this may be overridden by
+-- returning an explicit **false** for that property).
 --
 -- Unless the **"omit\_from\_event\_blocks"** property is true, a dot will be added to any event
 -- block that it happens to occupy.
 --
 -- The **"body"** and **"body_type"** properties can be supplied to @{corona_utils.collision.MakeSensor}.
+-- If **"body"** is false, these properties are not assigned.
 -- @pgroup group Display group that will hold the dot.
 -- @ptable info Information about the new dot. Required fields:
 --
@@ -100,15 +102,20 @@ function M.AddDot (group, info)
 	dot.GetProperty = dot.GetProperty or NoOp
 
 	tile_maps.PutObjectAt(index, dot)
-	collision.MakeSensor(dot, dot:GetProperty("body_type"), dot:GetProperty("body"))
-	collision.SetType(dot, info.type)
+
+	local body_prop = dot:GetProperty("body")
+
+	if body_prop ~= false then
+		collision.MakeSensor(dot, dot:GetProperty("body_type"), body_prop)
+		collision.SetType(dot, info.type)
+	end
 
 	local is_counted
 
 	if dot:GetProperty("add_to_shapes") then
 		shapes.AddPoint(index)
 
-		is_counted = true
+		is_counted = dot:GetProperty("is_counted") ~= false
 	else
 		is_counted = dot:GetProperty("is_counted")
 	end
