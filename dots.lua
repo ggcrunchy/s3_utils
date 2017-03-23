@@ -48,6 +48,9 @@ local timers = require("corona_utils.timers")
 -- Corona globals --
 local Runtime = Runtime
 
+-- Cached module references --
+local _DeductDot_
+
 -- Exports --
 local M = {}
 
@@ -125,6 +128,15 @@ function M.AddDot (group, info)
 	Remaining = Remaining + dot.m_count
 
 	Dots[#Dots + 1] = dot
+end
+
+--- Deduct a remaining dot, firing off an event if it was the last one.
+function M.DeductDot ()
+	Remaining = Remaining - 1
+
+	if Remaining == 0 then
+		Runtime:dispatchEvent{ name = "all_dots_removed" }
+	end
 end
 
 --- Handler for dot-related events sent by the editor.
@@ -211,14 +223,9 @@ for k, v in pairs{
 		-- Remove the dot from any shapes it's in.
 		shapes.RemoveAt(dot.m_index)
 
-		-- If this dot counts toward the "dots remaining", deduct it. If it was the last
-		-- dot, fire off an alert to that effect.
+		-- If this dot counts toward the "dots remaining", deduct it.
 		if dot.m_count > 0 then
-			Remaining = Remaining - 1
-
-			if Remaining == 0 then
-				Runtime:dispatchEvent{ name = "all_dots_removed" }
-			end
+			_DeductDot_()
 		end
 
 		-- Do dot-specific logic.
@@ -302,6 +309,9 @@ end
 
 -- Install various types of dots.
 DotList = require_ex.DoList("config.Dots")
+
+-- Cache module members.
+_DeductDot_ = M.DeductDot
 
 -- Export the module.
 return M
