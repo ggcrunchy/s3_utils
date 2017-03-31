@@ -95,9 +95,16 @@ local DecalsLayer
 -- If _result_ was **"report_quit"** on the initial call, then after quitting the call
 -- `func("quitting", arg)` is performed, allowing e.g. for external cleanup.
 -- @param arg Argument to _func_.
+-- @tparam ?pobject shadow Optional object to use as shadow, e.g. to supply effects
+-- or collision; otherwise, one is created. Either way, the shadow object is added
+-- to the decals layer.
 -- @treturn DisplayObject Shadow object. It can be removed to cancel the effect.
-function M.Shadow (func, arg)
-	local shadow = display.newCircle(DecalsLayer, 0, 0, 1)
+function M.Shadow (func, arg, shadow)
+	if shadow then
+		DecalsLayer:insert(shadow)
+	else
+		shadow = display.newCircle(DecalsLayer, 0, 0, 1)
+	end
 
 	for k, v in pairs(Shadow) do
 		shadow[k] = v
