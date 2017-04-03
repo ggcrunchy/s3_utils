@@ -27,6 +27,7 @@
 local assert = assert
 local max = math.max
 local min = math.min
+local random = math.random
 
 -- Extension imports --
 local indexOf = table.indexOf
@@ -37,6 +38,9 @@ local color = require("corona_ui.utils.color")
 local flood = require("s3_utils.fill.flood")
 local sheet = require("corona_utils.sheet")
 local tile_maps = require("s3_utils.tile_maps")
+
+-- Kernels --
+require("s3_utils.kernel.caustics")
 
 -- Corona globals --
 local display = display
@@ -146,6 +150,10 @@ function M.End (how, is_offset)
 	local group, dx, dy = snapshot.group, (minc + maxc - 1) * TileW / 2, (minr + maxr - 1) * TileH / 2
 
 	snapshot:translate(dx, dy)
+
+	snapshot.fill.effect = "filter.filler.caustics"
+
+	snapshot.fill.effect.seed = random(1024)
 
 	for i = 1, display.isValid(group) and n or 0, 2 do
 		local ul, lr = Batch[i], Batch[i + 1]
