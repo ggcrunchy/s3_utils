@@ -199,6 +199,13 @@ function M.End (how, is_offset)
 	Batch.n, Batch.group, Batch.name, Batch.rgba, FillOpts.snapshot = 0
 end
 
+-- --
+local function CancelRunning ()
+	for i = 1, #Running do
+		timer.cancel(Running[i])
+	end
+end
+
 -- Listen to events.
 for k, v in pairs{
 	-- Enter Level --
@@ -210,14 +217,14 @@ for k, v in pairs{
 
 	-- Leave Level --
 	leave_level = function()
+		CancelRunning()
+
 		Batch, Running = nil
 	end,
 
 	-- Reset Level --
 	reset_level = function()
-		for i = 1, #Running do
-			timer.cancel(Running[i])
-		end
+		CancelRunning()
 
 		Batch, Running = {}, {}
 	end
