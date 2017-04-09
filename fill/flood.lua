@@ -46,7 +46,7 @@ local graphics = graphics
 local M = {}
 
 -- --
-local CellW, CellH = 4, 4
+local CellW, CellH = 16, 16
 
 -- --
 local OffsetX, OffsetY = CellW - 1, CellH - 1
@@ -144,7 +144,7 @@ function M.Prepare (nx, ny)
 	end
 
 	-- Save the cell counts. Initialize state used to incrementally find the center cell.
-	Nx, Ny, Closest, CX, CY = nx, ny, 1 / 0, floor(.5 * (nx + 1)), floor(.5 * (ny + 1))
+	Nx, Ny, Closest, CX, CY = nx, ny, 1 / 0, (nx + 1) / 2, (ny + 1) / 2
 end
 
 -- Cache of grid use wrappers --
@@ -192,7 +192,8 @@ function M.Run (backdrop, opts)
 
 	-- Kick off the effect, starting at the centermost unit. If the cell list was empty, do
 	-- nothing; the timer will cancel itself on the first go.
-	local i1, nwork, nidle = grid.CellToIndex(MidCol * CellW - HalfW, MidRow * CellH - HalfH, xmax), 0, 0
+	local midc, midr = MidCol * CellW - (Nx % 2) * HalfW, MidRow * CellH - (Ny % 2) * HalfH
+	local i1, nwork, nidle = grid.CellToIndex(midc, midr, xmax), 0, 0
 
 	if #cells > 0 then
 		work[1], nwork = i1, 1
@@ -273,6 +274,7 @@ function M.Run (backdrop, opts)
 
 						if neighbor ~= false and used("mark", wi) then
 							idle[nidle + 1], nidle = wi, nidle + 1
+
 							local c, r = grid.IndexToCell(wi, xmax)
 
 							mtex:setPixel(c + xx, r + yy, .5)
@@ -290,7 +292,7 @@ function M.Run (backdrop, opts)
 		if display.isValid(backdrop) then
 			mtex:invalidate()
 		end
-	end, 100)
+	end, 15)
 end
 
 -- Export the module.
