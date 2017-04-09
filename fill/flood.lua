@@ -33,58 +33,73 @@ local remove = table.remove
 -- Modules --
 local grid = require("tektite_core.array.grid")
 local match_slot_id = require("tektite_core.array.match_slot_id")
-local powers_of_2 = require("bitwise_ops.powers_of_2")
 local timers = require("corona_utils.timers")
 
--- Kernels --
-require("s3_utils.kernel.grid4x4")
+-- Plugins --
+local memoryBitmap = require("plugin.memoryBitmap")
+
+-- Corona globals --
+local display = display
+local graphics = graphics
 
 -- Exports --
 local M = {}
 
+-- --
+local CellW, CellH = 4, 4
+
+-- --
+local OffsetX, OffsetY = CellW - 1, CellH - 1
+
+-- --
+local HalfW, HalfH = CellW / 2, CellH / 2
+
+-- --
+local FracW, FracH = 1 / CellW, 1 / CellH
+
 -- Helpers to look at next unit over --
 local Funcs = {
 	-- Left --
-	function(x, y, xoff, yoff, xmax)
+	function(x, y, xoff, _, xmax)
 		local index = x > 1 and grid.CellToIndex(x - 1, y, xmax)
 
 		if xoff > 0 then
 			return index
 		else
-			return index, index and -1, 4 + yoff, 8 + yoff
+			return index, index and -1
 		end
 	end,
 
 	-- Right --
-	function(x, y, xoff, yoff, xmax)
+	function(x, y, xoff, _, xmax)
 		local index = x < xmax and grid.CellToIndex(x + 1, y, xmax)
 
-		if xoff < 3 then
+		if xoff < OffsetX then
 			return index
 		else
-			return index, index and 1, 8 + yoff, 4 + yoff
+			return index, index and 1
 		end
 	end,
 
 	-- Up --
-	function(x, y, xoff, yoff, xmax)
+	function(x, y, _, yoff, xmax)
 		local index = y > 1 and grid.CellToIndex(x, y - 1, xmax)
 
 		if yoff > 0 then
 			return index
 		else
-			return index, index and -.25 * xmax, xoff, 12 + xoff
+			return index, index and -FracW * xmax
 		end
 	end,
 
 	-- Down --
-	function(x, y, xoff, yoff, xmax, ymax)
+	function(x, y, _, yoff, xmax, ymax)
 		local index = y < ymax and grid.CellToIndex(x, y + 1, xmax)
 
-		if yoff < 3 then
+		if yoff < OffsetY then
 			return index
 		else
-			return index, index and .25 * xmax, 12 + xoff, xoff
+			return index, index and FracW * xmax
 		end
 	end
 }
@@ -101,19 +116,15 @@ local MidCol, MidRow
 --- Adds (or overwrites) a cell to the effect being prepared.
 -- @uint col Column of cell, in [1, _nx_] (cf. @{Prepare})...
 -- @uint row ...and row, in [1, _ny_].
--- @pobject cell Display object found in cell, which will comprise a 4x4 grid of units, all
--- of them off by default.
 -- @see Run
-function M.Add (col, row, cell)
-	cell.fill.effect = "filter.filler.grid4x4_neighbors"
-
+function M.Add (col, row)
 	local dist_sq = (col - CX)^2 + (row - CY)^2
 
 	if dist_sq < Closest then
 		Closest, MidCol, MidRow = dist_sq, col, row
 	end
 
-	Cells[grid.CellToIndex(col, row, Nx)] = cell
+	Cells[grid.CellToIndex(col, row, Nx)] = true
 end
 
 -- Cache of cell / index arrays --
@@ -139,6 +150,15 @@ end
 -- Cache of grid use wrappers --
 local Used = {}
 
+-- Adjust dimensions to mask-appropriate amounts
+local function RoundUpMask (x)
+	local xx = x + 13 -- 3 black pixels per side, for mask, plus 7 to round
+					  -- all but multiples of 8 past the next such multiple
+	local dim = xx - xx % 8 -- Remove the overshot to land on a multiple
+
+	return dim, (dim - x) / 2
+end
+
 --- Runs the effect.
 -- @ptable[opt] opts Fill options. Fields:
 --
@@ -149,10 +169,10 @@ local Used = {}
 -- given iteration.
 -- * **on\_done**: If present, called (with the timer handle as argument) if and when the
 -- fill has completed.
--- * **snapshot**: If present, snapshot to invalidate after updating cells.
+-- * **backdrop**: If present, backdrop to be exposed when updating cells.
 -- @treturn TimerHandle Timer underlying the effect, which may be canceled.
 -- @see Add, Prepare
-function M.Run (opts)
+function M.Run (backdrop, opts)
 	-- Reset the grid-in-use state.
 	local used = remove(Used) or match_slot_id.Wrap{}
 
@@ -168,11 +188,11 @@ function M.Run (opts)
 	local nprocess = opts and opts.to_process or 13
 	local nvar = opts and opts.to_process_var or 5
 	local nlow, nhigh = nprocess - nvar, nprocess + nvar
-	local nx, xmax, ymax = Nx, Nx * 4, Ny * 4
+	local nx, xmax, ymax = Nx, Nx * CellW, Ny * CellH
 
 	-- Kick off the effect, starting at the centermost unit. If the cell list was empty, do
 	-- nothing; the timer will cancel itself on the first go.
-	local i1, nwork, nidle = grid.CellToIndex(MidCol * 4 - 2, MidRow * 4 - 2, xmax), 0, 0
+	local i1, nwork, nidle = grid.CellToIndex(MidCol * CellW - HalfW, MidRow * CellH - HalfH, xmax), 0, 0
 
 	if #cells > 0 then
 		work[1], nwork = i1, 1
@@ -180,8 +200,21 @@ function M.Run (opts)
 		used("mark", i1)
 	end
 
+	-- Add the backdrop.
+	local w2, xx = RoundUpMask(xmax)
+	local h2, yy = RoundUpMask(ymax)
+	local mtex = memoryBitmap.newTexture{ width = w2, height = h2, format = "mask" }
+	local mask = graphics.newMask(mtex.filename, mtex.baseDir)
+
+	backdrop:addEventListener("finalize", function()
+		mtex:releaseSelf()
+	end)
+	backdrop:setMask(mask)
+
+	backdrop.maskScaleX, backdrop.maskScaleY = backdrop.width / xmax, backdrop.height / ymax
+
 	-- Run a timer until all units are explored.
-	local on_done, snapshot = opts and opts.on_done, opts and opts.snapshot
+	local on_done = opts and opts.on_done
 
 	return timers.RepeatEx(function(event)
 		if nwork + nidle == 0 then
@@ -220,41 +253,30 @@ function M.Run (opts)
 
 			-- Process a few units.
 			for _ = nwork, max(1, nwork - to_process), -1 do
-				-- Choose a random unit and mark the corresponding bit in its cell.
+				-- Choose a random unit and expose it completely.
 				local index = random(nwork)
 				local x, y = grid.IndexToCell(work[index], xmax)
-				local xb, yb = floor((x - 1) * .25), floor((y - 1) * .25)
-				local xoff, yoff = x - xb * 4 - 1, y - yb * 4 - 1
+				local xb, yb = floor((x - 1) * FracW), floor((y - 1) * FracH)
+				local xoff, yoff = x - xb * CellW - 1, y - yb * CellH - 1
 				local ci = yb * nx + xb + 1
-				local ceffect = cells[ci].fill.effect
 
-				ceffect.bits = ceffect.bits + 2^(yoff * 4 + xoff)
+				mtex:setPixel(x + xx, y + yy, 1)
 
 				-- Update the cell with respect to each cardinal direction.
 				for _, func in ipairs(Funcs) do
-					local wi, delta, cbit, nbit = func(x, y, xoff, yoff, xmax, ymax)
+					local wi, delta = func(x, y, xoff, yoff, xmax, ymax)
 
+					-- If the non-boundary neighbor unit was unexplored and is not empty,
+					-- add it to the to-be-processed list.
 					if wi then
-						-- If the next unit over is inside a different cell, update the
-						-- appropriate neighbor bit of that cell.
 						local neighbor = delta and cells[ci + delta]
 
-						if neighbor then
-							local neffect = neighbor.fill.effect
-
-							neffect.neighbors = powers_of_2.Set(neffect.neighbors, 2^nbit)
-						end
-
-						-- If the non-boundary neighbor unit was unexplored and is not empty,
-						-- add it to the to-be-processed list.
 						if neighbor ~= false and used("mark", wi) then
 							idle[nidle + 1], nidle = wi, nidle + 1
-						end
-					end
+							local c, r = grid.IndexToCell(wi, xmax)
 
-					-- If this is a unit along a cell's fringe, update its neighbor bit.
-					if cbit then
-						ceffect.neighbors = powers_of_2.Set(ceffect.neighbors, 2^cbit)
+							mtex:setPixel(c + xx, r + yy, .5)
+						end
 					end
 				end
 
@@ -265,8 +287,8 @@ function M.Run (opts)
 		end
 
 		-- Update any underlying snapshot.
-		if snapshot then
-			snapshot:invalidate()
+		if display.isValid(backdrop) then
+			mtex:invalidate()
 		end
 	end, 100)
 end

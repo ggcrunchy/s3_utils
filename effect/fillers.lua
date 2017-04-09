@@ -36,7 +36,6 @@ local indexOf = table.indexOf
 local audio = require("corona_utils.audio")
 local color = require("corona_ui.utils.color")
 local flood = require("s3_utils.fill.flood")
-local sheet = require("corona_utils.sheet")
 local tile_maps = require("s3_utils.tile_maps")
 
 -- Kernels --
@@ -107,8 +106,7 @@ local FillOpts = {
 
 --- Commits the batch, launching an effect.
 -- @string[opt="flood_fill"] how Fill method applied to added regions.
--- @bool is_offset Are the cells offset by a half-tile in each direction?
-function M.End (how, is_offset)
+function M.End (how)
 	local n, method = Batch.n, assert(Methods[how or "flood_fill"], "Invalid fill method")
 
 	assert(n and n > 0, "No regions added")
@@ -127,76 +125,46 @@ function M.End (how, is_offset)
 		minr, maxr = min(ulr, minr), max(lrr, maxr)
 	end
 
-	-- Get the cell-wise dimensions, adjusting these or the lower-right corner offsets
-	-- depending on whether the cells use half-tile offsets. Get the color or image data, do
-	-- any initialization on it, and prepare the effect.
-	local nx, ny, rgba, image, minc2, minr2 = maxc - minc, maxr - minr, Batch.rgba
-
-	if is_offset then
-		minc2, minr2 = minc + 1, minr + 1
-	else
-		minc2, minr2, nx, ny = minc, minr, nx + 1, ny + 1
-	end
-
-	if not rgba then
-		image = sheet.TileImage(Batch.name, nx, ny)
-	end
+	-- Get the cell-wise dimensions and prepare the effect.
+	local nx, ny, rgba, back = maxc - minc, maxr - minr, Batch.rgba
+	local minc2, minr2 = minc + 1, minr + 1
 
 	method.Prepare(nx, ny)
 
-	-- Turn each region into cells and submit them to the effect. Snapshots are used for speed.
-	-- TODO: When not offset?
-	local snapshot = display.newSnapshot(Batch.group, (maxc - minc) * TileW, (maxr - minr) * TileH)
-	local group, dx, dy = snapshot.group, (minc + maxc - 1) * TileW / 2, (minr + maxr - 1) * TileH / 2
+	-- Turn each region into cells and submit them to the effect.
+	local x, y = (minc + maxc - 1) * TileW / 2, (minr + maxr - 1) * TileH / 2
+	local w, h = (maxc - minc) * TileW, (maxr - minr) * TileH
 
-	snapshot:translate(dx, dy)
+	if rgba then
+		back = display.newRect(Batch.group, x, y, w, h)
 
-	snapshot.fill.effect = "filter.filler.caustics"
+		back:setFillColor(color.UnpackNumber(rgba))
+	else
+		back = display.newImageRect(Batch.group, Batch.name, w, h)
 
-	snapshot.fill.effect.seed = random(1024)
+		back.x, back.y = x, y
+	end
 
-	for i = 1, display.isValid(group) and n or 0, 2 do
+	back.fill.effect = "filter.filler.caustics"
+
+	back.fill.effect.seed = random(1024)
+
+	for i = 1, display.isValid(back) and n or 0, 2 do
 		local ul, lr = Batch[i], Batch[i + 1]
 		local ulc, ulr = tile_maps.GetCell(ul)
 		local lrc, lrr = tile_maps.GetCell(lr)
-		local left, y = tile_maps.GetTilePos(ul)
-
-		if is_offset then
-			left, y = left + TileW / 2, y + TileH / 2
-		end
 
 		for dr = ulr - minr, lrr - minr2 do
-			local x, ri = left, not rgba and dr * nx + 1
-
 			for dc = ulc - minc, lrc - minc2 do
-				local cell
-
-				if rgba then
-					cell = display.newRect(group, x - dx, y - dy, TileW, TileH)
-
-					cell:setFillColor(color.UnpackNumber(rgba))
-				else
-					cell = sheet.NewImageAtFrame(group, image, ri + dc, x, y)
-
-					cell.xScale = TileW / cell.width
-					cell.yScale = TileH / cell.height
-				end
-
-				method.Add(dc + 1, dr + 1, cell)
-
-				x = x + TileW
+				method.Add(dc + 1, dr + 1, true)
 			end
-
-			y = y + TileH
 		end
 	end
 
 	-- Launch the effect and clear all temporary state.
-	FillOpts.snapshot = snapshot
+	Running[#Running + 1] = method.Run(back, FillOpts)
 
-	Running[#Running + 1] = method.Run(FillOpts)
-
-	Batch.n, Batch.group, Batch.name, Batch.rgba, FillOpts.snapshot = 0
+	Batch.n, Batch.group, Batch.name, Batch.rgba = 0
 end
 
 -- --
