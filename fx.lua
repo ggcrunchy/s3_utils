@@ -24,11 +24,14 @@
 --
 
 -- Standard library imports --
+local ipairs = ipairs
 local random = math.random
 local remove = table.remove
+local require = require
 
 -- Modules --
 local cbe = require("s3_utils.CBEffects.Library")
+local frames = require("corona_utils.frames")
 
 -- Corona globals --
 local display = display
@@ -37,8 +40,40 @@ local graphics = graphics
 local system = system
 local transition = transition
 
+-- Cached module references --
+local _DistortionBindCanvasEffect_
+
 -- Exports --
 local M = {}
+
+do
+	--- DOCME
+	function M.DistortionBindCanvasEffect (object, fill, name)
+		object.fill = fill
+		object.fill.effect = name
+		object.fill.effect.xdiv = 1 / display.contentWidth
+		object.fill.effect.ydiv = 1 / display.contentHeight
+	end
+
+	--- DOCME
+	function M.DistortionCanvasToPaintAttacher (paint)
+		return function(event)
+			if event.canvas then
+				paint.filename = event.canvas.filename
+				paint.baseDir = event.canvas.baseDir
+			end
+		end
+	end
+
+	--- DOCME
+	function M.DistortionKernelParams ()
+		return {
+			{ index = 0, name = "xdiv" },
+			{ index = 1, name = "ydiv" },
+			{ index = 2, name = "alpha", default = 1, min = 0, max = 1 }
+		}
+	end
+end
 
 do -- Flag effect
 end
@@ -48,31 +83,6 @@ local Cache = {}
 
 -- Active vents --
 local Vents = {}
-
--- "enterFrame" listener --
-Runtime:addEventListener("enterFrame", function(event)
-	local time, n = event.time, #Vents
-
-	for i = n, 1, -1 do
-		local vent = Vents[i]
-
-		if vent.m_time <= time then
-			vent:stop()
-			vent:clean()
-
-			-- Backfill over removed vent.
-			Vents[i] = Vents[n]
-			n, Vents[n] = n - 1
-
-			-- Stuff the event back in its cache.
-			local cache = Cache[vent.m_type] or {}
-
-			cache[#cache + 1] = vent
-
-			Cache[vent.m_type] = cache
-		end
-	end
-end)
 
 -- Create or reuse a vent
 local function Vent (params, group, x, y, time)
@@ -174,7 +184,37 @@ do -- POW! effect
 	end
 end
 
-do -- Ripple effect
+-- --
+local ShimmerFill = { type = "image" }
+
+-- --
+local Shimmers = {}
+
+do -- Shimmer effect
+	local Loaded
+
+	--- DOCME
+	function M.Shimmer (group, x, y, radius, opts)
+		Loaded = Loaded or not not require("s3_utils.kernel.shimmer")
+
+		local shimmer, influence, spin, time = display.newCircle(group, x, y, radius)
+
+		if opts then
+			influence, spin = opts.influence, opts.spin
+		end
+
+		shimmer.m_spin = spin or 100
+
+		_DistortionBindCanvasEffect_(shimmer, ShimmerFill, "filter.screen.shimmer")
+
+		if influence then
+			shimmer.fill.effect.influence = influence
+		end
+
+		Shimmers[#Shimmers + 1] = shimmer
+
+		return shimmer
+	end
 end
 
 do -- Sparkles effect
@@ -262,6 +302,89 @@ do -- Warp effects
 		return handle
 	end
 end
+
+--
+local function ShimmerForEach (func)
+	return function(arg)
+		local n = #Shimmers
+
+		for i = n, 1, -1 do
+			local shimmer = Shimmers[i]
+
+			if shimmer.parent then
+				func(shimmer, arg)
+			else
+				Shimmers[i] = Shimmers[n]
+				n, Shimmers[n] = n - 1
+			end
+		end
+	end
+end
+
+--
+local RemoveShimmers = ShimmerForEach(display.remove)
+
+--
+local UpdateShimmerAlpha = ShimmerForEach(function(shimmer, alpha)
+	shimmer.fill.effect.alpha = alpha
+end)
+
+--
+local UpdateShimmers = ShimmerForEach(function(shimmer, dt)
+	shimmer.rotation = shimmer.rotation + shimmer.m_spin * dt
+end)
+
+-- Listen to events.
+for k, v in pairs{
+	-- Enter Frame --
+	enterFrame = function(event)
+		--
+		local time, n = event.time, #Vents
+
+		for i = n, 1, -1 do
+			local vent = Vents[i]
+
+			if vent.m_time <= time then
+				vent:stop()
+				vent:clean()
+
+				-- Backfill over removed vent.
+				Vents[i] = Vents[n]
+				n, Vents[n] = n - 1
+
+				-- Stuff the event back in its cache.
+				local cache = Cache[vent.m_type] or {}
+
+				cache[#cache + 1] = vent
+
+				Cache[vent.m_type] = cache
+			end
+		end
+
+		--
+		UpdateShimmers(frames.DiffTime())
+	end,
+
+	-- Leave Level --
+	leave_level = function()
+		RemoveShimmers()
+
+		Shimmers = {}
+	end,
+
+	-- Set Canvas --
+	set_canvas = M.DistortionCanvasToPaintAttacher(ShimmerFill),
+
+	-- Set Canvas Alpha --
+	set_canvas_alpha = function(event)
+		UpdateShimmerAlpha(event.alpha)
+	end
+} do
+	Runtime:addEventListener(k, v)
+end
+
+-- Cache module members.
+_DistortionBindCanvasEffect_ = M.DistortionBindCanvasEffect
 
 -- Export the module.
 return M

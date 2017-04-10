@@ -26,6 +26,7 @@
 -- Standard library imports --
 local ceil = math.ceil
 local ipairs = ipairs
+local yield = coroutine.yield
 
 -- Corona globals --
 local display = display
@@ -122,6 +123,7 @@ local function InvalidateCanvas ()
 	Canvas:invalidate("cache")
 end
 
+-- --
 local CanvasRect
 
 --
@@ -160,7 +162,8 @@ function M.BeforeEntering (w, h)
 			view:insert(current_level[name])
 		end
 
-		--
+		-- Rig up a canvas that captures certain layers for use in post-processing, giving it
+		-- a frame to get up and running.
 		Canvas = graphics.newTexture{
 			type = "canvas", width = display.contentWidth, height = display.contentHeight
 		}
@@ -170,6 +173,8 @@ function M.BeforeEntering (w, h)
 		Runtime:addEventListener("set_canvas_alpha", SetCanvasRectAlpha)
 		
 		Canvas.anchorX, Canvas.anchorY = -.5, -.5
+
+		yield()
 
 		Runtime:dispatchEvent{ name = "set_canvas", canvas = Canvas }
 
