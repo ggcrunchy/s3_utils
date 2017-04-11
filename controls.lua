@@ -40,6 +40,7 @@ local touch = require("corona_ui.utils.touch")
 -- Corona globals --
 local display = display
 local Runtime = Runtime
+local system = system
 
 -- Exports --
 local M = {}
@@ -82,7 +83,13 @@ local function EndDir (_, target)
 end
 
 -- Helper to attach begin-end input to buttons --
-local TouchFunc = touch.TouchHelperFunc(BeginDir, nil, EndDir)
+local TouchFunc
+
+local platform = system.getInfo("platform")
+
+if system.getInfo("environment") == "device" and (platform == "android" or platform == "ios") then
+	TouchFunc = touch.TouchHelperFunc(BeginDir, nil, EndDir)
+end
 
 -- Controls are active? --
 local Active
@@ -229,7 +236,10 @@ for k, v in pairs{
 
 		-- Add buttons.
 		action.AddActionButton(hg, DoActions)
-		move.AddMoveButtons(hg, TouchFunc)
+
+		if TouchFunc then
+			move.AddMoveButtons(hg, TouchFunc)
+		end
 
 		-- Bind controller input.
 		device.MapAxesToKeyEvents(true)
