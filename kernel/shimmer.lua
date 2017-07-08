@@ -33,7 +33,7 @@ local kernel = { language = "glsl", category = "filter", group = "screen", name 
 
 local vertex_data = fx.DistortionKernelParams()
 
-vertex_data[4] = { name = "influence", index = 4, min = .5, max = 1024., default = 15. }
+vertex_data[4] = { name = "influence", index = 3, min = .5, max = 1024., default = 15. }
 
 kernel.vertexData = vertex_data
 kernel.vertex = screen_fx.GetPassThroughVertexKernelSource()

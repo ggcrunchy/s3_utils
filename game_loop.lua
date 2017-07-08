@@ -28,11 +28,6 @@ local ceil = math.ceil
 local ipairs = ipairs
 local yield = coroutine.yield
 
--- Corona globals --
-local display = display
-local graphics = graphics
-local Runtime = Runtime
-
 -- Modules --
 local require_ex = require("tektite_core.require_ex")
 local _ = require("s3_utils.controls")
@@ -50,6 +45,8 @@ local triggers = require("s3_utils.triggers")
 
 -- Corona globals --
 local display = display
+local graphics = graphics
+local Runtime = Runtime
 
 -- Exports --
 local M = {}
@@ -162,18 +159,18 @@ function M.BeforeEntering (w, h)
 			view:insert(current_level[name])
 		end
 
-		-- Rig up a canvas that captures certain layers for use in post-processing, giving it
-		-- a frame to get up and running.
+		-- Rig up a canvas that captures certain layers for use in post-processing.
 		Canvas = graphics.newTexture{
 			type = "canvas", width = display.contentWidth, height = display.contentHeight
 		}
-		
+
 		Canvas:draw(current_level.game_group)
 		Runtime:addEventListener("enterFrame", InvalidateCanvas)
 		Runtime:addEventListener("set_canvas_alpha", SetCanvasRectAlpha)
 		
 		Canvas.anchorX, Canvas.anchorY = -.5, -.5
 
+		-- Give it a frame to take hold, and finish up.
 		yield()
 
 		Runtime:dispatchEvent{ name = "set_canvas", canvas = Canvas }

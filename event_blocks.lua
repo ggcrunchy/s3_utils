@@ -467,30 +467,27 @@ end
 --   result = event(what, arg1, arg2)
 -- which should handle the following choices of _what_:
 --
--- * **"can_fire"**: If _result_ is true, the event can be safely fired. _arg1_ indicates
--- whether the source, e.g. a switch, wants to fire forward or backward (forward = true).
--- This has meaning to certain events.
--- * **"fire"**: Fires the event. _arg1_ is again the forward boolean.
+-- * **"fire"**: Fires the event. _arg1_ indicates whether the source, e.g. a switch, wants
+-- to fire forward or backward (forward = true), for events that make such distinctions.
+-- If _result_ is **"failed"**, the event was unable to fire.
 -- * **"is_done"**: If _result_ is false, the event is still in progress.
 -- * **"show"**: Shows or hides event hints. _arg1_ is the responsible party for firing
 -- events, e.g. a switch, and _arg2_ is a boolean (true = show).
 --
 -- **CONSIDER**: Formalize _arg1_ in "show" more... e.g. an options list (m\_forward is
 -- the only one we care about so far)... or maybe JUST the forward boolean, since the
--- hint might as well be compatible with can\_fire / fire?
+-- hint might as well be compatible with fire?
 function M.GetEvent (name)
 	return Events[name] or function() end -- TODO: Remove this function?
 end
 
 --- Fires all events.
--- @bool forward Forward boolean, argument to event's **"can_fire"** and **"fire"** choices.
+-- @bool forward Forward boolean, argument to event's **"fire"** handler.
 function M.FireAll (forward)
 	forward = not not forward
 
 	for _, v in ipairs(Events) do
-		if v("can_fire", forward) then
-			v("fire", forward)
-		end
+		v("fire", forward)
 	end
 end
 
