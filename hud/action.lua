@@ -29,6 +29,7 @@ local ceil = math.ceil
 local ipairs = ipairs
 local remove = table.remove
 local setmetatable = setmetatable
+local type = type
 
 -- Modules --
 local array_index = require("tektite_core.array.index")
@@ -121,8 +122,17 @@ end
 -- Lazily add images to the action sequence --
 local ImagesMT = {
 	__index = function(t, name)
-		local action = ActionGroup[1]
-		local ai = display.newImage(ActionGroup, name, action.x, action.y)
+		local action, ai = ActionGroup[1]
+
+		if type(name) == "string" then
+			ai = display.newImage(ActionGroup, name, action.x, action.y)
+		else
+			ai = name
+
+			ActionGroup:insert(ai)
+
+			ai.x, ai.y = action.x, action.y
+		end
 
 		ai.width, ai.height, ai.alpha = 96, 96, 0
 
@@ -290,8 +300,6 @@ for k, v in pairs{
 	-- Leave Level --
 	leave_level = function()
 		Cancel(Fading)
-
-	--	animation.cancel(Scaling)
 
 		ActionGroup, Current, Fade, Fading, Images, Pulsing, Sequence = nil
 	end,
