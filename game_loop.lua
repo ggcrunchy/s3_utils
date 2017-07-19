@@ -41,6 +41,7 @@ local persistence = require("corona_utils.persistence")
 local player = require("game.Player")
 local sound = require("s3_utils.sound")
 local tile_maps = require("s3_utils.tile_maps")
+local tilesets = require("s3_utils.tilesets")
 local triggers = require("s3_utils.triggers")
 
 -- Corona globals --
@@ -65,8 +66,11 @@ end
 
 --- DOCME
 function M.AddThings (current_level, level)
+	--
+	tilesets.UseTileset("tree")
+
 	-- Add the tiles to the level...
-	local tgroup = tile_maps.NewImageGroup()
+	local tgroup = display.newGroup()
 
 	current_level.tiles_layer:insert(tgroup)
 

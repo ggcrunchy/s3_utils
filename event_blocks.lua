@@ -143,7 +143,7 @@ local function NewBlock (col1, row1, col2, row2)
 
 	-- Lift any tile images into the block's own group. Mark the block region as occupied
 	-- and cache the current flags on each tile, for restoration.
-	local id, igroup = #Blocks + 1, tile_maps.NewImageGroup()
+	local id, igroup = #Blocks + 1, display.newGroup()
 
 	for i, index in ipairs(block) do
 		block[i] = GetImage(index) or false

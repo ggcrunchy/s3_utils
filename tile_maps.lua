@@ -24,21 +24,17 @@
 --
 
 -- Standard library imports --
-local ipairs = ipairs
 local setmetatable = setmetatable
 
 -- Modules --
 local array_index = require("tektite_core.array.index")
-local collision = require("corona_utils.collision")
 local grid = require("tektite_core.array.grid")
 local range = require("tektite_core.number.range")
-local sheet = require("corona_utils.sheet")
 local tile_flags = require("s3_utils.tile_flags")
+local tilesets = require("s3_utils.tilesets")
 
 -- Corona globals --
 local display = display
-local graphics = graphics
-local system = system
 
 -- Imports --
 local CellToIndex = grid.CellToIndex
@@ -46,31 +42,10 @@ local FitToSlot = array_index.FitToSlot
 local GetNameByFlags = tile_flags.GetNameByFlags
 local GetResolvedFlags = tile_flags.GetResolvedFlags
 local IndexToCell = grid.IndexToCell
-local IsFlagSet = tile_flags.IsFlagSet
 local SetFlags = tile_flags.SetFlags
 
 -- Module --
 local M = {}
-
--- Tile set frames --
--- TODO: This isn't very flexible
-local GameTiles = {
-	frames = require("tiles.TreeBG")
-}
-
--- Filename -> frame index cache for quick tile lookup --
--- TODO: Verify that this is "set it and forget it"
-local ImageCache = setmetatable({}, {
-	__index = function(t, k)
-		for i, tile in ipairs(GameTiles.frames) do
-			if tile.name:sub(1, -5) == k then
-				t[k] = i
-
-				return i
-			end
-		end
-	end
-})
 
 -- Loaded tiles --
 local Tiles
@@ -102,13 +77,13 @@ function M.AddTiles (group, names)
 		local x = .5 * TileW
 
 		for _ = 1, NCols do
-			local what = names[i]
-			local flags, tile = tile_flags.GetFlagsByName(what), {}
+			local what, tile = names[i], {}
+			local flags = tile_flags.GetFlagsByName(what)
 
 			-- For non-blank names, assign a frame from the sprite to the tile.
 			-- TODO: We might eventually want animating tiles...
 			if flags ~= 0 then
-				tile.image = sheet.NewImageAtFrame(group, ImageSheet, ImageCache[what], x, y, TileW, TileH)
+				tile.image = tilesets.NewTile(group, what, x, y, TileW, TileH)
 			end
 
 			SetFlags(i, flags)
@@ -201,15 +176,6 @@ function M.GetTilePos (index)
 	return tile.x, tile.y
 end
 
---- TODO: Hard-coded image file...
--- CONSIDER: layers...
--- @treturn DisplayGroup Image group using current tile sheet.
-function M.NewImageGroup ()
-	ImageSheet = ImageSheet or graphics.newImageSheet("GameTiles/Tiles.png", GameTiles)
-
-	return display.newGroup()
-end
-
 --- Utility.
 -- @uint index Tile index (see the caveat for @{GetTilePos}).
 -- @param object The tile center is assigned to this object's **x** and **y** fields.
@@ -240,15 +206,7 @@ function M.SetTilesFromFlags (group, col1, row1, col2, row2)
 			display.remove(tile.image)
 
 			if flags ~= 0 then
-				local name = GetNameByFlags(flags)
-
-				if name == "left" or name == "right" then -- TODO: left, right, up, down tiles...
-					name = "Horizontal"
-				elseif name == "up" or name == "down" then
-					name = "Vertical"
-				end
-
-				tile.image = sheet.NewImageAtFrame(group, ImageSheet, ImageCache[name], tile.x, tile.y, TileW, TileH)
+				tile.image = tilesets.NewTile(group, GetNameByFlags(flags), tile.x, tile.y, TileW, TileH)
 			else
 				tile.image = nil
 			end

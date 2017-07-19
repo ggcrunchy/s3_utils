@@ -65,7 +65,11 @@ local TileFlags = {
 	RightT = OrFlags("left", "up", "down"),
 	BottomT = OrFlags("left", "right", "up"),
 	Horizontal = OrFlags("left", "right"),
-	Vertical = OrFlags("up", "down")
+	Vertical = OrFlags("up", "down"),
+	LeftNub = DirFlags.right,
+	RightNub = DirFlags.left,
+	BottomNub = DirFlags.up,
+	TopNub = DirFlags.down
 }
 
 -- Working set of per-tile flags --
@@ -84,7 +88,8 @@ end
 --- Getter.
 -- @string name One of **"left"**, **"right"**, **"up"**, **"down"**, **"FourWays"**,
 -- **"UpperLeft"**, **"UpperRight"**, **"LowerLeft"**, **"LowerRight"**, **"TopT"**,
--- **"LeftT"**, **"RightT"**, **"BottomT"**, **"Horizontal"**, **"Vertical"**.
+-- **"LeftT"**, **"RightT"**, **"BottomT"**, **"Horizontal"**, **"Vertical"**, **"LeftNub"**,
+-- **"RightNub"**, **"BottomNub"**, **"TopNub"**.
 -- @treturn uint Union of flags corresponding to _name_, or 0 if no match is found.
 function M.GetFlagsByName (name)
 	return TileFlags[name] or DirFlags[name] or 0
@@ -101,7 +106,7 @@ local NamesByValueTile = table_funcs.Invert(TileFlags)
 -- @treturn ?|string|nil One of the values of _name_ in @{GetFlagsByName}, or **nil** if no
 -- match was found.
 function M.GetNameByFlags (flags)
-	return NamesByValueTile[flags] or NamesByValueDir[flags]
+	return NamesByValueTile[flags]
 end
 
 -- The "true" value of flags, as used outside the module --
