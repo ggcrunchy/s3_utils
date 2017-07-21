@@ -72,11 +72,51 @@ local Image
 -- --
 local Sheet
 
+-- --
+local TileShader
+
+--- DOCME
+function M.GetShader ()
+	return TileShader and TileShader.name
+end
+
+-- --
+local TextureRects = {}
+
+--
+local function GetRect (name_or_index)
+	return assert(TextureRects[NameToIndex[name_or_index] or name_or_index], "Invalid index or name")
+end
+
+--- DOCME
+function M.GetFrameBounds (index)
+	local rect = GetRect(index)
+
+	return rect.u1, rect.v1, rect.u2, rect.v2
+end
+
+-- DOCME
+function M.GetFrameCenter (index)
+	local rect = GetRect(index)
+
+	return (rect.u1 + rect.u2) / 2, (rect.v1 + rect.v2) / 2
+end
+
 --- DOCME
 function M.NewTile (group, name, x, y, w, h)
 	local tile = display.newImageRect(group, Sheet, NameToIndex[name], w, h)
 
 	tile.x, tile.y = x, y
+
+	if TileShader then
+		tile.fill.effect = TileShader.name
+
+		local set_vdata = TileShader.set_vdata
+
+		if set_vdata then
+			set_vdata(tile, name)
+		end
+	end
 
 	return tile
 end
@@ -96,7 +136,9 @@ local TileCore = [[
 	#define LR_TEXCOORD uv.yx
 	#define H_TEXCOORD uv
 	#define V_TEXCOORD uv.yx
-	
+	#define MIX3(x, y, z) SoftMin(x, y, z, -5.)
+	#define MIX4(x, y, z, w) SoftMin(x, y, z, w, -5.)
+
 	P_COLOR vec4 GetColor (P_UV float offset, P_UV vec2 radius_t)
 	{
 		P_UV float p = 4. * radius_t.y * (1. - radius_t.y);
@@ -106,9 +148,10 @@ local TileCore = [[
 	#endif
 
 		P_UV vec2 uv_rt = vec2(smoothstep(INNER_RADIUS, OUTER_RADIUS, radius_t.x), mix(p, radius_t.y, p * p * p * p));
+		P_UV float outside = step(HALF_RADIUS, abs(radius_t.x - MID_RADIUS));
 		P_COLOR vec3 value = GetColorRGB(uv_rt);
 
-		return mix(vec4(vec3(value), 1.), vec4(2.), step(HALF_RADIUS, abs(radius_t.x - MID_RADIUS)));
+		return mix(vec4(vec3(value), 1.), vec4(2.), outside);
 	}
 
 	P_UV vec2 CornerCoords (P_UV vec2 uv)
@@ -137,24 +180,13 @@ local TileCore = [[
 
 	P_COLOR vec4 FinalColor (P_COLOR vec4 color)
 	{
+	#ifdef EMIT_COMPONENT
+		color.r = mix(1., color.r * (255. / 256.), step(color.r, 1.5));
+
+		return color;
+	#else
 		return color * step(color.r, 1.5);
-	}
-
-	// https://math.stackexchange.com/a/601130, after some previous experiments with
-	// http://iquilezles.org/www/articles/smin/smin.htm
-
-	P_COLOR vec4 smin (P_COLOR vec4 a, P_COLOR vec4 b, P_COLOR vec4 c, P_COLOR float k)
-	{
-		P_COLOR vec4 ea = exp(a * k), eb = exp(b * k), ec = exp(c * k);
-
-		return (a * ea + b * eb + c * ec) / (ea + eb + ec);
-	}
-
-	P_COLOR vec4 smin (P_COLOR vec4 a, P_COLOR vec4 b, P_COLOR vec4 c, P_COLOR vec4 d, P_COLOR float k)
-	{
-		P_COLOR vec4 ea = exp(a * k), eb = exp(b * k), ec = exp(c * k), ed = exp(d * k);
-
-		return (a * ea + b * eb + c * ec + d * ed) / (ea + eb + ec + ed);
+	#endif
 	}
 
 ]]
@@ -184,6 +216,15 @@ local NamePrefix
 local VertexData = {}
 
 --
+local function AuxFragment (fcode, name, vdata)
+	Kernel.name = name
+	Kernel.vertexData = vdata
+	Kernel.fragment = loader.FragmentShader(fcode)
+
+	graphics.defineEffect(Kernel)
+end
+
+--
 local function Fragment (fcode, x, y, z, w)
 	NameID, VertexData[1], VertexData[2], VertexData[3], VertexData[4] = NameID + 1, x, y, z, w
 
@@ -197,11 +238,7 @@ local function Fragment (fcode, x, y, z, w)
 	end
 
 	--
-	Kernel.name = ("tile_%i"):format(NameID)
-	Kernel.vertexData = vdata
-	Kernel.fragment = loader.FragmentShader(fcode)
-
-	graphics.defineEffect(Kernel)
+	AuxFragment(fcode, ("tile_%i"):format(NameID), vdata)
 
 	return NamePrefix .. Kernel.name
 end
@@ -234,7 +271,7 @@ local TJunction = [[
 		P_COLOR vec4 c2 = GetColor(CoronaVertexUserData.y, CornerCoords(%s));
 		P_COLOR vec4 c3 = GetColor(CoronaVertexUserData.z, CornerCoords(%s));
 
-		return FinalColor(smin(c1, c2, c3, -5.));
+		return FinalColor(MIX3(c1, c2, c3));
 	}
 ]]
 
@@ -246,7 +283,7 @@ local FourWays = [[
 		P_COLOR vec4 c3 = GetColor(CoronaVertexUserData.z, CornerCoords(LL_TEXCOORD));
 		P_COLOR vec4 c4 = GetColor(CoronaVertexUserData.w, CornerCoords(LR_TEXCOORD));
 
-		return FinalColor(smin(c1, c2, c3, c4, -5.));
+		return FinalColor(MIX4(c1, c2, c3, c4));
 	}
 ]]
 
@@ -269,8 +306,40 @@ local Makers = {
 	RightNub = { Nub, "uv" }
 }
 
+-- --
+local EmitComponent = [[
+	#define EMIT_COMPONENT
+]]
+
 --
-function M.UseTileset (name)
+local function LoadEffects (config, prelude)
+	local effects = {}
+
+	for k, v in pairs(Makers) do
+		local cparams = config[k]
+		local fcode = prelude .. v[1]:format(unpack(v, 2))
+
+		if type(cparams) == "table" then
+			effects[k] = Fragment(fcode, unpack(cparams))
+		else
+			effects[k] = Fragment(fcode, cparams)
+		end
+	end
+
+	return effects
+end
+
+--
+local function RenderTile (x, y, w, h, effect)
+	local tile = display.newRect(x, y, w, h)
+
+	tile.fill.effect = effect
+
+	Image:draw(tile)
+end
+
+--
+function M.UseTileset (name, prefer_raw)
 	assert(not Image, "Tileset already loaded")
 
 	local ts = assert(TilesetList[name], "Invalid tileset")
@@ -284,34 +353,70 @@ function M.UseTileset (name)
 	prelude = prelude .. TileCore
 
 	--
+	local config, effects = ts.config, Groups[gname]
+
+	if not effects then
+		--
+		local filter, composite = ts.filter, ts.composite
+
+		assert(filter == nil or type(filter) == "string", "Invalid filter")
+		assert(composite == nil or type(composite) == "string", "Invalid composite")
+		assert(not (filter and composite), "Cannot have both filter and composite")
+
+		local shader = filter or composite
+
+		--
+		NameID, DatumPrefix, NamePrefix = 0, datum_prefix or "", category .. "." .. gname .. "."
+
+		Kernel.category, Kernel.group, effects = category, gname, {}
+
+		effects.raw = LoadEffects(config, prelude)
+
+		if shader then
+			prelude = EmitComponent .. prelude
+			effects.extra_space = Fragment(prelude .. Beam:format("vec2(0.)"))
+			effects.with_shader = LoadEffects(config, prelude)
+		end
+
+		--
+		if shader then
+			Kernel.category = filter and "filter" or "composite"
+
+			local vertex = ts.vertex
+
+			if vertex then
+				Kernel.vertex = loader.VertexShader(vertex)
+			end
+
+			AuxFragment(EmitComponent .. shader, "tile_shader", ts.vdata)
+
+			effects.tile_shader, Kernel.vertex = Kernel.category .. "." .. gname .. ".tile_shader"
+		end
+
+		--
+		Groups[gname] = effects
+	end
+
+	--
 	local ex, ey = ts.extra_x or 0, ts.extra_y or 0
 	local w, h = (Cols + ex) * Dim, (Rows + ey) * Dim
 
 	Image = graphics.newTexture{ type = "canvas", width = w, height = h }
 
 	--
-	local config, effects = ts.config, Groups[gname]
+	local sname, list = not prefer_raw and effects.tile_shader
 
-	if not effects then
-		NameID, DatumPrefix, NamePrefix = 0, datum_prefix or "", category .. "." .. gname .. "."
-
-		Kernel.category, Kernel.group, effects = category, gname, {}
-
-		for k, v in pairs(Makers) do
-			local cparams = config[k]
-			local fcode = prelude .. v[1]:format(unpack(v, 2))
-
-			if type(cparams) == "table" then
-				effects[k] = Fragment(fcode, unpack(cparams))
-			else
-				effects[k] = Fragment(fcode, cparams)
-			end
-		end
-
-		Groups[gname] = effects
+	if sname then
+		TileShader, list = {
+			name = effects.tile_shader, set_vdata = ts.set_vdata
+		}, effects.with_shader
+	else
+		list = effects.raw
 	end
 
 	--
+	TextureRects, w, h = {}, Image.width, Image.height
+
 	local frames, x0, y0 = {}, (Dim - w) / 2, (Dim - h) / 2
 
 	for ri, row in ipairs(Names) do
@@ -319,18 +424,20 @@ function M.UseTileset (name)
 
 		for ci, name in ipairs(row) do
 			local x = (ci - 1) * Dim
-			local tile = display.newRect(x0 + x, y0 + y, Dim, Dim)
 
-			tile.fill.effect = effects[name]
+			RenderTile(x0 + x, y0 + y, Dim, Dim, list[name])
 
-			Image:draw(tile)
+			TextureRects[#TextureRects + 1] = { u1 = x / w, v1 = y / h, u2 = (x + Dim - 1) / w, v2 = (y + Dim - 1) / h }
 
 			frames[#frames + 1] = { x = x + 1, y = y + 1, width = Dim, height = Dim }
 		end
 	end
 
-	-- TODO: populate other spots if logic available
+	if TileShader then
+		RenderTile(x0 + 5 * Dim, y0 + 1.5 * Dim, w - 4 * Dim, h - Dim, list.extra_space)
+	end
 
+	--
 	Image:invalidate()
 
 	--
@@ -350,7 +457,7 @@ for k, v in pairs{
 			Image:releaseSelf()
 		end
 
-		Image, Sheet = nil
+		Image, Sheet, TextureRects, TileShader = nil
 	end
 } do
 	Runtime:addEventListener(k, v)
