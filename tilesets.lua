@@ -136,27 +136,60 @@ local TileCore = [[
 	#define LR_TEXCOORD uv.yx
 	#define H_TEXCOORD uv
 	#define V_TEXCOORD uv.yx
-	#define MIX3(x, y, z) SoftMin(x, y, z, -5.)
-	#define MIX4(x, y, z, w) SoftMin(x, y, z, w, -5.)
+
+	#ifdef SOFTMAX
+		P_UV vec4 Invert (P_UV vec4 x)
+		{
+			return mix(vec4(2.), -x, step(x.r, 1.5));
+		}
+
+		P_UV vec4 SoftMax (P_UV vec4 a, P_UV vec4 b, P_UV float k)
+		{
+			return Invert(SoftMin(Invert(a), Invert(b), k));
+		}
+
+		P_UV vec4 SoftMax (P_UV vec4 a, P_UV vec4 b, P_UV vec4 c, P_UV float k)
+		{
+			return Invert(SoftMin(Invert(a), Invert(b), Invert(c), k));
+		}
+
+		P_UV vec4 SoftMax (P_UV vec4 a, P_UV vec4 b, P_UV vec4 c, P_UV vec4 d, P_UV float k)
+		{
+			return Invert(SoftMin(Invert(a), Invert(b), Invert(c), Invert(d), k));
+		}
+
+		#define SOFTMIN SoftMax
+	#else
+		#define SOFTMIN SoftMin
+	#endif
+
+	#define MIX_CONSTANT -5.
+	#define MIX2(x, y) SOFTMIN(x, y, MIX_CONSTANT)
+	#define MIX3(x, y, z) SOFTMIN(x, y, z, MIX_CONSTANT)
+	#define MIX4(x, y, z, w) SOFTMIN(x, y, z, w, MIX_CONSTANT)
 
 	P_COLOR vec4 GetColor (P_UV float offset, P_UV vec2 radius_t)
 	{
+	#ifdef RADIAL_NOISE_INFLUENCE
 		P_UV float p = 4. * radius_t.y * (1. - radius_t.y);
 
-	#ifdef RADIAL_NOISE_INFLUENCE
 		radius_t.x += (2. * IQ(sin(radius_t * (FIXED_OFFSET + offset))) - 1.) * (p * RADIAL_NOISE_INFLUENCE);
 	#endif
 
-		P_UV vec2 uv_rt = vec2(smoothstep(INNER_RADIUS, OUTER_RADIUS, radius_t.x), mix(p, radius_t.y, p * p * p * p));
+		P_UV vec2 uv = vec2(smoothstep(INNER_RADIUS, OUTER_RADIUS, radius_t.x), radius_t.y);
+		P_UV vec2 quarter = floor(uv * 4.), frac = uv * 4. - quarter;
+		P_UV vec2 uv0 = mod(quarter, 2.), mixed = mix(uv0, 1. - uv0, frac);
+		P_UV float on_edge = floor(abs(1.5 - quarter.y)), on_left = step(quarter.y, 2.);
+		P_UV float v = mix(uv.x, mixed.x, mix(frac.y, 1. - frac.y, on_left) * on_edge);
 		P_UV float outside = step(HALF_RADIUS, abs(radius_t.x - MID_RADIUS));
-		P_COLOR vec3 value = GetColorRGB(uv_rt);
+		P_COLOR vec3 value = GetColorRGB(vec2(v, mixed.y), offset);
 
-		return mix(vec4(vec3(value), 1.), vec4(2.), outside);
+		return mix(vec4(value, 1.), vec4(2.), outside);
 	}
 
 	P_UV vec2 CornerCoords (P_UV vec2 uv)
 	{
-		P_UV float radius = length(uv), t = acos(uv.x / radius) / PI_OVER_TWO;
+		P_UV float radius = length(uv), t = acos(uv.x / max(radius, 1e-3)) / PI_OVER_TWO;
 
 		return vec2(radius, t);
 	}
@@ -181,11 +214,11 @@ local TileCore = [[
 	P_COLOR vec4 FinalColor (P_COLOR vec4 color)
 	{
 	#ifdef EMIT_COMPONENT
-		color.r = mix(1., color.r * (255. / 256.), step(color.r, 1.5));
+		color.a = step(color.a, 1.5);
 
 		return color;
 	#else
-		return color * step(color.r, 1.5);
+		return color * step(color.a, 1.5);
 	#endif
 	}
 
@@ -373,14 +406,13 @@ function M.UseTileset (name, prefer_raw)
 		effects.raw = LoadEffects(config, prelude)
 
 		if shader then
-			prelude = EmitComponent .. prelude
-			effects.extra_space = Fragment(prelude .. Beam:format("vec2(0.)"))
-			effects.with_shader = LoadEffects(config, prelude)
+			effects.with_shader = LoadEffects(config, EmitComponent .. prelude)
 		end
 
 		--
 		if shader then
 			Kernel.category = filter and "filter" or "composite"
+			Kernel.isTimeDependent = ts.isTimeDependent
 
 			local vertex = ts.vertex
 
@@ -390,7 +422,7 @@ function M.UseTileset (name, prefer_raw)
 
 			AuxFragment(EmitComponent .. shader, "tile_shader", ts.vdata)
 
-			effects.tile_shader, Kernel.vertex = Kernel.category .. "." .. gname .. ".tile_shader"
+			effects.tile_shader, Kernel.isTimeDependent, Kernel.vertex = Kernel.category .. "." .. gname .. ".tile_shader"
 		end
 
 		--
@@ -434,7 +466,11 @@ function M.UseTileset (name, prefer_raw)
 	end
 
 	if TileShader then
-		RenderTile(x0 + 5 * Dim, y0 + 1.5 * Dim, w - 4 * Dim, h - Dim, list.extra_space)
+		local empty = display.newRect(x0 + 5 * Dim, y0 + 1.5 * Dim, w - 4 * Dim, h - Dim)
+
+		empty:setFillColor(0, 0)
+
+		Image:draw(empty)
 	end
 
 	--
