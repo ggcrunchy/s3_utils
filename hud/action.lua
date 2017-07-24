@@ -36,7 +36,7 @@ local array_index = require("tektite_core.array.index")
 local touch = require("corona_ui.utils.touch")
 
 -- Plugins --
-local animation = require("plugin.animation")
+local animation = ANIMATION
 
 -- Corona globals --
 local display = display
