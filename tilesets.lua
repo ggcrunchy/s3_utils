@@ -140,7 +140,7 @@ local TileCore = [[
 	#ifdef SOFTMAX
 		P_UV vec4 Invert (P_UV vec4 x)
 		{
-			return mix(vec4(2.), -x, step(x.r, 1.5));
+			return mix(vec4(vec3(1.), 2.), -x, step(x.a, 1.5));
 		}
 
 		P_UV vec4 SoftMax (P_UV vec4 a, P_UV vec4 b, P_UV float k)
@@ -184,7 +184,7 @@ local TileCore = [[
 		P_UV float outside = step(HALF_RADIUS, abs(radius_t.x - MID_RADIUS));
 		P_COLOR vec3 value = GetColorRGB(vec2(v, mixed.y), offset);
 
-		return mix(vec4(value, 1.), vec4(2.), outside);
+		return mix(vec4(value, 1.), vec4(vec3(1.), 2.), outside);
 	}
 
 	P_UV vec2 CornerCoords (P_UV vec2 uv)

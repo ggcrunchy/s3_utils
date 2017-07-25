@@ -56,16 +56,7 @@ local Images
 local Sequence
 
 -- Fading icon transition --
-local FadeIconParams = {}
-
--- Helper to cancel a (possible) transition
-local function Cancel (trans)
-	if trans then
-		transition.cancel(trans)
-
-		return true
-	end
-end
+local FadeIconParams = { tag = "action_fading" }
 
 -- Helper to get extract action from the sequence
 local function IndexOf (name)
@@ -76,8 +67,8 @@ local function IndexOf (name)
 	end
 end
 
--- Current opaque icon; icon fading in or out --
-local Current, Fading
+-- Current opaque icon --
+local Current
 
 -- Helper to fade icon in or out
 local function FadeIcon (icon, alpha, delay)
@@ -87,28 +78,35 @@ local function FadeIcon (icon, alpha, delay)
 	FadeIconParams.delay = delay or 0
 	FadeIconParams.time = ceil(150 * abs(alpha - icon.alpha))
 
-	if not Cancel(Fading) then
+	if icon.is_fading then
+		transition.cancel(icon)
+	else
 		icon.alpha = 1 - alpha
 	end
 
-	Fading = transition.to(icon, FadeIconParams)
+	transition.to(icon, FadeIconParams)
+
+	icon.is_fading = true
 end
 
 -- On complete, try to advance the sequence
 function FadeIconParams.onComplete (icon)
-	Fading = nil
-
 	local n = #Sequence
 
 	-- No items left: kill the sequence.
 	if n == 0 or not display.isValid(icon) then
 		Current = nil
 
-	-- On fade out: Try to fade in the next icon (which may be the icon itself).
+	-- On fade out: Try to fade in the next icon (which might be the icon itself). Ignore
+	-- the icon if it is no longer in the sequence.
 	elseif icon.alpha < .5 then
-		local index = array_index.RotateIndex(IndexOf(icon.prev or icon.name), n)
+		local index = IndexOf(icon.prev or icon.name)
 
-		FadeIcon(Sequence[index].icon, 1)
+		if index then
+			local index = array_index.RotateIndex(index, n)
+
+			FadeIcon(Sequence[index].icon, 1)
+		end
 
 	-- On fade in: Tell this icon to fade out shortly if other icons are in the queue.
 	elseif n > 1 then
@@ -116,7 +114,7 @@ function FadeIconParams.onComplete (icon)
 	end
 
 	-- The previous name was either of no use or has served its purpose.
-	icon.prev = nil
+	icon.is_fading, icon.prev = nil
 end
 
 -- Lazily add images to the action sequence --
@@ -174,7 +172,7 @@ local function RemoveIcon (index, item)
 		-- Is this the icon being shown?
 		if item.icon == Current then
 			-- Fade the icon out, but spare the effort if it's doing so already.
-			if not Fading or FadeIconParams.alpha > .5 then
+			if not item.is_fading or FadeIconParams.alpha > .5 then
 				FadeIcon(item.icon, 0)
 			end
 
@@ -187,7 +185,7 @@ local function RemoveIcon (index, item)
 
 		-- Otherwise, if there were only two items, it follows that the other is being
 		-- shown. If it was fading out, fade it back in instead.
-		elseif #Sequence == 2 and Fading and FadeIconParams.alpha < .5 then
+		elseif #Sequence == 2 and item.is_fading and FadeIconParams.alpha < .5 then
 			FadeIcon(Sequence[3 - index].icon, 1)
 		end
 
@@ -227,19 +225,16 @@ local function PulseActionButton (button)
 	Pulsing:resume()
 end
 
--- In-progress action button fade, if any --
-local Fade
-
 -- Fading button transition --
 local FadeParams = {
-	time = 200, 
+	tag = "action_fading", time = 200,
 
 	onComplete = function(agroup)
 		if (agroup.alpha or 0) < .5 then
 			agroup.isVisible = false
 		end
 
-		Fade = nil
+		agroup.is_fading = nil
 	end
 }
 
@@ -257,13 +252,15 @@ local function ShowAction (show)
 
 	-- If it was already fading, stop that and use whatever its current alpha happens to
 	-- be. Otherwise, begin from some defined alpha. Kick off a fade-in or fade-out.
-	if not Cancel(Fade) then
+	if ActionGroup.is_fading then
+		transition.cancel(ActionGroup)
+	else
 		ActionGroup.alpha = from
 	end
 
-	FadeParams.alpha = to
+	FadeParams.alpha, ActionGroup.is_fading = to, true
 
-	Fade = transition.to(ActionGroup, FadeParams)
+	transition.to(ActionGroup, FadeParams)
 end
 
 --- DOCME
@@ -299,9 +296,9 @@ end
 for k, v in pairs{
 	-- Leave Level --
 	leave_level = function()
-		Cancel(Fading)
+		transition.cancel("action_fading")
 
-		ActionGroup, Current, Fade, Fading, Images, Pulsing, Sequence = nil
+		ActionGroup, Current, Images, Pulsing, Sequence = nil
 	end,
 
 	-- Touching Dot --

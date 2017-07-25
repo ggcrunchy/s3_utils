@@ -67,7 +67,7 @@ end
 --- DOCME
 function M.AddThings (current_level, level)
 	--
-	tilesets.UseTileset("tree")
+	tilesets.UseTileset("metal")
 
 	-- Add the tiles to the level...
 	local tgroup = display.newGroup()
