@@ -49,6 +49,7 @@ local timers = require("corona_utils.timers")
 local Runtime = Runtime
 
 -- Cached module references --
+local _AddBody_
 local _DeductDot_
 
 -- Exports --
@@ -56,6 +57,17 @@ local M = {}
 
 -- Tile index -> dot map --
 local Dots = {}
+
+-- Try to add a body and report success
+local function AddBody (dot) 
+	local body_prop = dot:GetProperty("body")
+
+	if body_prop ~= false then
+		collision.MakeSensor(dot, dot:GetProperty("body_type"), body_prop)
+
+		return true
+	end
+end
 
 -- How many dots are left to pick up? --
 local Remaining
@@ -105,10 +117,7 @@ function M.AddDot (group, info)
 
 	tile_maps.PutObjectAt(index, dot)
 
-	local body_prop = dot:GetProperty("body")
-
-	if body_prop ~= false then
-		collision.MakeSensor(dot, dot:GetProperty("body_type"), body_prop)
+	if AddBody(dot) then
 		collision.SetType(dot, info.type)
 	end
 
@@ -299,7 +308,9 @@ for k, v in pairs{
 
 		timers.Defer(function()
 			for _, dot in ipairs(Dots) do
-				dot.isBodyActive = true
+				if collision.RemoveBody(dot) then
+					AddBody(dot)
+				end
 			end
 		end)
 	end
@@ -311,6 +322,7 @@ end
 DotList = require_ex.DoList("config.Dots")
 
 -- Cache module members.
+_AddBody_ = M.AddBody
 _DeductDot_ = M.DeductDot
 
 -- Export the module.
