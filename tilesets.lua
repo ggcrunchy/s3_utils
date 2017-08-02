@@ -142,7 +142,7 @@ local TileCore = [[
 		{
 			return mix(vec4(vec3(1.), 2.), -x, step(x.a, 1.5));
 		}
-
+/*
 		P_UV vec4 SoftMax (P_UV vec4 a, P_UV vec4 b, P_UV float k)
 		{
 			return Invert(SoftMin(Invert(a), Invert(b), k));
@@ -157,6 +157,36 @@ local TileCore = [[
 		{
 			return Invert(SoftMin(Invert(a), Invert(b), Invert(c), Invert(d), k));
 		}
+*/
+		P_UV vec4 SoftMax (P_UV vec4 a, P_UV vec4 b, P_UV float k)
+		{
+			P_UV vec2 alpha = vec2(a.a, b.a);
+			P_UV vec2 found = alpha * step(alpha, vec2(1.5));
+			P_UV vec4 sum = a * found.x + b * found.y;
+			P_UV float n = dot(found, vec2(1.));
+
+			return mix(vec4(vec3(1.), 2.), sum / max(n, 1.), min(n, 1.));
+		}
+
+		P_UV vec4 SoftMax (P_UV vec4 a, P_UV vec4 b, P_UV vec4 c, P_UV float k)
+		{
+			P_UV vec3 alpha = vec3(a.a, b.a, c.a);
+			P_UV vec3 found = alpha * step(alpha, vec3(1.5));
+			P_UV vec4 sum = a * found.x + b * found.y + c * found.z;
+			P_UV float n = dot(found, vec3(1.));
+
+			return mix(vec4(vec3(1.), 2.), sum / max(n, 1.), min(n, 1.));
+		}
+
+		P_UV vec4 SoftMax (P_UV vec4 a, P_UV vec4 b, P_UV vec4 c, P_UV vec4 d, P_UV float k)
+		{
+			P_UV vec4 alpha = vec4(a.a, b.a, c.a, d.a);
+			P_UV vec4 found = alpha * step(alpha, vec4(1.5));
+			P_UV vec4 sum = mat4(a, b, c, d) * found;
+			P_UV float n = dot(found, vec4(1.));
+
+			return mix(vec4(vec3(1.), 2.), sum / max(n, 1.), min(n, 1.));
+		}
 
 		#define SOFTMIN SoftMax
 	#else
@@ -168,7 +198,11 @@ local TileCore = [[
 	#define MIX3(x, y, z) SOFTMIN(x, y, z, MIX_CONSTANT)
 	#define MIX4(x, y, z, w) SOFTMIN(x, y, z, w, MIX_CONSTANT)
 
-	P_COLOR vec4 GetColor (P_UV float offset, P_UV vec2 radius_t)
+	#ifndef FEATHER_CUTOFF
+		#define FEATHER_CUTOFF .9
+	#endif
+
+	P_COLOR vec4 GetColor (P_UV float offset, P_UV vec2 radius_t, bool bFeather)
 	{
 	#ifdef RADIAL_NOISE_INFLUENCE
 		P_UV float p = 4. * radius_t.y * (1. - radius_t.y);
@@ -184,7 +218,7 @@ local TileCore = [[
 		P_UV float outside = step(HALF_RADIUS, abs(radius_t.x - MID_RADIUS));
 		P_COLOR vec3 value = GetColorRGB(vec2(v, mixed.y), offset);
 
-		return mix(vec4(value, 1.), vec4(vec3(1.), 2.), outside);
+		return mix(vec4(value, bFeather ? smoothstep(1., FEATHER_CUTOFF, uv.x) : 1.), vec4(vec3(1.), 2.), outside);
 	}
 
 	P_UV vec2 CornerCoords (P_UV vec2 uv)
@@ -279,30 +313,30 @@ end
 local Corner = [[
 	P_COLOR vec4 FragmentKernel (P_UV vec2 uv)
 	{
-		return FinalColor(GetColor(CoronaVertexUserData.x, CornerCoords(%s)));
+		return FinalColor(GetColor(CoronaVertexUserData.x, CornerCoords(%s), false));
 	}
 ]]
 
 local Beam = [[
 	P_COLOR vec4 FragmentKernel (P_UV vec2 uv)
 	{
-		return FinalColor(GetColor(CoronaVertexUserData.x, BeamCoords(%s)));
+		return FinalColor(GetColor(CoronaVertexUserData.x, BeamCoords(%s), false));
 	}
 ]]
 
 local Nub = [[
 	P_COLOR vec4 FragmentKernel (P_UV vec2 uv)
 	{
-		return FinalColor(GetColor(CoronaVertexUserData.x, NubCoords(%s)));
+		return FinalColor(GetColor(CoronaVertexUserData.x, NubCoords(%s), false));
 	}
 ]]
 
 local TJunction = [[
 	P_COLOR vec4 FragmentKernel (P_UV vec2 uv)
 	{
-		P_COLOR vec4 c1 = GetColor(CoronaVertexUserData.x, BeamCoords(%s));
-		P_COLOR vec4 c2 = GetColor(CoronaVertexUserData.y, CornerCoords(%s));
-		P_COLOR vec4 c3 = GetColor(CoronaVertexUserData.z, CornerCoords(%s));
+		P_COLOR vec4 c1 = GetColor(CoronaVertexUserData.x, BeamCoords(%s), false);
+		P_COLOR vec4 c2 = GetColor(CoronaVertexUserData.y, CornerCoords(%s), true);
+		P_COLOR vec4 c3 = GetColor(CoronaVertexUserData.z, CornerCoords(%s), true);
 
 		return FinalColor(MIX3(c1, c2, c3));
 	}
@@ -311,10 +345,10 @@ local TJunction = [[
 local FourWays = [[
 	P_COLOR vec4 FragmentKernel (P_UV vec2 uv)
 	{
-		P_COLOR vec4 c1 = GetColor(CoronaVertexUserData.x, CornerCoords(UL_TEXCOORD));
-		P_COLOR vec4 c2 = GetColor(CoronaVertexUserData.y, CornerCoords(UR_TEXCOORD));
-		P_COLOR vec4 c3 = GetColor(CoronaVertexUserData.z, CornerCoords(LL_TEXCOORD));
-		P_COLOR vec4 c4 = GetColor(CoronaVertexUserData.w, CornerCoords(LR_TEXCOORD));
+		P_COLOR vec4 c1 = GetColor(CoronaVertexUserData.x, CornerCoords(UL_TEXCOORD), true);
+		P_COLOR vec4 c2 = GetColor(CoronaVertexUserData.y, CornerCoords(UR_TEXCOORD), true);
+		P_COLOR vec4 c3 = GetColor(CoronaVertexUserData.z, CornerCoords(LL_TEXCOORD), true);
+		P_COLOR vec4 c4 = GetColor(CoronaVertexUserData.w, CornerCoords(LR_TEXCOORD), true);
 
 		return FinalColor(MIX4(c1, c2, c3, c4));
 	}
