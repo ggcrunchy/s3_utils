@@ -137,10 +137,12 @@ local TileCore = [[
 	#define H_TEXCOORD uv
 	#define V_TEXCOORD uv.yx
 
+	const P_COLOR vec4 BlankPixel = vec4(vec3(1.), 2.);
+
 	#ifdef SOFTMAX
 		P_UV vec4 Invert (P_UV vec4 x)
 		{
-			return mix(vec4(vec3(1.), 2.), -x, step(x.a, 1.5));
+			return mix(BlankPixel, -x, step(x.a, 1.5));
 		}
 /*
 		P_UV vec4 SoftMax (P_UV vec4 a, P_UV vec4 b, P_UV float k)
@@ -158,34 +160,30 @@ local TileCore = [[
 			return Invert(SoftMin(Invert(a), Invert(b), Invert(c), Invert(d), k));
 		}
 */
+		P_UV vec4 Average (P_UV vec4 sum, P_UV float n)
+		{
+			return mix(BlankPixel, sum / max(n, 1.), min(n, 1.));
+		}
+
 		P_UV vec4 SoftMax (P_UV vec4 a, P_UV vec4 b, P_UV float k)
 		{
-			P_UV vec2 alpha = vec2(a.a, b.a);
-			P_UV vec2 found = alpha * step(alpha, vec2(1.5));
-			P_UV vec4 sum = a * found.x + b * found.y;
-			P_UV float n = dot(found, vec2(1.));
+			P_UV vec2 alpha = vec2(a.a, b.a), found = alpha * step(alpha, vec2(1.5));
 
-			return mix(vec4(vec3(1.), 2.), sum / max(n, 1.), min(n, 1.));
+			return Average(a * found.x + b * found.y, dot(found, vec2(1.)));
 		}
 
 		P_UV vec4 SoftMax (P_UV vec4 a, P_UV vec4 b, P_UV vec4 c, P_UV float k)
 		{
-			P_UV vec3 alpha = vec3(a.a, b.a, c.a);
-			P_UV vec3 found = alpha * step(alpha, vec3(1.5));
-			P_UV vec4 sum = a * found.x + b * found.y + c * found.z;
-			P_UV float n = dot(found, vec3(1.));
+			P_UV vec3 alpha = vec3(a.a, b.a, c.a), found = alpha * step(alpha, vec3(1.5));
 
-			return mix(vec4(vec3(1.), 2.), sum / max(n, 1.), min(n, 1.));
+			return Average(a * found.x + b * found.y + c * found.z, dot(found, vec3(1.)));
 		}
 
 		P_UV vec4 SoftMax (P_UV vec4 a, P_UV vec4 b, P_UV vec4 c, P_UV vec4 d, P_UV float k)
 		{
-			P_UV vec4 alpha = vec4(a.a, b.a, c.a, d.a);
-			P_UV vec4 found = alpha * step(alpha, vec4(1.5));
-			P_UV vec4 sum = mat4(a, b, c, d) * found;
-			P_UV float n = dot(found, vec4(1.));
+			P_UV vec4 alpha = vec4(a.a, b.a, c.a, d.a), found = alpha * step(alpha, vec4(1.5));
 
-			return mix(vec4(vec3(1.), 2.), sum / max(n, 1.), min(n, 1.));
+			return Average(mat4(a, b, c, d) * found, dot(found, vec4(1.)));
 		}
 
 		#define SOFTMIN SoftMax
@@ -216,9 +214,18 @@ local TileCore = [[
 		P_UV float on_edge = floor(abs(1.5 - quarter.y)), on_left = step(quarter.y, 2.);
 		P_UV float v = mix(uv.x, mixed.x, mix(frac.y, 1. - frac.y, on_left) * on_edge);
 		P_UV float outside = step(HALF_RADIUS, abs(radius_t.x - MID_RADIUS));
+/*
+mixed.y = abs(uv.y - .5);
+if (mixed.y <= .5)
+{
+    mixed.y /= .5;
+    mixed.y= 1.0 - mixed.y*mixed.y*(3.0-2.0*mixed.y);
+}
+else mixed.y = 0.;
+*/
 		P_COLOR vec3 value = GetColorRGB(vec2(v, mixed.y), offset);
 
-		return mix(vec4(value, bFeather ? smoothstep(1., FEATHER_CUTOFF, uv.x) : 1.), vec4(vec3(1.), 2.), outside);
+		return mix(vec4(value, bFeather ? smoothstep(1., FEATHER_CUTOFF, uv.x) : 1.), BlankPixel, outside);
 	}
 
 	P_UV vec2 CornerCoords (P_UV vec2 uv)
