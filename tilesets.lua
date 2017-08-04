@@ -127,80 +127,79 @@ local TileCore = [[
 		#error "Inner radius must be specified"
 	#endif
 
+	//
 	#define OUTER_RADIUS 1. - INNER_RADIUS
 	#define MID_RADIUS .5 * (INNER_RADIUS + OUTER_RADIUS)
 	#define HALF_RADIUS .5 * (OUTER_RADIUS - INNER_RADIUS)
-	#define UL_TEXCOORD vec2(1. - uv.x, 1. - uv.y)
-	#define UR_TEXCOORD vec2(uv.x, 1. - uv.y)
-	#define LL_TEXCOORD vec2(uv.y, 1. - uv.x)
-	#define LR_TEXCOORD uv.yx
-	#define H_TEXCOORD uv
-	#define V_TEXCOORD uv.yx
 
+	//
+	#define UL_TEXCOORD vec4(1. - uv.x, 1. - uv.y, 3. * PI_OVER_TWO, -1.)
+	#define UR_TEXCOORD vec4(uv.x, 1. - uv.y, PI_OVER_TWO, 1.)
+	#define LL_TEXCOORD vec4(uv.y, 1. - uv.x, 0., -1.)
+	#define LR_TEXCOORD vec4(uv.yx, 0., 1.)
+	#define H_TEXCOORD vec3(uv, 0.)
+	#define V_TEXCOORD vec3(uv.yx, PI_OVER_TWO)
+
+	//
+	#define LEFT_ANGLE 0.
+	#define RIGHT_ANGLE PI
+	#define TOP_ANGLE PI_OVER_TWO
+	#define BOTTOM_ANGLE -PI_OVER_TWO
+
+	//
+	#define H_ANGLES LEFT_ANGLE, RIGHT_ANGLE
+	#define V_ANGLES BOTTOM_ANGLE, TOP_ANGLE
+	#define UL_ANGLES TOP_ANGLE, LEFT_ANGLE
+	#define UR_ANGLES TOP_ANGLE, RIGHT_ANGLE
+	#define LL_ANGLES LEFT_ANGLE, BOTTOM_ANGLE
+	#define LR_ANGLES RIGHT_ANGLE, BOTTOM_ANGLE
+
+	//
 	const P_COLOR vec4 BlankPixel = vec4(vec3(1.), 2.);
 
-	#ifdef SOFTMAX
-		P_UV vec4 Invert (P_UV vec4 x)
-		{
-			return mix(BlankPixel, -x, step(x.a, 1.5));
-		}
-/*
-		P_UV vec4 SoftMax (P_UV vec4 a, P_UV vec4 b, P_UV float k)
-		{
-			return Invert(SoftMin(Invert(a), Invert(b), k));
-		}
-
-		P_UV vec4 SoftMax (P_UV vec4 a, P_UV vec4 b, P_UV vec4 c, P_UV float k)
-		{
-			return Invert(SoftMin(Invert(a), Invert(b), Invert(c), k));
-		}
-
-		P_UV vec4 SoftMax (P_UV vec4 a, P_UV vec4 b, P_UV vec4 c, P_UV vec4 d, P_UV float k)
-		{
-			return Invert(SoftMin(Invert(a), Invert(b), Invert(c), Invert(d), k));
-		}
-*/
-		P_UV vec4 Average (P_UV vec4 sum, P_UV float n)
-		{
-			return mix(BlankPixel, sum / max(n, 1.), min(n, 1.));
-		}
-
-		P_UV vec4 SoftMax (P_UV vec4 a, P_UV vec4 b, P_UV float k)
-		{
-			P_UV vec2 alpha = vec2(a.a, b.a), found = alpha * step(alpha, vec2(1.5));
-
-			return Average(a * found.x + b * found.y, dot(found, vec2(1.)));
-		}
-
-		P_UV vec4 SoftMax (P_UV vec4 a, P_UV vec4 b, P_UV vec4 c, P_UV float k)
-		{
-			P_UV vec3 alpha = vec3(a.a, b.a, c.a), found = alpha * step(alpha, vec3(1.5));
-
-			return Average(a * found.x + b * found.y + c * found.z, dot(found, vec3(1.)));
-		}
-
-		P_UV vec4 SoftMax (P_UV vec4 a, P_UV vec4 b, P_UV vec4 c, P_UV vec4 d, P_UV float k)
-		{
-			P_UV vec4 alpha = vec4(a.a, b.a, c.a, d.a), found = alpha * step(alpha, vec4(1.5));
-
-			return Average(mat4(a, b, c, d) * found, dot(found, vec4(1.)));
-		}
-
-		#define SOFTMIN SoftMax
+	//
+	#ifdef COORDS_NEED_ANGLE
+		#define CTYPE vec3
+		#define COORD(uv, angle) vec3(uv.xy, angle)
 	#else
-		#define SOFTMIN SoftMin
+		#define CTYPE vec2
+		#define COORD(uv, _) uv.xy
 	#endif
 
-	#define MIX_CONSTANT -5.
-	#define MIX2(x, y) SOFTMIN(x, y, MIX_CONSTANT)
-	#define MIX3(x, y, z) SOFTMIN(x, y, z, MIX_CONSTANT)
-	#define MIX4(x, y, z, w) SOFTMIN(x, y, z, w, MIX_CONSTANT)
+	//
+	P_UV vec4 AuxAverage (P_UV vec4 sum, P_UV float n)
+	{
+		return mix(BlankPixel, sum / max(n, 1.), min(n, 1.));
+	}
 
+	P_UV vec4 Average (P_UV vec4 a, P_UV vec4 b)
+	{
+		P_UV vec2 alpha = vec2(a.a, b.a), found = alpha * step(alpha, vec2(1.5));
+
+		return AuxAverage(a * found.x + b * found.y, dot(found, vec2(1.)));
+	}
+
+	P_UV vec4 Average (P_UV vec4 a, P_UV vec4 b, P_UV vec4 c)
+	{
+		P_UV vec3 alpha = vec3(a.a, b.a, c.a), found = alpha * step(alpha, vec3(1.5));
+
+		return AuxAverage(a * found.x + b * found.y + c * found.z, dot(found, vec3(1.)));
+	}
+
+	P_UV vec4 Average (P_UV vec4 a, P_UV vec4 b, P_UV vec4 c, P_UV vec4 d)
+	{
+		P_UV vec4 alpha = vec4(a.a, b.a, c.a, d.a), found = alpha * step(alpha, vec4(1.5));
+
+		return AuxAverage(mat4(a, b, c, d) * found, dot(found, vec4(1.)));
+	}
+
+	//
 	#ifndef FEATHER_CUTOFF
 		#define FEATHER_CUTOFF .9
 	#endif
 
-	P_COLOR vec4 GetColor (P_UV float offset, P_UV vec2 radius_t, bool bFeather)
+	//
+	P_COLOR vec4 GetColor (P_UV float offset, P_UV CTYPE radius_t, P_UV vec2 angle, bool bFeather)
 	{
 	#ifdef RADIAL_NOISE_INFLUENCE
 		P_UV float p = 4. * radius_t.y * (1. - radius_t.y);
@@ -208,39 +207,43 @@ local TileCore = [[
 		radius_t.x += (2. * IQ(sin(radius_t * (FIXED_OFFSET + offset))) - 1.) * (p * RADIAL_NOISE_INFLUENCE);
 	#endif
 
-		P_UV vec2 uv = vec2(smoothstep(INNER_RADIUS, OUTER_RADIUS, radius_t.x), radius_t.y);
+		P_UV float s = sin(mix(angle.x, angle.y, radius_t.y));
+		P_UV vec2 uv = vec2(smoothstep(INNER_RADIUS, OUTER_RADIUS, radius_t.x), s * s);
+		P_UV float feather = bFeather ? smoothstep(1., FEATHER_CUTOFF, uv.x) : 1.;
+
+	#ifndef V_OK
 		P_UV vec2 quarter = floor(uv * 4.), frac = uv * 4. - quarter;
 		P_UV vec2 uv0 = mod(quarter, 2.), mixed = mix(uv0, 1. - uv0, frac);
 		P_UV float on_edge = floor(abs(1.5 - quarter.y)), on_left = step(quarter.y, 2.);
-		P_UV float v = mix(uv.x, mixed.x, mix(frac.y, 1. - frac.y, on_left) * on_edge);
+
+		uv.x = mix(uv.x, mixed.x, mix(frac.y, 1. - frac.y, on_left) * on_edge);
+	
+		offset *= mixed.y;
+	#endif
+	
 		P_UV float outside = step(HALF_RADIUS, abs(radius_t.x - MID_RADIUS));
-/*
-mixed.y = abs(uv.y - .5);
-if (mixed.y <= .5)
-{
-    mixed.y /= .5;
-    mixed.y= 1.0 - mixed.y*mixed.y*(3.0-2.0*mixed.y);
-}
-else mixed.y = 0.;
-*/
-		P_COLOR vec3 value = GetColorRGB(vec2(v, mixed.y), offset);
 
-		return mix(vec4(value, bFeather ? smoothstep(1., FEATHER_CUTOFF, uv.x) : 1.), BlankPixel, outside);
+		radius_t.xy = uv;
+
+		P_COLOR vec3 value = GetColorRGB(radius_t, offset * s * s);
+
+		return mix(vec4(value, feather), BlankPixel, outside);
 	}
 
-	P_UV vec2 CornerCoords (P_UV vec2 uv)
+	//
+	P_UV CTYPE CornerCoords (P_UV vec4 uv)
 	{
-		P_UV float radius = length(uv), t = acos(uv.x / max(radius, 1e-3)) / PI_OVER_TWO;
+		P_UV float radius = length(uv.xy), angle = acos(uv.x / max(radius, 1e-3)), t = angle / PI_OVER_TWO;
 
-		return vec2(radius, t);
+		return COORD(vec2(radius, t), angle * uv.w + uv.z);
 	}
 
-	P_UV vec2 BeamCoords (P_UV vec2 uv)
+	P_UV CTYPE BeamCoords (P_UV vec3 uv)
 	{
-		return uv.yx;
+		return COORD(uv.yx, uv.z);
 	}
 
-	P_UV vec2 NubCoords (P_UV vec2 uv)
+	P_UV CTYPE NubCoords (P_UV vec3 uv)
 	{
 		P_UV float radius = uv.y, t = uv.x;
 		P_UV float tnub = t - .5, in_x = step(abs(tnub), HALF_RADIUS);
@@ -249,9 +252,10 @@ else mixed.y = 0.;
 
 		radius = mix(radius, mix(-1., INNER_RADIUS + (radius - rmin) / max(nradius, 1e-3) * HALF_RADIUS, in_x), step(0., tnub));
 
-		return vec2(radius, t);
+		return COORD(vec2(radius, t), uv.z);
 	}
 
+	//
 	P_COLOR vec4 FinalColor (P_COLOR vec4 color)
 	{
 	#ifdef EMIT_COMPONENT
@@ -320,64 +324,77 @@ end
 local Corner = [[
 	P_COLOR vec4 FragmentKernel (P_UV vec2 uv)
 	{
-		return FinalColor(GetColor(CoronaVertexUserData.x, CornerCoords(%s), false));
+		return FinalColor(GetColor(CoronaVertexUserData.x, CornerCoords(%s), vec2(%s), false));
 	}
 ]]
 
 local Beam = [[
 	P_COLOR vec4 FragmentKernel (P_UV vec2 uv)
 	{
-		return FinalColor(GetColor(CoronaVertexUserData.x, BeamCoords(%s), false));
+		return FinalColor(GetColor(CoronaVertexUserData.x, BeamCoords(%s), vec2(%s), false));
 	}
 ]]
 
 local Nub = [[
 	P_COLOR vec4 FragmentKernel (P_UV vec2 uv)
 	{
-		return FinalColor(GetColor(CoronaVertexUserData.x, NubCoords(%s), false));
+		return FinalColor(GetColor(CoronaVertexUserData.x, NubCoords(%s), vec2(%s), false));
 	}
 ]]
 
-local TJunction = [[
+local FourWayColor = [[
+	P_COLOR vec4 FourWayColor (P_UV vec2 uv)
+	{
+		P_COLOR vec4 c1 = GetColor(CoronaVertexUserData.x, CornerCoords(UL_TEXCOORD), vec2(UL_ANGLES), true);
+		P_COLOR vec4 c2 = GetColor(CoronaVertexUserData.y, CornerCoords(UR_TEXCOORD), vec2(UR_ANGLES), true);
+		P_COLOR vec4 c3 = GetColor(CoronaVertexUserData.z, CornerCoords(LL_TEXCOORD), vec2(LL_ANGLES), true);
+		P_COLOR vec4 c4 = GetColor(CoronaVertexUserData.w, CornerCoords(LR_TEXCOORD), vec2(LR_ANGLES), true);
+
+		return Average(c1, c2, c3, c4);
+	}
+
+]]
+
+local TJunction = FourWayColor ..[[
 	P_COLOR vec4 FragmentKernel (P_UV vec2 uv)
 	{
-		P_COLOR vec4 c1 = GetColor(CoronaVertexUserData.x, BeamCoords(%s), false);
-		P_COLOR vec4 c2 = GetColor(CoronaVertexUserData.y, CornerCoords(%s), true);
-		P_COLOR vec4 c3 = GetColor(CoronaVertexUserData.z, CornerCoords(%s), true);
+		P_COLOR vec4 c1 = GetColor(CoronaVertexUserData.x, BeamCoords(%s), vec2(%s), false);
 
-		return FinalColor(MIX3(c1, c2, c3));
+	#ifdef FOUR_WAY_CORRECT
+		c1.rgb = FourWayColor(uv).rgb;
+	#endif
+
+		P_COLOR vec4 c2 = GetColor(CoronaVertexUserData.y, CornerCoords(%s), vec2(%s), true);
+		P_COLOR vec4 c3 = GetColor(CoronaVertexUserData.z, CornerCoords(%s), vec2(%s), true);
+
+		return FinalColor(Average(c1, c2, c3));
 	}
 ]]
 
-local FourWays = [[
+local FourWays = FourWayColor .. [[
 	P_COLOR vec4 FragmentKernel (P_UV vec2 uv)
 	{
-		P_COLOR vec4 c1 = GetColor(CoronaVertexUserData.x, CornerCoords(UL_TEXCOORD), true);
-		P_COLOR vec4 c2 = GetColor(CoronaVertexUserData.y, CornerCoords(UR_TEXCOORD), true);
-		P_COLOR vec4 c3 = GetColor(CoronaVertexUserData.z, CornerCoords(LL_TEXCOORD), true);
-		P_COLOR vec4 c4 = GetColor(CoronaVertexUserData.w, CornerCoords(LR_TEXCOORD), true);
-
-		return FinalColor(MIX4(c1, c2, c3, c4));
+		return FinalColor(FourWayColor(uv));
 	}
 ]]
 
 -- --
 local Makers = {
-	UpperLeft = { Corner, "UL_TEXCOORD" },
-	TopT = { TJunction, "H_TEXCOORD", "UL_TEXCOORD", "UR_TEXCOORD" },
-	UpperRight = { Corner, "UR_TEXCOORD" },
-	TopNub = { Nub, "vec2(1. - uv.y, uv.x)" },
-	LeftNub = { Nub, "vec2(1. - uv.x, uv.y)" },
-	LeftT = { TJunction, "V_TEXCOORD", "UL_TEXCOORD", "LL_TEXCOORD" },
+	UpperLeft = { Corner, "UL_TEXCOORD", "UL_ANGLES" },
+	TopT = { TJunction, "H_TEXCOORD", "H_ANGLES", "UL_TEXCOORD", "UL_ANGLES", "UR_TEXCOORD", "UR_ANGLES" },
+	UpperRight = { Corner, "UR_TEXCOORD", "UR_ANGLES" },
+	TopNub = { Nub, "vec3(1. - uv.y, uv.x, PI_OVER_TWO)", "BOTTOM_ANGLE, 0." },
+	LeftNub = { Nub, "vec3(1. - uv.x, uv.y, 0.)", "RIGHT_ANGLE, PI_OVER_TWO" },
+	LeftT = { TJunction, "V_TEXCOORD", "V_ANGLES", "UL_TEXCOORD", "UL_ANGLES", "LL_TEXCOORD", "LL_ANGLES" },
 	FourWays = { FourWays },
-	Vertical = { Beam, "V_TEXCOORD" },
-	RightT = { TJunction, "V_TEXCOORD", "UR_TEXCOORD", "LR_TEXCOORD" },
-	Horizontal = { Beam, "H_TEXCOORD" },
-	LowerLeft = { Corner, "LL_TEXCOORD" },
-	BottomT = { TJunction, "H_TEXCOORD", "LL_TEXCOORD", "LR_TEXCOORD" },
-	LowerRight = { Corner, "LR_TEXCOORD" },
-	BottomNub = { Nub, "uv.yx" },
-	RightNub = { Nub, "uv" }
+	Vertical = { Beam, "V_TEXCOORD", "V_ANGLES" },
+	RightT = { TJunction, "V_TEXCOORD", "V_ANGLES", "UR_TEXCOORD", "UR_ANGLES", "LR_TEXCOORD", "LR_ANGLES" },
+	Horizontal = { Beam, "H_TEXCOORD", "H_ANGLES" },
+	LowerLeft = { Corner, "LL_TEXCOORD", "LL_ANGLES" },
+	BottomT = { TJunction, "H_TEXCOORD", "H_ANGLES", "LL_TEXCOORD", "LL_ANGLES", "LR_TEXCOORD", "LR_ANGLES" },
+	LowerRight = { Corner, "LR_TEXCOORD", "LR_ANGLES" },
+	BottomNub = { Nub, "vec3(uv.yx, PI_OVER_TWO)", "TOP_ANGLE, 0." },
+	RightNub = { Nub, "vec3(uv, 0.)", "LEFT_ANGLE, PI_OVER_TWO" }
 }
 
 -- --
