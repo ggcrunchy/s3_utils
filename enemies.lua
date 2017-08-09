@@ -283,18 +283,21 @@ function M.EditorEvent (type, what, arg1, arg2, arg3)
 
 		-- Enumerate Properties --
 		-- arg1: Dialog
-		-- arg2: Representative object
 		elseif what == "enum_props" then
 			arg1:StockElements("Enemy", type)
 			arg1:AddSeparator()
 			arg1:AddCheckbox{ text = "Asleep By Default?", value_name = "asleep" }
 			arg1:AddCheckbox{ text = "Fall Asleep If Killed?", value_name = "sleep_on_death" }
 			arg1:AddCheckbox{ text = "Can Attach To Event Block?", value_name = "can_attach" }
-			arg1:AddLink{ text = "Event links: On(die)", rep = arg2, sub = "on_die", interfaces = "event_target" }
-			arg1:AddLink{ text = "Event links: On(wake)", rep = arg2, sub = "on_wake", interfaces = "event_target" }
-			arg1:AddLink{ text = "Action links: Do(kill)", rep = arg2, sub = "do_kill", interfaces = "event_source" }
-			arg1:AddLink{ text = "Action links: Do(wake)", rep = arg2, sub = "do_wake", interfaces = "event_source" }
 			arg1:AddSeparator()
+
+		-- Get Link Info --
+		-- arg1: Info to populate
+		elseif what == "get_link_info" then
+			arg1.on_die = "Event links: On(die)"
+			arg1.on_wake = "Event links: On(wake)"
+			arg1.do_kill = "Action links: Do(kill)"
+			arg1.do_wake = "Action links: Do(wake)"
 
 		-- Get Tag --
 		elseif what == "get_tag" then

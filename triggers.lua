@@ -197,15 +197,9 @@ function M.EditorEvent (_, what, arg1, arg2)
 
 	-- Enumerate Properties --
 	-- arg1: Dialog
-	-- arg2: Representative object
 	elseif what == "enum_props" then
 		arg1:StockElements(nil, "trigger")
 		arg1:AddSeparator()
-		arg1:AddLink{ text = "Event links: On(enter)", rep = arg2, sub = "on_enter", interfaces = "event_target" }
-		arg1:AddLink{ text = "Event links: On(leave)", rep = arg2, sub = "on_leave", interfaces = "event_target" }
-		arg1:AddLink{ text = "Action links: Do(enter)", rep = arg2, sub = "do_enter", interfaces = "event_source" }
-		arg1:AddLink{ text = "Action links: Do(leave)", rep = arg2, sub = "do_leave", interfaces = "event_source" }
-		arg1:AddLink{ text = "Action links: Do(impulse)", rep = arg2, sub = "do_impulse", interfaces = "event_source" }
 		arg1:AddBitfield{
 			text = "Detect when?", strs = {
 				"player enter", "player leave", "enemy enter", "enemy leave", "projectile enter", "projectile leave"
@@ -220,6 +214,15 @@ function M.EditorEvent (_, what, arg1, arg2)
 
 		--
 		arg1:SetStateFromValue_Watch(restore_section, "deactivate")
+
+	-- Get Link Info --
+	-- arg1: Info to populate
+	elseif what == "get_link_info" then
+		arg1.on_enter = "Event links: On(enter)"
+		arg1.on_leave = "Event links: On(leave)"
+		arg1.do_enter = "Action links: Do(enter)"
+		arg1.do_leave = "Action links: Do(leave)"
+		arg1.do_impulse = "Action links: Do(impulse)"
 
 	-- Get Tag --
 	elseif what == "get_tag" then

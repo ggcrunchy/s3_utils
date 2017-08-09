@@ -426,13 +426,16 @@ function M.EditorEvent (type, what, arg1, arg2, arg3)
 
 		-- Enumerate Properties --
 		-- arg1: Dialog
-		-- arg2: Representative object
 		elseif what == "enum_props" then
 			arg1:StockElements("EventBlock", type)
-			arg1:AddLink{ text = "Link to event source", rep = arg2, sub = "fire", interfaces = "event_source" }
 			arg1:AddSeparator()
 --			arg1:AddCheckbox{ text = "On By Default?", value_name = "starts_on" }
 --			arg1:AddSeparator()
+
+		-- Get Link Info --
+		-- arg1: Info to populate
+		elseif what == "get_link_info" then
+			arg1.fire = "Link to event source"
 
 		-- Get Tag --
 		elseif what == "get_tag" then

@@ -155,17 +155,10 @@ function M.EditorEvent (_, what, arg1, arg2)
 
 	-- Enumerate Properties --
 	-- arg1: Dialog
-	-- arg2: Representative object
 	elseif what == "enum_props" then
 		arg1:StockElements(nil, "sound")
 		arg1:AddSeparator()
 		arg1:AddSoundPicker{ text = "Sound file", value_name = "filename" }
-		arg1:AddLink{ text = "Event links: On(done)", rep = arg2, sub = "on_done", interfaces = "event_target" }
-		arg1:AddLink{ text = "Event links: On(stop)", rep = arg2, sub = "on_stop", interfaces = "event_target" }
-		arg1:AddLink{ text = "Action links: Do(play)", rep = arg2, sub = "do_play", interfaces = "event_source" }
-		arg1:AddLink{ text = "Action links: Do(pause)", rep = arg2, sub = "do_pause", interfaces = "event_source" }
-		arg1:AddLink{ text = "Action links: Do(resume)", rep = arg2, sub = "do_resume", interfaces = "event_source" }
-		arg1:AddLink{ text = "Action links: Do(stop)", rep = arg2, sub = "do_stop", interfaces = "event_source" }
 		arg1:AddCheckbox{ text = "Streaming?", value_name = "streaming" }
 		arg1:AddCheckbox{ text = "Persist over reset?", value_name = "persist_on_reset" }
 		arg1:AddCheckbox{ text = "Loop forever?", value_name = "looping" }
@@ -180,6 +173,16 @@ function M.EditorEvent (_, what, arg1, arg2)
 
 		--
 		arg1:SetStateFromValue_Watch(loop_count_section, "looping", true)
+
+	-- Get Link Info --
+	-- arg1: Info to populate
+	elseif what == "get_link_info" then
+		arg1.on_done = "Event links: On(done)"
+		arg1.on_stop = "Event links: On(stop)"
+		arg1.do_play = "Action links: Do(play)"
+		arg1.do_pause = "Action links: Do(pause)"
+		arg1.do_resume = "Action links: Do(resume)"
+		arg1.do_stop = "Action links: Do(stop)"
 
 	-- Get Tag --
 	elseif what == "get_tag" then

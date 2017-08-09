@@ -192,18 +192,10 @@ function M.EditorEvent (_, what, arg1, arg2)
 
 	-- Enumerate Properties --
 	-- arg1: Dialog
-	-- arg2: Representative object
 	elseif what == "enum_props" then
 		arg1:StockElements(nil, "music")
 		arg1:AddSeparator()
 		arg1:AddMusicPicker{ text = "Music file", value_name = "filename" }
-		arg1:AddLink{ text = "Event links: On(done)", rep = arg2, sub = "on_done", interfaces = "event_target" }
-		arg1:AddLink{ text = "Event links: On(stop)", rep = arg2, sub = "on_stop", interfaces = "event_target" }
-		arg1:AddLink{ text = "Action links: Do(play, remove others)", rep = arg2, sub = "do_play", interfaces = "event_source" }
-		arg1:AddLink{ text = "Action links: Do(play, leave others)", rep = arg2, sub = "do_play_no_cancel", interfaces = "event_source" }
-		arg1:AddLink{ text = "Action links: Do(pause)", rep = arg2, sub = "do_pause", interfaces = "event_source" }
-		arg1:AddLink{ text = "Action links: Do(resume)", rep = arg2, sub = "do_resume", interfaces = "event_source" }
-		arg1:AddLink{ text = "Action links: Do(stop)", rep = arg2, sub = "do_stop", interfaces = "event_source" }
 		arg1:AddCheckbox{ text = "Loop forever?", value_name = "looping" }
 
 		local loop_count_section = arg1:BeginSection()
@@ -216,6 +208,17 @@ function M.EditorEvent (_, what, arg1, arg2)
 		--
 		arg1:SetStateFromValue_Watch(loop_count_section, "looping", true)
 
+	-- Get Link Info --
+	-- arg1: Info to populate
+	elseif what == "get_link_info" then
+		arg1.on_done = "Event links: On(done)"
+		arg1.on_stop = "Event links: On(stop)"
+		arg1.do_play = "Action links: Do(play, remove others)"
+		arg1.do_play_no_cancel = "Action links: Do(play, leave others)"
+		arg1.do_pause = "Action links: Do(pause)"
+		arg1.do_resume = "Action links: Do(resume)"
+		arg1.do_stop = "Action links: Do(stop)"
+
 	-- Get Tag --
 	elseif what == "get_tag" then
 		return "music"
@@ -223,7 +226,7 @@ function M.EditorEvent (_, what, arg1, arg2)
 	-- New Tag --
 	elseif what == "new_tag" then
 		return "sources_and_targets", Events, Actions
-
+	
 	-- Prep Link --
 	elseif what == "prep_link" then
 		return LinkMusic
