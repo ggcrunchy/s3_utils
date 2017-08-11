@@ -104,7 +104,8 @@ end
 
 --- DOCME
 function M.NewTile (group, name, x, y, w, h)
-	local tile = display.newImageRect(group, Sheet, NameToIndex[name], w, h)
+	local index = NameToIndex[name]
+	local tile = display.newImageRect(group, Sheet, index, w, h)
 
 	tile.x, tile.y = x, y
 
@@ -114,7 +115,7 @@ function M.NewTile (group, name, x, y, w, h)
 		local set_vdata = TileShader.set_vdata
 
 		if set_vdata then
-			set_vdata(tile, name)
+			set_vdata(tile, name, index)
 		end
 	end
 
