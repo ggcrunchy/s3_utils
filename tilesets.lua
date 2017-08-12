@@ -95,11 +95,23 @@ function M.GetFrameBounds (index)
 	return rect.u1, rect.v1, rect.u2, rect.v2
 end
 
--- DOCME
+--- DOCME
 function M.GetFrameCenter (index)
 	local rect = GetRect(index)
 
 	return (rect.u1 + rect.u2) / 2, (rect.v1 + rect.v2) / 2
+end
+
+-- --
+local VertexDataNames
+
+--- DOCME
+function M.GetVertexDataNames ()
+	if VertexDataNames then
+		return unpack(VertexDataNames, 1, 4)
+	else
+		return nil, nil, nil, nil
+	end
 end
 
 --- DOCME
@@ -234,7 +246,7 @@ local TileCore = [[
 	//
 	P_UV CTYPE CornerCoords (P_UV vec4 uv)
 	{
-		P_UV float radius = length(uv.xy), angle = acos(uv.x / max(radius, 1e-3)), t = angle / PI_OVER_TWO;
+		P_UV float radius = length(uv.xy), angle = atan(uv.y, max(uv.x, 2e-8)), t = angle / PI;
 
 		return COORD(vec2(radius, t), angle * uv.w + uv.z);
 	}
@@ -501,6 +513,12 @@ function M.UseTileset (name, prefer_raw)
 		TileShader, list = {
 			name = effects.tile_shader, set_vdata = ts.set_vdata
 		}, effects.with_shader
+
+		VertexDataNames = {}
+
+		for i = 1, #(ts.vdata or "") do
+			VertexDataNames[ts.vdata[i].index + 1] = ts.vdata[i].name
+		end
 	else
 		list = effects.raw
 	end
@@ -552,7 +570,7 @@ for k, v in pairs{
 			Image:releaseSelf()
 		end
 
-		Image, Sheet, TextureRects, TileShader = nil
+		Image, Sheet, TextureRects, TileShader, VertexDataNames = nil
 	end
 } do
 	Runtime:addEventListener(k, v)
