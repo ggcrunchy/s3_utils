@@ -57,7 +57,7 @@ function M.EditorEvent (_, what, arg1, arg2)
 	-- Get Link Info --
 	-- arg1: Info to populate
 	elseif what == "get_link_info" then
-		arg1.link = "Generic link"
+		arg1.link = { text = "Generic link", is_source = true }
 
 	-- Get Tag --
 	elseif what == "get_tag" then
