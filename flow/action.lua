@@ -23,5 +23,28 @@
 -- [ MIT license: http://www.opensource.org/licenses/mit-license.php ]
 --
 
+-- Exports --
+local M = {}
+
 -- Action link
 -- Action nodes, base
+
+--- DOCME
+function M.EnumerateComponents ()
+	--
+end
+
+--- DOCME
+function M.RegisterComponentType (name, factory)
+	--
+end
+
+-- Listen to events.
+for k, v in pairs{
+	--
+} do
+	Runtime:addEventListener(k, v)
+end
+
+-- Export module.
+return M

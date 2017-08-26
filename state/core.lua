@@ -23,6 +23,47 @@
 -- [ MIT license: http://www.opensource.org/licenses/mit-license.php ]
 --
 
+-- Exports --
+local M = {}
+
 -- Figure out the VarFamily tiers...
 -- ...policies for persistence, rollback, etc...
 -- ...variable substitution, gensyms, object referents
+
+--- DOCME
+function M.AddGlobalInterpolation ()
+	--
+end
+
+--- DOCME
+function M.CallAction ()
+	--
+end
+
+--- DOCME
+function M.CallCondition ()
+	--
+end
+
+--- DOCME
+function M.CallEpilogue ()
+	--
+end
+
+--- DOCME
+function M.CallPrologue ()
+	--
+end
+
+--- DOCME
+function M.NewInterpVar ()
+	--
+end
+
+--- DOCME
+function M.NewReader ()
+	--
+end
+
+-- Export the module.
+return M

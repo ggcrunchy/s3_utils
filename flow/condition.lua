@@ -23,9 +23,32 @@
 -- [ MIT license: http://www.opensource.org/licenses/mit-license.php ]
 --
 
+-- Exports --
+local M = {}
+
 -- Condition links
 	-- Single
 	-- Binary
 	-- Multi (todo: glue DSL... keep? and if so, try LPEG?)
 -- Condition nodes, base
 -- Monitor
+
+--- DOCME
+function M.EnumerateComponents ()
+	--
+end
+
+--- DOCME
+function M.RegisterComponentType (name, factory)
+	--
+end
+
+-- Listen to events.
+for k, v in pairs{
+	--
+} do
+	Runtime:addEventListener(k, v)
+end
+
+-- Export the module.
+return M
