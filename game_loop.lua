@@ -30,6 +30,8 @@ local yield = coroutine.yield
 
 -- Modules --
 local require_ex = require("tektite_core.require_ex")
+local actions = require("s3_utils.state.actions")
+local conditions = require("s3_utils.state.conditions")
 local _ = require("s3_utils.controls")
 local dots = require("s3_utils.dots")
 local enemies = require("s3_utils.enemies")
@@ -66,8 +68,7 @@ end
 
 --- DOCME
 function M.AddThings (current_level, level)
-	--
-	tilesets.UseTileset("metal")
+	tilesets.UseTileset(level.tileset or "tree")
 
 	-- Add the tiles to the level...
 	local tgroup = display.newGroup()
@@ -100,6 +101,16 @@ function M.AddThings (current_level, level)
 	-- ...and any triggers...
 	for _, trigger in Ipairs(level.triggers) do
 		triggers.AddTrigger(current_level.things_layer, trigger)
+	end
+
+	-- ...and actions...
+	for _, action in Ipairs(level.actions) do
+		actions.AddAction(action)
+	end
+
+	-- ...and conditions...
+	for _, condition in Ipairs(level.conditions) do
+		conditions.AddCondition(condition)
 	end
 
 	-- ...and music...
