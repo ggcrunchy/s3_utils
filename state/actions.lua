@@ -52,16 +52,8 @@ function M.AddAction (info)
 	local body, can_fire, instead, next = assert(ActionList[info.type], "Invalid action")(info)
 
 	local function action (what, arg)
-		-- Bind any control flow state.
-		if rawequal(arg, Instead) then
-			instead = what -- TODO: should do a broadcast builder from Instead
-		elseif rawequal(arg, Next) then
-			next = what -- ditto, with Next
-		elseif rawequal(arg, ActionList) then
-			can_fire = what
-
 		-- Resolve the action itself.
-		elseif what == "fire" then
+		if what == "fire" then
 			local ok = not can_fire or can_fire()
 
 			if ok then
@@ -75,6 +67,14 @@ function M.AddAction (info)
 			end
 		elseif what == "is_done" then
 			return true
+
+		-- Otherwise, bind any control flow state.
+		elseif rawequal(arg, Instead) then
+			instead = what -- TODO: should do a broadcast builder from Instead
+		elseif rawequal(arg, Next) then
+			next = what -- ditto, with Next
+		elseif rawequal(arg, ActionList) then
+			can_fire = what
 		end
 	end
 
@@ -153,6 +153,7 @@ function M.EditorEvent (type, what, arg1, arg2, arg3)
 		-- New Tag --
 		elseif what == "new_tag" then
 			-- TODO! might just be sources / targets with a boolean link? "pull"?
+			-- return Actions, nil, nil, { boolean = "can_fire" }
 
 		-- Prep Link --
 		elseif what == "prep_link" then

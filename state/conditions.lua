@@ -135,7 +135,8 @@ function M.EditorEvent (type, what, arg1, arg2, arg3)
 		-- arg2: Original entry
 		-- arg3: Action to build
 		if what == "build" then
-			-- 
+			-- could use this to filter out stuff not germane to type?
+			-- or maybe to build the name -> ID maps?
 
 		-- Enumerate Defaults --
 		-- arg1: Defaults
@@ -164,6 +165,8 @@ function M.EditorEvent (type, what, arg1, arg2, arg3)
 		-- New Tag --
 		elseif what == "new_tag" then
 			-- TODO!
+			-- nil, nil, { boolean = "test" }, { cond1, cond2, conds... }
+			-- Complex condition won't do this, but the other two probably can
 
 		-- Prep Link --
 		elseif what == "prep_link" then
@@ -185,6 +188,8 @@ function M.EditorEvent (type, what, arg1, arg2, arg3)
 		-- ^^^ TODO: need to see what this requires in practice
 	end
 end
+
+-- TODO: a little unsure how to make Binary and Complex fit
 
 --- Getter.
 -- @treturn {string,...} Unordered list of condition type names.
