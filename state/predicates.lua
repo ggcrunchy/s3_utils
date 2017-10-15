@@ -31,6 +31,7 @@ local rawequal = rawequal
 -- Modules --
 local require_ex = require("tektite_core.require_ex")
 local bind = require("tektite_core.bind")
+local expression = require("s3_utils.state.expression")
 
 -- Exports --
 local M = {}
@@ -58,7 +59,7 @@ function M.AddPredicate (info)
 
 	--
 	if info.expression then
-		local logic--Parse(info.expression)
+		local logic = expression.Parse(info.expression)
 
 		function predicate (comp, arg)
 			if rawequal(arg, PredicateList) then
@@ -72,14 +73,14 @@ function M.AddPredicate (info)
 
 	--
 	elseif info.connective then
-		local connective,pred1, pred2 = Connectives[info.connective]
+		local connective, pred1, pred2 = Connectives[info.connective]
 
 		function predicate (comp, arg)
 			if rawequal(arg, PredicateList) then
 				if pred1 then -- TODO: check order guarantees
-					cond2 = comp
+					pred2 = comp
 				else
-					cond1 = comp
+					pred1 = comp
 				end
 			else
 				return connective(pred1(), pred2())
@@ -99,26 +100,6 @@ function M.AddPredicate (info)
 	return predicate
 end
 
---
-local function LinkPredicate (predicate, other, sub, other_sub)
-	if sub == "pred1" or sub == "pred2" then
-		predicate[sub] = other.uid
-	elseif sub == "preds" then
-		bind.AddId(predicate, "preds", other.uid, other_sub)
-	end
-
-	-- TODO: anything necessary for "test", i.e. to hook this up as boolean property?
-	-- 
-	--[[
-	if sub == "to" or (sub == "from" and not warp.to) then
-		if sub == "to" and other.type ~= "warp" then
-			bind.AddId(warp, "to", other.uid, other_sub)
-		else
-			warp.to = other.uid
-		end
-	end]]
-end
-
 --- Handler for predicate-related events sent by the editor.
 -- @string type Predicate type, as listed by @{GetTypes}.
 -- @string what Name of event.
@@ -135,46 +116,38 @@ function M.EditorEvent (type, what, arg1, arg2, arg3)
 		-- arg2: Original entry
 		-- arg3: Action to build
 		if what == "build" then
-			-- could use this to filter out stuff not germane to type?
-			-- or maybe to build the name -> ID maps?
+			-- ANYTHING?
 
 		-- Enumerate Defaults --
 		-- arg1: Defaults
 		elseif what == "enum_defs" then
-			-- link to predicate object (more likely, that should extend this)
-			-- rest will be in extensions (Binary, Complex)
+			-- extended by derived types
 
 		-- Enumerate Properties --
 		-- arg1: Dialog
 		elseif what == "enum_props" then
-			arg1:StockElements("Predicate", type)
+			arg1:StockElements()
 			arg1:AddSeparator()
 
 		-- Get Link Info --
 		-- arg1: Info to populate
 		elseif what == "get_link_info" then
 			arg1.test = "Query this predicate"
-			arg1.pred1 = "Binary predicate's first reference" -- TODO: move these to own stuff?
-			arg1.pred2 = "Binary predicate's second reference"
-			arg1.preds = "Components of complex predicate"
 
 		-- Get Tag --
 		elseif what == "get_tag" then
-			return "predicate" -- TODO: maybe simple predicate, then derive from that?
+			return "predicate"
 
 		-- New Tag --
 		elseif what == "new_tag" then
-			-- TODO!
-			-- nil, nil, { boolean = "test" }, { pred1, pred2, preds... }
-			-- Complex predicate won't do this, but the other two probably can
+			return "properties", { boolean = "test" }
 
 		-- Prep Link --
 		elseif what == "prep_link" then
-			return LinkPredicate
+			-- ANYTHING?
 		
 		-- Verify --
 		elseif what == "verify" then
-			-- COMMON STUFF...
 			-- chase down loops?
 		end
 
@@ -189,7 +162,128 @@ function M.EditorEvent (type, what, arg1, arg2, arg3)
 	end
 end
 
--- TODO: a little unsure how to make Binary and Complex fit
+--
+local function LinkBinaryPredicate (predicate, other, sub, other_sub)
+	if sub == "pred1" or sub == "pred2" then
+		predicate[sub] = other.uid
+	end
+end
+
+--- Handler for binary predicate-related events sent by the editor.
+-- @string what Name of event.
+-- @param arg1 Argument #1.
+-- @param arg2 Argument #2.
+-- @param arg3 Argument #3.
+-- @return Result(s) of the event, if any.
+function M.EditorEvent_Binary (what, arg1, arg2, arg3)
+	-- Build --
+	-- arg1: Level
+	-- arg2: Original entry
+	-- arg3: Action to build
+	if what == "build" then
+		-- could use this to filter out stuff not germane to type?
+		-- or maybe to build the name -> ID maps?
+
+	-- Enumerate Defaults --
+	-- arg1: Defaults
+	elseif what == "enum_defs" then
+		-- link to predicate object (more likely, that should extend this)
+		-- rest will be in extensions (Binary, Complex)
+
+	-- Enumerate Properties --
+	-- arg1: Dialog
+	elseif what == "enum_props" then
+		arg1:StockElements()
+		arg1:AddSeparator()
+
+	-- Get Link Info --
+	-- arg1: Info to populate
+	elseif what == "get_link_info" then
+		arg1.test = "Query this predicate"
+		arg1.pred1 = "Binary predicate's first reference"
+		arg1.pred2 = "Binary predicate's second reference"
+
+	-- Get Tag --
+	elseif what == "get_tag" then
+		return "binary_predicate"
+
+	-- New Tag --
+	elseif what == "new_tag" then
+		return "properties", {
+			boolean = "test"
+		}, {
+			boolean = { pred1 = true, pred2 = true }
+		}
+
+	-- Prep Link --
+	elseif what == "prep_link" then
+		return LinkBinaryPredicate
+	
+	-- Verify --
+	elseif what == "verify" then
+		-- Has both set?
+	end
+end
+
+--
+local function LinkComplexPredicate (predicate, other, sub, other_sub)
+	if sub == "preds" then
+		bind.AddId(predicate, "preds", other.uid, other_sub)
+	end
+end
+
+--- Handler for complex predicate-related events sent by the editor.
+-- @string what Name of event.
+-- @param arg1 Argument #1.
+-- @param arg2 Argument #2.
+-- @param arg3 Argument #3.
+-- @return Result(s) of the event, if any.
+function M.EditorEvent_Complex (what, arg1, arg2, arg3)
+	-- Build --
+	-- arg1: Level
+	-- arg2: Original entry
+	-- arg3: Action to build
+	if what == "build" then
+		-- build the name -> ID maps?
+
+	-- Enumerate Defaults --
+	-- arg1: Defaults
+	elseif what == "enum_defs" then
+		arg1.expression = ""
+
+	-- Enumerate Properties --
+	-- arg1: Dialog
+	elseif what == "enum_props" then
+		arg1:StockElements()
+		arg1:AddSeparator()
+
+	-- Get Link Info --
+	-- arg1: Info to populate
+	elseif what == "get_link_info" then
+		arg1.test = "Query this predicate"
+		arg1.preds = "Subpredicates to query"
+
+	-- Get Tag --
+	elseif what == "get_tag" then
+		return "complex_predicate"
+
+	-- New Tag --
+	elseif what == "new_tag" then
+		return "properties", {
+			boolean = "test"
+		}, {
+			-- preds/Multi
+		}
+
+	-- Prep Link --
+	elseif what == "prep_link" then
+		return LinkComplexPredicate
+	
+	-- Verify --
+	elseif what == "verify" then
+		-- Legal expression?
+	end
+end
 
 --- Getter.
 -- @treturn {string,...} Unordered list of predicate type names.
