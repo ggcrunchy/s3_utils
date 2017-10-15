@@ -40,6 +40,7 @@ local collision = require("corona_utils.collision")
 local enemy_events = require("annex.EnemyEvents")
 local flow_ops = require("coroutine_ops.flow")
 local movement = require("s3_utils.movement")
+local state_vars = require("config.StateVariables")
 local tile_maps = require("s3_utils.tile_maps")
 local wrapper = require("coroutine_ops.wrapper")
 
@@ -250,9 +251,60 @@ local Actions = {
 	end
 }
 
+-- --
+local Properties = {
+	boolean = {
+		-- --
+		alive = function(enemy)
+			return function()
+				return enemy.m_alive == true
+			end
+		end
+	},
+
+	number = {
+		-- --
+		enemy_x = function(enemy)
+			return function()
+				return enemy.x
+			end
+		end,
+
+		-- --
+		enemy_y = function(enemy)
+			return function()
+				return enemy.y
+			end
+		end,
+
+		-- --
+		sp_x = function(enemy)
+			local x
+
+			return function()
+				x = x or enemy.m_start.x
+
+				return x
+			end
+		end,
+
+		-- --
+		sp_y = function(enemy)
+			local y
+
+			return function()
+				y = y or enemy.m_start.y
+
+				return y
+			end
+		end
+	}
+}
+
 --
 local function LinkEnemy (enemy, other, esub, osub)
-	bind.LinkActionsAndEvents(enemy, other, esub, osub, Events, Actions, "actions")
+--	bind.LinkActionsAndEvents(enemy, other, esub, osub, Events, Actions, "actions")
+	bind.LinkActionsEventsAndProperties(enemy, other, esub, osub, Events, Actions, "actions", Properties, "props")
 end
 
 --- Handler for enemy-related events sent by the editor.
@@ -298,6 +350,11 @@ function M.EditorEvent (type, what, arg1, arg2, arg3)
 			arg1.on_wake = "Event links: On(wake)"
 			arg1.do_kill = "Action links: Do(kill)"
 			arg1.do_wake = "Action links: Do(wake)"
+			arg1.alive = { friendly_name = "BOOL: enemy alive?" }
+			arg1.enemy_x = { friendly_name = "NUM: enemy's x" }
+			arg1.enemy_y = { friendly_name = "NUM: enemy's y" }
+			arg1.sp_x = { friendly_name = "NUM: spawner's x" }
+			arg1.sp_y = { friendly_name = "NUM: spawner's y" }
 
 		-- Get Tag --
 		elseif what == "get_tag" then
@@ -305,7 +362,7 @@ function M.EditorEvent (type, what, arg1, arg2, arg3)
 
 		-- New Tag --
 		elseif what == "new_tag" then
-			return "sources_and_targets", Events, Actions
+			return "sources_and_targets", Events, Actions, state_vars.UnfoldPropertyFunctionsAsTagReadyList(Properties)
 
 		-- Prep Link --
 		elseif what == "prep_link" then
@@ -431,6 +488,8 @@ function M.SpawnEnemy (group, info)
 	for k in adaptive.IterSet(info.actions) do
 		bind.Publish("loading_level", Actions[k](enemy), info.uid, k)
 	end
+
+	state_vars.PublishProperties(info.props, Properties, info.uid, enemy)
 
 	--- Allows an enemy to send an alert to other enemies.
 	-- @function enemy:AlertOthers

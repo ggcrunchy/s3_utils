@@ -152,7 +152,6 @@ function M.EditorEvent (type, what, arg1, arg2, arg3)
 
 		-- New Tag --
 		elseif what == "new_tag" then
-			-- TODO! might just be sources / targets with a boolean link? "pull"?
 			-- return Actions, nil, nil, { boolean = "can_fire" }
 
 		-- Prep Link --

@@ -31,7 +31,6 @@ local yield = coroutine.yield
 -- Modules --
 local require_ex = require("tektite_core.require_ex")
 local actions = require("s3_utils.state.actions")
-local conditions = require("s3_utils.state.conditions")
 local _ = require("s3_utils.controls")
 local dots = require("s3_utils.dots")
 local enemies = require("s3_utils.enemies")
@@ -41,6 +40,7 @@ local loop = require_ex.Lazy("corona_boilerplate.game.loop")
 local music = require("s3_utils.music")
 local persistence = require("corona_utils.persistence")
 local player = require("game.Player")
+local predicates = require("s3_utils.state.predicates")
 local sound = require("s3_utils.sound")
 local tile_maps = require("s3_utils.tile_maps")
 local tilesets = require("s3_utils.tilesets")
@@ -108,9 +108,9 @@ function M.AddThings (current_level, level)
 		actions.AddAction(action)
 	end
 
-	-- ...and conditions...
-	for _, condition in Ipairs(level.conditions) do
-		conditions.AddCondition(condition)
+	-- ...and predicate...
+	for _, predicate in Ipairs(level.predicates) do
+		predicates.AddPredicate(predicate)
 	end
 
 	-- ...and music...

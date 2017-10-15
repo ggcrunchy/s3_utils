@@ -1,4 +1,4 @@
---- Objects that represent conditions.
+--- Objects that represent predicates.
 
 --
 -- Permission is hereby granted, free of charge, to any person obtaining
@@ -35,8 +35,8 @@ local bind = require("tektite_core.bind")
 -- Exports --
 local M = {}
 
--- Condition type lookup table --
-local ConditionList
+-- Predicate type lookup table --
+local PredicateList
 
 -- --
 local Connectives = {
@@ -53,58 +53,58 @@ local Connectives = {
 }
 
 --- DOCME
-function M.AddCondition (info)
-	local condition
+function M.AddPredicate (info)
+	local predicate
 
 	--
 	if info.expression then
 		local logic--Parse(info.expression)
 
-		function condition (comp, arg)
-			if rawequal(arg, ConditionList) then
+		function predicate (comp, arg)
+			if rawequal(arg, PredicateList) then
 				logic(comp) -- TODO: check order guarantees...
 			else
 				return logic()
 			end
 		end
 
-		bind.Subscribe("loading_level", info.conds, condition, ConditionList)
+		bind.Subscribe("loading_level", info.conds, predicate, PredicateList)
 
 	--
 	elseif info.connective then
-		local connective, cond1, cond2 = Connectives[info.connective]
+		local connective,pred1, pred2 = Connectives[info.connective]
 
-		function condition (comp, arg)
-			if rawequal(arg, ConditionList) then
-				if cond1 then -- TODO: check order guarantees
+		function predicate (comp, arg)
+			if rawequal(arg, PredicateList) then
+				if pred1 then -- TODO: check order guarantees
 					cond2 = comp
 				else
 					cond1 = comp
 				end
 			else
-				return connective(cond1(), cond2())
+				return connective(pred1(), pred2())
 			end
 		end
 
-		bind.Subscribe("loading_level", info.cond1, condition, ConditionList)
-		bind.Subscribe("loading_level", info.cond2, condition, ConditionList)
+		bind.Subscribe("loading_level", info.cond1, predicate, PredicateList)
+		bind.Subscribe("loading_level", info.cond2, predicate, PredicateList)
 
 	--
 	else
-		condition = assert(ConditionList[info.type], "Invalid condition")(info)
+		predicate = assert(PredicateList[info.type], "Invalid predicate")(info)
 	end
 
-	bind.Publish("loading_level", condition, info.uid, "test")
+	bind.Publish("loading_level", predicate, info.uid, "test")
 
-	return condition
+	return predicate
 end
 
 --
-local function LinkCondition (condition, other, sub, other_sub)
-	if sub == "cond1" or sub == "cond2" then
-		condition[sub] = other.uid
-	elseif sub == "conds" then
-		bind.AddId(condition, "conds", other.uid, other_sub)
+local function LinkPredicate (predicate, other, sub, other_sub)
+	if sub == "pred1" or sub == "pred2" then
+		predicate[sub] = other.uid
+	elseif sub == "preds" then
+		bind.AddId(predicate, "preds", other.uid, other_sub)
 	end
 
 	-- TODO: anything necessary for "test", i.e. to hook this up as boolean property?
@@ -119,15 +119,15 @@ local function LinkCondition (condition, other, sub, other_sub)
 	end]]
 end
 
---- Handler for condition-related events sent by the editor.
--- @string type Condition type, as listed by @{GetTypes}.
+--- Handler for predicate-related events sent by the editor.
+-- @string type Predicate type, as listed by @{GetTypes}.
 -- @string what Name of event.
 -- @param arg1 Argument #1.
 -- @param arg2 Argument #2.
 -- @param arg3 Argument #3.
 -- @return Result(s) of the event, if any.
 function M.EditorEvent (type, what, arg1, arg2, arg3)
-	local cons = ConditionList[type]
+	local cons = PredicateList[type]
 
 	if cons then
 		-- Build --
@@ -141,36 +141,36 @@ function M.EditorEvent (type, what, arg1, arg2, arg3)
 		-- Enumerate Defaults --
 		-- arg1: Defaults
 		elseif what == "enum_defs" then
-			-- link to condition object (more likely, that should extend this)
+			-- link to predicate object (more likely, that should extend this)
 			-- rest will be in extensions (Binary, Complex)
 
 		-- Enumerate Properties --
 		-- arg1: Dialog
 		elseif what == "enum_props" then
-			arg1:StockElements("Condition", type)
+			arg1:StockElements("Predicate", type)
 			arg1:AddSeparator()
 
 		-- Get Link Info --
 		-- arg1: Info to populate
 		elseif what == "get_link_info" then
-			arg1.test = "Query this condition"
-			arg1.cond1 = "Binary condition's first reference" -- TODO: move these to own stuff?
-			arg1.cond2 = "Binary condition's second reference"
-			arg1.conds = "Components of complex condition"
+			arg1.test = "Query this predicate"
+			arg1.pred1 = "Binary predicate's first reference" -- TODO: move these to own stuff?
+			arg1.pred2 = "Binary predicate's second reference"
+			arg1.preds = "Components of complex predicate"
 
 		-- Get Tag --
 		elseif what == "get_tag" then
-			return "condition" -- TODO: maybe simple condition, then derive from that?
+			return "predicate" -- TODO: maybe simple predicate, then derive from that?
 
 		-- New Tag --
 		elseif what == "new_tag" then
 			-- TODO!
-			-- nil, nil, { boolean = "test" }, { cond1, cond2, conds... }
-			-- Complex condition won't do this, but the other two probably can
+			-- nil, nil, { boolean = "test" }, { pred1, pred2, preds... }
+			-- Complex predicate won't do this, but the other two probably can
 
 		-- Prep Link --
 		elseif what == "prep_link" then
-			return LinkCondition
+			return LinkPredicate
 		
 		-- Verify --
 		elseif what == "verify" then
@@ -192,26 +192,26 @@ end
 -- TODO: a little unsure how to make Binary and Complex fit
 
 --- Getter.
--- @treturn {string,...} Unordered list of condition type names.
+-- @treturn {string,...} Unordered list of predicate type names.
 function M.GetTypes ()
 	local types = {}
 
-	for k in pairs(ConditionList) do
+	for k in pairs(PredicateList) do
 		types[#types + 1] = k
 	end
 
 	return types
 end
 
--- Condition links
+-- Predicate links
 	-- Single
 	-- Binary
 	-- Multi (todo: glue DSL... keep? and if so, try LPEG?)
--- Condition nodes, base
+-- Predicate nodes, base
 -- Monitor
 
 -- Install various types of actions.
-ConditionList = require_ex.DoList("config.Conditions")
+PredicateList = require_ex.DoList("config.Predicates")
 
 -- Export the module.
 return M
