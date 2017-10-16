@@ -40,11 +40,11 @@ local loop = require_ex.Lazy("corona_boilerplate.game.loop")
 local music = require("s3_utils.music")
 local persistence = require("corona_utils.persistence")
 local player = require("game.Player")
-local predicates = require("s3_utils.state.predicates")
 local sound = require("s3_utils.sound")
 local tile_maps = require("s3_utils.tile_maps")
 local tilesets = require("s3_utils.tilesets")
 local triggers = require("s3_utils.triggers")
+local values = require("s3_utils.state.values")
 
 -- Corona globals --
 local display = display
@@ -108,10 +108,8 @@ function M.AddThings (current_level, level)
 		actions.AddAction(action)
 	end
 
-	-- ...and predicate...
-	for _, predicate in Ipairs(level.predicates) do
-		predicates.AddPredicate(predicate)
-	end
+	-- ...and values...
+	values.Load(level.values)
 
 	-- ...and music...
 	for _, track in Ipairs(level.music) do

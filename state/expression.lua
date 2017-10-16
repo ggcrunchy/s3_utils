@@ -27,12 +27,12 @@
 local M = {}
 
 --- DOCME
-function M.Parse (expr)
+function M.Parse (expr, names)
 	--
 end
 
 --- DOCME
-function M.Validate (expr)
+function M.Validate (expr, names)
 	--
 end
 

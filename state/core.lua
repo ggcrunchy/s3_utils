@@ -23,6 +23,10 @@
 -- [ MIT license: http://www.opensource.org/licenses/mit-license.php ]
 --
 
+-- Standard library imports --
+local assert = assert
+local select = select
+
 -- Exports --
 local M = {}
 
@@ -30,39 +34,42 @@ local M = {}
 -- ...policies for persistence, rollback, etc...
 -- ...variable substitution, gensyms, object referents
 
+-- --
+local FuncTypes = {}
+
 --- DOCME
-function M.AddGlobalInterpolation ()
-	--
+-- @string type
+-- @string name
+-- @uint arity
+-- @callable func
+function M.AddFunction (type, name, arity, func)
+	local funcs = assert(FuncTypes[type], "Unknown type")
+	local afuncs = funcs[arity] or {}
+
+	funcs[arity], afuncs[name] = afuncs, func
 end
 
 --- DOCME
-function M.CallAction ()
-	--
+-- @string type
+-- @callable fixup
+function M.AddType (type, fixup)
+	assert(not FuncTypes[type], "Type already exists")
+
+	FuncTypes[type] = { fixup = fixup }
 end
 
 --- DOCME
-function M.CallCondition ()
-	--
-end
+-- @string type
+-- @string name
+-- @uint arity
+-- @param ...
+-- @return X
+function M.CallFunction (type, name, arity, ...)
+	local funcs = assert(FuncTypes[type], "Unknown type")
+	local afuncs = funcs[arity]
+	local func = afuncs and afuncs[name]
 
---- DOCME
-function M.CallEpilogue ()
-	--
-end
-
---- DOCME
-function M.CallPrologue ()
-	--
-end
-
---- DOCME
-function M.NewInterpVar ()
-	--
-end
-
---- DOCME
-function M.NewReader ()
-	--
+	return funcs.fixup(func and func(select(arity, ...)))
 end
 
 -- Export the module.
