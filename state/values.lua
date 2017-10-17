@@ -135,19 +135,36 @@ function M.GetTypes ()
 end
 
 -- Rig up adders and editor events for various property types --
-local ValuesEx = { binary = {}, composite = {} }
+local ValuesEx = { binary = {}, compound = {} }
 
 for _, dir in adaptive.IterArray(state_vars.dirs) do
 	for name in pairs(state_vars.properties) do
 		local bok, binary = pcall(require, dir .. ".binary." .. name)
-		local cok, composite = pcall(require, dir .. ".composite." .. name)
+		local cok, compound = pcall(require, dir .. ".compound." .. name)
 
 		if bok then
 			ValuesEx.binary[name] = binary
 		end
 
 		if cok then
-			ValuesEx.composite[name] = composite
+			ValuesEx.compound[name] = compound
+		end
+	end
+end
+
+--
+local function AddList (values, key, message)
+	local list, alist = values[key], ValuesEx[key]
+
+	if list then
+		for name in pairs(state_vars.properties) do
+			local plist, adder = list[name], alist[name]
+
+			assert(not plist or adder, message)
+
+			for i = 1, #(plist or "") do
+				adder(plist[i])
+			end
 		end
 	end
 end
@@ -155,38 +172,16 @@ end
 --- DOCME
 function M.Load (values)
 	if values then
-		local prim, binary, comp = values.primitive, values.binary, values.composite
-
 		--
-		for i = 1, #(prim or "") do
-			_AddValue_(prim[i])
+		local prims = values.primitive
+
+		for i = 1, #(prims or "") do
+			_AddValue_(prims[i])
 		end
 
 		--
-		if binary then
-			for name in pairs(state_vars.properties) do
-				local plist, adder = binary[name], ValuesEx.binary[name]
-
-				assert(not plist or adder, "No adder available for binary type")
-
-				for i = 1, #(plist or "") do
-					adder(plist[i])
-				end
-			end
-		end
-
-		--
-		if comp then
-			for name in pairs(state_vars.properties) do
-				local plist, adder = comp[name], ValuesEx.composite[name]
-
-				assert(not plist or adder, "No adder available for composite type")
-
-				for i = 1, #(plist or "") do
-					adder(plist[i])
-				end
-			end
-		end
+		AddList(values, "binary", "No adder available for binary type")
+		AddList(values, "compound", "No adder available for compound type")
 	end
 end
 

@@ -32,7 +32,8 @@ local M = {}
 
 -- Figure out the VarFamily tiers...
 -- ...policies for persistence, rollback, etc...
--- ...variable substitution, gensyms, object referents
+-- ...variable substitution, gensyms, object referents (last mostly solved thanks to property redesign... others still relevant?)
+-- Random number generators, time facilities?
 
 -- --
 local FuncTypes = {}
