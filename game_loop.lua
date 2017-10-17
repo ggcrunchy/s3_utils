@@ -109,7 +109,9 @@ function M.AddThings (current_level, level)
 	end
 
 	-- ...and values...
-	values.Load(level.values)
+	for _, value in Ipairs(level.values) do
+		values.AddValues(value)
+	end
 
 	-- ...and music...
 	for _, track in Ipairs(level.music) do

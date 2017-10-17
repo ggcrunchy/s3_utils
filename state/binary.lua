@@ -88,7 +88,7 @@ function M.MakeEditorEvent (type, event, tag)
 		-- Prep Link --
 		elseif what == "prep_link" then
 			return function(bvalue, other, sub)
-				if sub == "pred1" or sub == "pred2" then
+				if sub == "value1" or sub == "value2" then
 					bvalue[sub] = other.uid
 				end
 			end

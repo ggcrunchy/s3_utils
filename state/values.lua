@@ -26,17 +26,10 @@
 -- Standard library imports --
 local assert = assert
 local pairs = pairs
-local rawequal = rawequal
 
 -- Modules --
 local require_ex = require("tektite_core.require_ex")
-local adaptive = require("tektite_core.table.adaptive")
 local bind = require("tektite_core.bind")
-local expression = require("s3_utils.state.expression")
-local state_vars = require("config.StateVariables")
-
--- Cached module references --
-local _AddValue_
 
 -- Exports --
 local M = {}
@@ -134,62 +127,8 @@ function M.GetTypes ()
 	return types
 end
 
--- Rig up adders and editor events for various property types --
-local ValuesEx = { binary = {}, compound = {} }
-
-for _, dir in adaptive.IterArray(state_vars.dirs) do
-	for name in pairs(state_vars.properties) do
-		local bok, binary = pcall(require, dir .. ".binary." .. name)
-		local cok, compound = pcall(require, dir .. ".compound." .. name)
-
-		if bok then
-			ValuesEx.binary[name] = binary
-		end
-
-		if cok then
-			ValuesEx.compound[name] = compound
-		end
-	end
-end
-
---
-local function AddList (values, key, message)
-	local list, alist = values[key], ValuesEx[key]
-
-	if list then
-		for name in pairs(state_vars.properties) do
-			local plist, adder = list[name], alist[name]
-
-			assert(not plist or adder, message)
-
-			for i = 1, #(plist or "") do
-				adder(plist[i])
-			end
-		end
-	end
-end
-
---- DOCME
-function M.Load (values)
-	if values then
-		--
-		local prims = values.primitive
-
-		for i = 1, #(prims or "") do
-			_AddValue_(prims[i])
-		end
-
-		--
-		AddList(values, "binary", "No adder available for binary type")
-		AddList(values, "compound", "No adder available for compound type")
-	end
-end
-
 -- Install various types of values.
 ValueList = require_ex.DoList("config.Values")
-
--- Cache module members.
-_AddValue_ = M.AddValue
 
 -- Export the module.
 return M
