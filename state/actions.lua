@@ -30,6 +30,7 @@ local rawequal = rawequal
 
 -- Modules --
 local require_ex = require("tektite_core.require_ex")
+local adaptive = require("tektite_core.table.adaptive")
 local bind = require("tektite_core.bind")
 
 -- Exports --
@@ -64,7 +65,7 @@ function M.AddAction (info, wname)
 			return true
 
 		-- Otherwise, bind any control flow state.
-		elseif rawequal(arg, ActionList) then
+		elseif rawequal(arg, proxy) then
 			can_fire = what
 		end
 	end
@@ -74,7 +75,7 @@ function M.AddAction (info, wname)
 		event.Subscribe(proxy, info[k], wlist)
 	end
 
-	bind.Subscribe(wlist, info.can_fire, action, ActionList)
+	bind.Subscribe(wlist, info.can_fire, action, proxy)
 
 	--
 	bind.Publish(wlist, action, info.uid, "fire")
@@ -102,10 +103,50 @@ end
 
 --
 local function NewTag (result, ...)
-	if result then
+	if result and result ~= "extend" then
 		return result, ...
 	else
-		return "sources_and_targets", Events, "fire", nil, { boolean = "can_fire" }
+		local events, actions, sources, targets = Events, "fire", nil, { boolean = "can_fire" }
+
+		if result == "extend" then
+			local w1, w2, w3, w4 = ...
+
+			if w1 then
+				local events = {}
+
+				for k, v in pairs(Events) do
+					events[k] = v
+				end
+
+				for k in adaptive.IterSet(w1) do
+					events[k] = true
+				end
+			end
+
+			for k in adaptive.IterSet(w2) do
+				w2 = adaptive.AddToSet(w2, k)
+			end
+
+			if w3 then
+				sources = {}
+
+				for vtype, list in pairs(w3) do
+					for k in adaptive.IterSet(list) do
+						sources[vtype] = adaptive.AddToSet(sources[vtype], k)
+					end
+				end
+			end
+
+			if w4 then
+				for vtype, list in pairs(w4) do
+					for k in adaptive.IterSet(list) do
+						targets[vtype] = adaptive.AddToSet(targets[vtype], k)
+					end
+				end
+			end
+		end
+
+		return "sources_and_targets", events, actions, sources, targets
 	end
 end
 

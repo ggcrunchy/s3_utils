@@ -37,11 +37,27 @@ local M = {}
 -- Value type lookup table --
 local ValueList
 
+
+local Before = bind.BroadcastBuilder_Helper("loading_level")
+
 --- DOCME
 function M.AddValue (info, wname)
+	local wlist = wname or "loading_level"
 	local value = assert(ValueList[info.type], "Invalid value")(info)
 
-	bind.Publish(wname or "loading_level", value, info.uid, "get")
+	if info.before then
+		local body, proxy = value, {}
+
+		function value ()
+			Before(proxy, "fire", false)
+
+			return body()
+		end
+
+		Before.Subscribe(proxy, info.before, wlist)
+	end
+
+	bind.Publish(wlist, value, info.uid, "get")
 
 	return value
 end
@@ -51,7 +67,7 @@ local function NewTag (vtype, result, ...)
 	if result then
 		return result, ...
 	else
-		return "properties", { [vtype] = "get" }
+		return "sources_and_targets", { before = Before }, nil, { [vtype] = "get" }
 	end
 end
 
