@@ -100,7 +100,7 @@ function M.EditorEvent (type, what, arg1, arg2, arg3)
 
 		-- New Tag --
 		elseif what == "new_tag" then
-			return NewTag(event("new_tag"))
+			return NewTag(vtype, event("new_tag"))
 
 		-- Prep Link --
 		elseif what == "prep_link" then

@@ -142,7 +142,7 @@ function M.EditorEvent (type, what, arg1, arg2, arg3)
 		-- Enumerate Properties --
 		-- arg1: Dialog
 		elseif what == "enum_props" then
-			arg1:StockElements("Action", type)
+			arg1:StockElements()
 			arg1:AddSeparator()
 
 		-- Get Link Info --
