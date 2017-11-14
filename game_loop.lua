@@ -110,7 +110,7 @@ function M.AddThings (current_level, level)
 
 	-- ...and values...
 	for _, value in Ipairs(level.values) do
-		values.AddValues(value)
+		values.AddValue(value)
 	end
 
 	-- ...and music...
