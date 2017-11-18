@@ -34,8 +34,10 @@ local rawequal = rawequal
 local adaptive = require("tektite_core.table.adaptive")
 local bind = require("tektite_core.bind")
 local config = require("config.GlobalEvents")
+local state_vars = require("config.StateVariables")
 
 -- Corona globals --
+local Runtime = Runtime
 local timer = timer
 
 -- Exports --
@@ -43,6 +45,9 @@ local M = {}
 
 -- --
 local Actions = {}
+
+-- --
+local OutProperties = config.out_properties
 
 -- --
 local Defaults, Events
@@ -82,6 +87,8 @@ function M.AddEvents (events)
 		bind.Publish("loading_level", Actions[k], events.uid, k)
 	end
 
+	state_vars.PublishProperties(events.props, OutProperties, events.uid)
+
 	--
 	if not adaptive.InSet(actions, "win") then
 		Defaults = { all_dots_removed = "win" }
@@ -90,7 +97,7 @@ end
 
 --
 local function LinkGlobal (global, other, gsub, osub)
-	bind.LinkActionsAndEvents(global, other, gsub, osub, GetEvent, Actions, "actions")
+	bind.LinkActionsEventsAndProperties(global, other, gsub, osub, GetEvent, Actions, "actions", OutProperties, "props")
 end
 
 --- DOCME
@@ -101,7 +108,7 @@ function M.EditorEvent (_, what)
 
 	-- New Tag --
 	elseif what == "new_tag" then
-		return "sources_and_targets", GetEvent, Actions
+		return "sources_and_targets", GetEvent, Actions, state_vars.UnfoldPropertyFunctionsAsTagReadyList(OutProperties)
 
 	-- Prep Link --
 	elseif what == "prep_link" then
@@ -140,15 +147,27 @@ function M.ExtendAction (name, func)
 	end
 end
 
+local function EnterFrame ()
+	for _, event in bind.IterEvents(GetEvent.enter_frame) do
+		event("fire", false)
+	end
+end
+
 -- Listen to events.
 for k, v in pairs{
 	-- Enter Level --
 	enter_level = function()
 		Events = {}
+
+		if GetEvent.enter_frame and GetEvent.enter_frame("n") > 0 then
+			Runtime:addEventListener("enterFrame", EnterFrame)
+		end
 	end,
 
 	-- Leave Level --
 	leave_level = function()
+		Runtime:removeEventListener("enterFrame", EnterFrame)
+
 		timer.performWithDelay(0, function()
 			Events, Defaults = nil
 		end)
