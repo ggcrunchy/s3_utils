@@ -29,6 +29,7 @@ local pairs = pairs
 
 -- Modules --
 local require_ex = require("tektite_core.require_ex")
+local adaptive = require("tektite_core.table.adaptive")
 local bind = require("tektite_core.bind")
 
 -- Exports --
@@ -43,18 +44,18 @@ local Before = bind.BroadcastBuilder_Helper("loading_level")
 --- DOCME
 function M.AddValue (info, wname)
 	local wlist = wname or "loading_level"
-	local value = assert(ValueList[info.type], "Invalid value")(info)
+	local value = assert(ValueList[info.type], "Invalid value")(info, wlist)
 
 	if info.before then
-		local body, proxy = value, {}
+		local body = value
 
 		function value ()
-			Before(proxy, "fire", false)
+			Before(value, "fire", false)
 
 			return body()
 		end
 
-		Before.Subscribe(proxy, info.before, wlist)
+		Before.Subscribe(value, info.before, wlist)
 	end
 
 	bind.Publish(wlist, value, info.uid, "get")
@@ -64,10 +65,44 @@ end
 
 --
 local function NewTag (vtype, result, ...)
-	if result then
+	if result and result ~= "extend" then
 		return result, ...
 	else
-		return "sources_and_targets", { before = Before }, nil, { [vtype] = "get" }
+		local events, actions, sources, targets = { before = Before }, nil, { [vtype] = "get" }
+
+		if result == "extend" then
+			local w1, w2, w3, w4 = ...
+
+			if w1 then
+				for k in adaptive.IterSet(w1) do
+					events[k] = true
+				end
+			end
+
+			for k in adaptive.IterSet(w2) do
+				w2 = adaptive.AddToSet(w2, k)
+			end
+
+			if w3 then
+				for vtype, list in pairs(w3) do
+					for k in adaptive.IterSet(list) do
+						sources[vtype] = adaptive.AddToSet(sources[vtype], k)
+					end
+				end
+			end
+
+			if w4 then
+				targets = {}
+
+				for vtype, list in pairs(w4) do
+					for k in adaptive.IterSet(list) do
+						targets[vtype] = adaptive.AddToSet(targets[vtype], k)
+					end
+				end
+			end
+		end
+
+		return "sources_and_targets", events, actions, sources, targets
 	end
 end
 
@@ -105,11 +140,6 @@ function M.EditorEvent (type, what, arg1, arg2, arg3)
 			arg1:StockElements()
 			arg1:AddSeparator()
 
-		-- Get Link Info --
-		-- arg1: Info to populate
-		elseif what == "get_link_info" then
-			arg1.get = "Query this value"
-
 		-- Get Tag --
 		elseif what == "get_tag" then
 			return event("get_tag") or vtype
@@ -118,10 +148,6 @@ function M.EditorEvent (type, what, arg1, arg2, arg3)
 		elseif what == "new_tag" then
 			return NewTag(vtype, event("new_tag"))
 
-		-- Prep Link --
-		elseif what == "prep_link" then
-			-- ANYTHING?
-		
 		-- Verify --
 		elseif what == "verify" then
 			-- chase down loops?

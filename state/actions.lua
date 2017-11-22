@@ -46,36 +46,40 @@ for _, v in ipairs{ "instead", "next" } do
 	Events[v] = bind.BroadcastBuilder_Helper("loading_level")
 end
 
+local CanFire = setmetatable({}, { __mode = "k" })
+
+local function BindCanFire (can_fire, action)
+	CanFire[action] = can_fire
+end
+
 --- DOCME
 function M.AddAction (info, wname)
-	local wlist, can_fire, instead, next = wname or "loading_level"
-	local body, proxy = assert(ActionList[info.type], "Invalid action")(info), {}
+	local wlist, instead, next = wname or "loading_level"
+	local body = assert(ActionList[info.type], "Invalid action")(info, wlist)
 
-	local function action (what, arg)
+	local function action (what)
 		-- Resolve the action itself.
 		if what == "fire" then
+			local can_fire = CanFire[action]
+
 			if can_fire and not can_fire() then
-				return Events.instead(proxy, "fire", false)
+				return Events.instead(action, "fire", false)
 			else
 				body()
 
-				return Events.next(proxy, "fire", false)
+				return Events.next(action, "fire", false)
 			end
 		elseif what == "is_done" then
 			return true
-
-		-- Otherwise, bind any control flow state.
-		elseif rawequal(arg, proxy) then
-			can_fire = what
 		end
 	end
 
 	--
 	for k, event in pairs(Events) do
-		event.Subscribe(proxy, info[k], wlist)
+		event.Subscribe(action, info[k], wlist)
 	end
 
-	bind.Subscribe(wlist, info.can_fire, action, proxy)
+	bind.Subscribe(wlist, info.can_fire, BindCanFire, action)
 
 	--
 	bind.Publish(wlist, action, info.uid, "fire")

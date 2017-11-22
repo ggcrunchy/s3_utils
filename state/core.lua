@@ -27,6 +27,9 @@
 local assert = assert
 local select = select
 
+-- Modules --
+local state_vars = require("config.StateVariables")
+
 -- Exports --
 local M = {}
 
@@ -71,6 +74,31 @@ function M.CallFunction (type, name, arity, ...)
 	local func = afuncs and afuncs[name]
 
 	return funcs.fixup(func and func(select(arity, ...)))
+end
+
+local Vars = {}
+
+for _, family in ipairs(state_vars.families) do
+	Vars[family] = {}
+end
+
+--- DOCME
+function M.GetVariable (family, type, name)
+	local tier = Vars[family]
+	local tset = tier and tier[type]
+
+	return tset and tset[name]
+end
+
+--- DOCME
+function M.SetVariable (family, type, name, value)
+	assert(state_vars.properties[type], "Unknown variable type")
+
+	local tier = assert(Vars[family], "Unknown variable family")
+	local tset = tier[type] or {}
+
+	tier[type], tset[name] = tset, value
+	-- TODO: autopropagation...
 end
 
 -- Export the module.
