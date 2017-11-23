@@ -96,7 +96,7 @@ local function ValidateOperator (name, info)
 end
 
 local Int = "%d+"
-local Float = "%d+%.?%d*[Ee]?[%+%-]?%d*"
+local Float = "%d+%.?%d*[Ee]?"
 
 local NumberPatts = {
 	number = "[%+%-]?" .. Float,
@@ -246,14 +246,30 @@ local function AreParensBalanced (expr)
 	return depth == 0 
 end
 
+local Exponent = "[%+%-]?%d+"
+
+local function CheckExponent (expr, i1, i2)
+	local last = expr:sub(i2, i2)
+
+	if last == "e" or last == "E" then
+		local i3, i4 = expr:find(Exponent, i2 + 1)
+
+		if i3 == i2 + 1 then -- else number is broken
+			return i1, i4
+		end
+	else
+		return i1, i2
+	end
+end
+
 local function EatSpace (expr, pos, n)
 	return expr:find("%S", pos) or n + 1
 end
 
 local SearchList = {
-	"number", false, -- n.b. pattern filled in (or not) ahead of time
-	"identifier", IdentifierPatt,
-	"symbol", SymbolPatt -- n.b. follows numbers to avoid ambiguities with symbols beginning with `+` and `-`
+	"number", false, CheckExponent,-- n.b. pattern filled in (or not) ahead of time
+	"identifier", IdentifierPatt, false,
+	"symbol", SymbolPatt, false -- n.b. follows numbers to avoid ambiguities with symbols beginning with `+` and `-`
 }
 
 local EmitInfo = {
@@ -290,11 +306,15 @@ local function LookupVar (grammar, item, next_pos)
 end
 
 local function GetNextToken (grammar, expr, pos)
-	for i = 1, #SearchList, 2 do
-		local ttype, patt = SearchList[i], SearchList[i + 1]
+	for i = 1, #SearchList, 3 do
+		local ttype, patt, follow_up = SearchList[i], SearchList[i + 1], SearchList[i + 2]
 
 		if patt then
 			local i1, i2 = expr:find(patt, pos)
+
+			if follow_up and i1 == pos then -- address cases needing two patterns
+				i1, i2 = follow_up(expr, i1, i2)
+			end
 
 			if i1 == pos then
 				local item, next_pos = expr:sub(i1, i2), i2 + 1
@@ -450,7 +470,9 @@ local function FindBestOperator (list)
 		end
 	end
 
-	if list[index + 2] == "resolved" then
+	if not index then
+		return nil, "Found no operators"
+	elseif list[index + 2] == "resolved" then
 		if index == alt_index then -- if alternate should be used, overwrite entry
 			list[index], list[index + 1] = "unary_op", list[index + 1][3]
 		end
@@ -558,6 +580,8 @@ function Lex (grammar, expr, pos, n, term)
 
 	if ok then
 		return Resolve(lexa, lexb, pos)
+	elseif type(term) == "function" then
+		return nil, "Reached end of stream without finding ',' or ')'"
 	else
 		return nil, "Reached end of stream without finding '" .. term .. "'"
 	end
