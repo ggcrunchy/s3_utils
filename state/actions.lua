@@ -32,6 +32,7 @@ local rawequal = rawequal
 local require_ex = require("tektite_core.require_ex")
 local adaptive = require("tektite_core.table.adaptive")
 local bind = require("tektite_core.bind")
+local table_funcs = require("tektite_core.table.funcs")
 
 -- Exports --
 local M = {}
@@ -46,7 +47,7 @@ for _, v in ipairs{ "instead", "next" } do
 	Events[v] = bind.BroadcastBuilder_Helper("loading_level")
 end
 
-local CanFire = setmetatable({}, { __mode = "k" })
+local CanFire = table_funcs.Weak("k")
 
 local function BindCanFire (can_fire, action)
 	CanFire[action] = can_fire
