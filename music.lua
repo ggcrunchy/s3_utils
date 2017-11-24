@@ -206,7 +206,7 @@ function M.EditorEvent (_, what, arg1, arg2)
 		-- volume?
 
 		--
-		arg1:SetStateFromValue_Watch(loop_count_section, "looping", true)
+		arg1:SetStateFromValue_Watch(loop_count_section, "looping", "use_false")
 
 	-- Get Link Info --
 	-- arg1: Info to populate
