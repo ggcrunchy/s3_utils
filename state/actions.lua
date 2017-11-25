@@ -26,7 +26,6 @@
 -- Standard library imports --
 local assert = assert
 local pairs = pairs
-local rawequal = rawequal
 
 -- Modules --
 local require_ex = require("tektite_core.require_ex")
@@ -55,7 +54,7 @@ end
 
 --- DOCME
 function M.AddAction (info, wname)
-	local wlist, instead, next = wname or "loading_level"
+	local wlist = wname or "loading_level"
 	local body = assert(ActionList[info.type], "Invalid action")(info, wlist)
 
 	local function action (what)

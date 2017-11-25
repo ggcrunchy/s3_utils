@@ -50,17 +50,23 @@ local Actions = {}
 local OutProperties = config.out_properties
 
 -- --
-local Defaults, Events
+local Defaults, EventNonce
 
 -- Deferred global event <-> event bindings
-local GetEvent = {}
+local GetEvent, EnterFrameMapping = {}
 
 for _, v in ipairs(config.events) do
-	GetEvent[v] = bind.BroadcastBuilder(v)
+	local object_to_broadcaster
+
+	GetEvent[v], object_to_broadcaster = bind.BroadcastBuilder()
+
+	if v == "enter_frame" then
+		EnterFrameMapping = object_to_broadcaster
+	end
 
 	Runtime:addEventListener(v, function()
 		--
-		for _, event in bind.IterEvents(Events[v]) do
+		for _, event in bind.IterEvents(object_to_broadcaster[EventNonce]) do
 			event("fire", false)
 		end
 
@@ -77,7 +83,7 @@ end
 function M.AddEvents (events)
 	--
 	for k, v in pairs(GetEvent) do
-		bind.Subscribe("loading_level", events and events[k], v, Events)
+		bind.Subscribe("loading_level", events and events[k], v, EventNonce)
 	end
 	
 	--
@@ -148,7 +154,7 @@ function M.ExtendAction (name, func)
 end
 
 local function EnterFrame ()
-	for _, event in bind.IterEvents(GetEvent.enter_frame) do
+	for _, event in bind.IterEvents(EnterFrameMapping[EventNonce]) do
 		event("fire", false)
 	end
 end
@@ -157,11 +163,7 @@ end
 for k, v in pairs{
 	-- Enter Level --
 	enter_level = function()
-		Events = {}
-
-		if GetEvent.enter_frame and GetEvent.enter_frame("n") > 0 then
-			Runtime:addEventListener("enterFrame", EnterFrame)
-		end
+		EventNonce = {}
 	end,
 
 	-- Leave Level --
@@ -169,8 +171,17 @@ for k, v in pairs{
 		Runtime:removeEventListener("enterFrame", EnterFrame)
 
 		timer.performWithDelay(0, function()
-			Events, Defaults = nil
+			EventNonce, Defaults = nil
 		end)
+	end,
+
+	-- Things Loaded --
+	things_loaded = function()
+		for _ in bind.IterEvents(EnterFrameMapping[EventNonce]) do
+			Runtime:addEventListener("enterFrame", EnterFrame)
+
+			break
+		end
 	end
 } do
 	Runtime:addEventListener(k, v)
