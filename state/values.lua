@@ -38,7 +38,6 @@ local M = {}
 -- Value type lookup table --
 local ValueList
 
-
 local Before = bind.BroadcastBuilder_Helper("loading_level")
 
 --- DOCME
@@ -63,15 +62,25 @@ function M.AddValue (info, wname)
 	return value
 end
 
+local function LinkValue ()
+	--
+end
+
 --
 local function NewTag (vtype, result, ...)
-	if result and result ~= "extend" then
+	if result and result ~= "extend" and result ~= "extend_properties" then
 		return result, ...
 	else
 		local events, actions, sources, targets = { before = Before }, nil, { [vtype] = "get" }
 
-		if result == "extend" then
-			local w1, w2, w3, w4 = ...
+		if result then
+			local w1, w2, w3, w4
+
+			if result == "extend" then
+				w1, w2, w3, w4 = ...
+			else
+				w3, w4 = ...
+			end
 
 			if w1 then
 				for k in adaptive.IterSet(w1) do
@@ -147,6 +156,12 @@ function M.EditorEvent (type, what, arg1, arg2, arg3)
 		-- New Tag --
 		elseif what == "new_tag" then
 			return NewTag(vtype, event("new_tag"))
+
+		-- Prep Link --
+		-- arg1: Level
+		-- arg2: Built
+		elseif what == "prep_link" then
+			return event("prep_link:value", LinkValue, arg1, arg2) or LinkValue
 
 		-- Verify --
 		elseif what == "verify" then

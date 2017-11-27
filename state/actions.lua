@@ -89,31 +89,26 @@ end
 
 --
 local function LinkAction (action, other, sub, other_sub)
-	if sub == "instead" or sub == "next" then
+	if sub == "can_fire" or sub == "instead" or sub == "next" then
 		bind.AddId(action, sub, other.uid, other_sub)
 	end
-
-	-- TODO: anything necessary for "fire"?
-	-- 
-	--[[
-	if sub == "to" or (sub == "from" and not warp.to) then
-		if sub == "to" and other.type ~= "warp" then
-			bind.AddId(warp, "to", other.uid, other_sub)
-		else
-			warp.to = other.uid
-		end
-	end]]
 end
 
 --
 local function NewTag (result, ...)
-	if result and result ~= "extend" then
+	if result and result ~= "extend" and result ~= "extend_properties" then
 		return result, ...
 	else
 		local events, actions, sources, targets = Events, "fire", nil, { boolean = "can_fire" }
 
-		if result == "extend" then
-			local w1, w2, w3, w4 = ...
+		if result then
+			local w1, w2, w3, w4
+
+			if result == "extend" then
+				w1, w2, w3, w4 = ...
+			else
+				w3, w4 = ...
+			end
 
 			if w1 then
 				local events = {}
@@ -193,10 +188,10 @@ function M.EditorEvent (type, what, arg1, arg2, arg3)
 		-- Get Link Info --
 		-- arg1: Info to populate
 		elseif what == "get_link_info" then
-			arg1.fire = "Kick off this action and anything that follows"
-			arg1.can_fire = "Can this action fire? (default true)"
-			arg1.next = "Follow-up actions or events, after firing"
-			arg1.instead = "Actions or events to do instead of firing"
+			arg1.fire = "Do action"
+			arg1.can_fire = "BOOL: Okay to do?"
+			arg1.next = "Follow-up"
+			arg1.instead = "Instead"
 
 		-- Get Tag --
 		elseif what == "get_tag" then
@@ -208,8 +203,10 @@ function M.EditorEvent (type, what, arg1, arg2, arg3)
 			-- TODO: property getter narratives could have something to kick off action before reading
 
 		-- Prep Link --
+		-- arg1: Level
+		-- arg2: Built
 		elseif what == "prep_link" then
-			return event("prep_link", LinkAction) or LinkAction
+			return event("prep_link:action", LinkAction, arg1, arg2) or LinkAction
 		
 		-- Verify --
 		elseif what == "verify" then

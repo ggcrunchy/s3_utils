@@ -346,15 +346,15 @@ function M.EditorEvent (type, what, arg1, arg2, arg3)
 		-- Get Link Info --
 		-- arg1: Info to populate
 		elseif what == "get_link_info" then
-			arg1.on_die = "Event links: On(die)"
-			arg1.on_wake = "Event links: On(wake)"
-			arg1.do_kill = "Action links: Do(kill)"
-			arg1.do_wake = "Action links: Do(wake)"
-			arg1.alive = { friendly_name = "BOOL: enemy alive?" }
-			arg1.enemy_x = { friendly_name = "NUM: enemy's x" }
-			arg1.enemy_y = { friendly_name = "NUM: enemy's y" }
-			arg1.sp_x = { friendly_name = "NUM: spawner's x" }
-			arg1.sp_y = { friendly_name = "NUM: spawner's y" }
+			arg1.on_die = "On(die)"
+			arg1.on_wake = "On(wake)"
+			arg1.do_kill = "Kill enemy"
+			arg1.do_wake = "Wake spawner"
+			arg1.alive = { friendly_name = "BOOL: Is alive?", is_source = true }
+			arg1.enemy_x = { friendly_name = "NUM: Enemy's x", is_source = true }
+			arg1.enemy_y = { friendly_name = "NUM: Enemy's y", is_source = true }
+			arg1.sp_x = { friendly_name = "NUM: Spawner's x", is_source = true }
+			arg1.sp_y = { friendly_name = "NUM: Spawner's y", is_source = true }
 
 		-- Get Tag --
 		elseif what == "get_tag" then

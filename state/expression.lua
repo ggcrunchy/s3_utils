@@ -140,8 +140,6 @@ end
 --            `{ func = X, identity = I }`, where `X` is either a function taking `N` arguments
 --            or a function taking `I` plus a variable number of arguments, and in either
 --            case returning a single value.
---   * **names**: Optional array of names. During processing, discovering a variable whose
---            name is absent from this list results in an error.
 --   * **numbers**: If present, one of **"number"**, **"negative\_number"**, **"positive\_number"**,
 --              **"integer"**, **"negative\_integer"**, or **"positive\_number"**, indicating
 --              what sort of numeric constants to allow, with **"number"** being the most
@@ -162,14 +160,6 @@ function M.DefineGrammar (params)
 	local grammar = { def = params.default }
 
 	assert(grammar.def ~= nil, "Non-nil default return value required")
-
-	if params.names then
-		grammar.names = {}
-
-		for i = 1, #params.names do
-			grammar.names[params.names[i]] = true
-		end
-	end
 
 	if params.numbers then
 		grammar.numbers = assert(NumberPatts[params.numbers], "Invalid number kind")
@@ -293,10 +283,6 @@ end
 local Lookup
 
 local function LookupVar (grammar, item, next_pos)
-	if grammar.names and not grammar.names[item] then
-		return nil, item .. "is not a valid name"
-	end
-
 	Lookup = Lookup or {}
 	Lookup[item] = Lookup[item] or function(params)
 		return params[item]
@@ -627,6 +613,22 @@ local function ArgsMatchVars (args, vars)
 	return args == vars -- both nil?
 end
 
+local function NoExtraKeys (from, find_in)
+	if from == nil then
+		return true
+	elseif find_in == nil then
+		return false
+	else
+		for k in pairs(from) do
+			if find_in[k] == nil then
+				return false
+			end
+		end
+	end
+
+	return true
+end
+
 --- Given a grammar, convert an expression into callable form.
 -- @tparam Grammar grammar_def The grammar underlying the expression, as returned by @{DefineGrammar}.
 -- @string expr TODO! identifiers, symbols, parens, whitespace, constants, funcs, binary and unary operators)
@@ -667,9 +669,17 @@ function M.Process (grammar_def, expr)
 		end
 
 		return function(args, how)
-			if how == "check_match" then
-				return ArgsMatchVars(args, vars)
-			elseif vars then
+			if how then
+				if how == "check_match" then
+					return ArgsMatchVars(args, vars)
+				elseif how == "check_no_extra_args" then
+					return NoExtraKeys(args, vars)
+				elseif how == "check_no_unbound_vars" then
+					return NoExtraKeys(vars, args)
+				end
+			end
+
+			if vars then
 				BindArgs(vars, args, def)
 			end
 
@@ -677,13 +687,65 @@ function M.Process (grammar_def, expr)
 		end
 	else -- empty expression
 		return function(args, how)
-			if how == "check_match" then
-				return args == nil
+			if how == "check_match" or how == "check_no_extra_args" then
+				return (args and next(args, nil)) == nil
+			elseif how == "check_no_unbound_vars" then
+				return true
 			else
 				return def
 			end
 		end
 	end
+end
+
+local function SplicePair (out, grammar1, grammar2, name)
+	local list1, list2 = grammar1[name], grammar2[name]
+
+	if list1 or list2 then
+		if list1 == nil then
+			out[name] = list2
+		elseif list2 == nil then
+			out[name] = list1
+		else
+			for k, v in pairs(list1) do
+				if list2[k] then
+					assert(false, "`" .. name .. "` clash: `" .. k .. "` present in both grammars")
+				else
+					out[k] = v
+				end
+			end
+
+			for k, v in pairs(list2) do
+				if not out[k] then
+					out[k] = v
+				end
+			end
+		end
+	end
+end
+
+--- DOCME
+-- TODO: most of the power here will come with types
+function M.Splice (grammar1, grammar2)
+	local new = {}
+
+	-- defs...
+		-- assumed these will be revised to accommodate types
+		-- in that case, just need to ensure they match?
+			-- actually, even okay to be blank
+
+	if grammar1.numbers or grammar2.numbers then
+		-- TODO!
+		-- some combinations compatible, others not
+		-- choose the "winner" or error
+	end
+
+	SplicePair(new, grammar1, grammar2, "binary_funcs")
+	SplicePair(new, grammar1, grammar2, "constants")
+	SplicePair(new, grammar1, grammar2, "funcs")
+	SplicePair(new, grammar1, grammar2, "unary_funcs")
+
+	return new
 end
 
 -- Export the module.
