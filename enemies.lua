@@ -102,7 +102,7 @@ end
 -- Common logic to apply when an enemy is killed
 local function Kill (enemy, other)
 	if enemy.m_alive then
-		enemy.m_alive = false
+		enemy.m_alive, enemy.m_local_vars = false
 
 		collision.SetVisibility(enemy, false)
 
@@ -201,7 +201,7 @@ function M.AlertEnemies (what, arg, how)
 	local live_value, omit
 
 	-- Filter out alert recipients: an enemy alerting others must not alert itself, and
-	-- otherwise screen passed on who is or is not alive. The "omit self" flag is consumed
+	-- otherwise screen out those either alive or not. The "omit self" flag is consumed
 	-- immediately, so clean it up in order to not confused subsequent alerts.
 	omit, OmitArg = OmitArg and arg
 
@@ -258,6 +258,21 @@ local Properties = {
 		alive = function(enemy)
 			return function()
 				return enemy.m_alive == true
+			end
+		end
+	},
+
+	family = {
+		-- --
+		local_vars = function(enemy)
+			return function()
+				if enemy.m_alive then
+					enemy.m_local_vars = enemy.m_local_vars or {}
+
+					return enemy.m_local_vars
+				else
+					return false
+				end
 			end
 		end
 	},
@@ -353,6 +368,7 @@ function M.EditorEvent (type, what, arg1, arg2, arg3)
 			arg1.alive = { friendly_name = "BOOL: Is alive?", is_source = true }
 			arg1.enemy_x = { friendly_name = "NUM: Enemy's x", is_source = true }
 			arg1.enemy_y = { friendly_name = "NUM: Enemy's y", is_source = true }
+			arg1.local_vars = { friendly_name = "FAM: Enemy vars", is_source = true }
 			arg1.sp_x = { friendly_name = "NUM: Spawner's x", is_source = true }
 			arg1.sp_y = { friendly_name = "NUM: Spawner's y", is_source = true }
 
@@ -611,7 +627,7 @@ local events = {
 		_AlertEnemies_("about_to_reset")
 
 		for i, enemy in ipairs(Enemies) do
-			enemy.m_alive = false
+			enemy.m_alive, enemy.m_local_vars = false
 
 			enemy_events.base_reset(enemy)
 

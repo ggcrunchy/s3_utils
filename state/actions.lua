@@ -200,7 +200,6 @@ function M.EditorEvent (type, what, arg1, arg2, arg3)
 		-- New Tag --
 		elseif what == "new_tag" then
 			return NewTag(event("new_tag"))
-			-- TODO: property getter narratives could have something to kick off action before reading
 
 		-- Prep Link --
 		-- arg1: Level
