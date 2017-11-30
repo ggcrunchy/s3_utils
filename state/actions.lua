@@ -111,9 +111,9 @@ local function NewTag (result, ...)
 			end
 
 			if w1 then
-				local events = {}
+				events = {}
 
-				for k, v in pairs(Events) do
+				for k, v in pairs(Events) do -- copy to not mutate
 					events[k] = v
 				end
 
@@ -123,7 +123,7 @@ local function NewTag (result, ...)
 			end
 
 			for k in adaptive.IterSet(w2) do
-				w2 = adaptive.AddToSet(w2, k)
+				actions = adaptive.AddToSet(actions, k)
 			end
 
 			if w3 then

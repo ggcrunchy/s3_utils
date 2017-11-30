@@ -89,7 +89,7 @@ local function NewTag (vtype, result, ...)
 			end
 
 			for k in adaptive.IterSet(w2) do
-				w2 = adaptive.AddToSet(w2, k)
+				actions = adaptive.AddToSet(actions, k)
 			end
 
 			if w3 then
@@ -131,24 +131,17 @@ function M.EditorEvent (type, what, arg1, arg2, arg3)
 	if cons then
 		local event, vtype = cons("editor_event") or NoEvent, assert(cons("value_type"), "No value type specified")
 
-		-- Build --
-		-- arg1: Level
-		-- arg2: Original entry
-		-- arg3: Action to build
-		if what == "build" then
-			-- ANYTHING?
-
-		-- Enumerate Defaults --
-		-- arg1: Defaults
-		elseif what == "enum_defs" then
-			-- extended by derived types
-
 		-- Enumerate Properties --
 		-- arg1: Dialog
-		elseif what == "enum_props" then
+		if what == "enum_props" then
 			arg1:StockElements()
 			arg1:AddSeparator()
 
+		-- Get Link Info --
+		-- arg1: Info to populate
+		elseif what == "get_link_info" then
+			arg1.before = "On(before)"
+	
 		-- Get Tag --
 		elseif what == "get_tag" then
 			return event("get_tag") or vtype
