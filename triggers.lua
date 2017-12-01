@@ -175,8 +175,8 @@ function M.AddTrigger (group, info)
 end
 
 --
-local function LinkTrigger (trigger, other, gsub, osub)
-	bind.LinkActionsAndEvents(trigger, other, gsub, osub, Events, Actions, "actions")
+local function LinkTrigger (trigger, other, sub, osub)
+	bind.LinkActionsAndEvents(trigger, other, sub, osub, Events, Actions, "actions")
 end
 
 --- DOCME

@@ -87,9 +87,7 @@ function M.AddEvents (events)
 	end
 	
 	--
-	local actions = events and events.actions
-
-	for k in adaptive.IterSet(actions) do
+	for k in adaptive.IterSet(events and events.actions) do
 		bind.Publish("loading_level", Actions[k], events.uid, k)
 	end
 
