@@ -175,8 +175,12 @@ function M.AddTrigger (group, info)
 end
 
 --
-local function LinkTrigger (trigger, other, sub, osub)
-	bind.LinkActionsAndEvents(trigger, other, sub, osub, Events, Actions, "actions")
+local function LinkTrigger (trigger, other, tsub, osub)
+	local helper = bind.PrepLink(trigger, other, tsub, osub)
+
+	helper("try_actions", Actions)
+	helper("try_events", Events)
+	helper("commit")
 end
 
 --- DOCME

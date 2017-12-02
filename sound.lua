@@ -138,8 +138,12 @@ function M.AddSound (info)
 end
 
 --
-local function LinkSound (sound, other, gsub, osub)
-	bind.LinkActionsAndEvents(sound, other, gsub, osub, Events, Actions, "actions")
+local function LinkSound (sound, other, ssub, osub)
+	local helper = bind.PrepLink(sound, other, ssub, osub)
+
+	helper("try_actions", Actions)
+	helper("try_events", Events)
+	helper("commit")
 end
 
 --- DOCME

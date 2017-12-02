@@ -94,14 +94,19 @@ function M.AddEvents (events)
 	state_vars.PublishProperties(events.props, OutProperties, events.uid)
 
 	--
-	if not adaptive.InSet(actions, "win") then
+	if not adaptive.InSet(events and events.actions, "win") then
 		Defaults = { all_dots_removed = "win" }
 	end
 end
 
 --
 local function LinkGlobal (global, other, gsub, osub)
-	bind.LinkActionsEventsAndProperties(global, other, gsub, osub, GetEvent, Actions, "actions", OutProperties, "props")
+	local helper = bind.PrepLink(global, other, gsub, osub)
+
+	helper("try_actions", Actions)
+	helper("try_events", GetEvent)
+	helper("try_out_properties", OutProperties)
+	helper("commit")
 end
 
 --- DOCME

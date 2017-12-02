@@ -318,8 +318,12 @@ local Properties = {
 
 --
 local function LinkEnemy (enemy, other, esub, osub)
---	bind.LinkActionsAndEvents(enemy, other, esub, osub, Events, Actions, "actions")
-	bind.LinkActionsEventsAndProperties(enemy, other, esub, osub, Events, Actions, "actions", Properties, "props")
+	local helper = bind.PrepLink(enemy, other, esub, osub)
+
+	helper("try_actions", Actions)
+	helper("try_events", Events)
+	helper("try_out_properties", Properties)
+	helper("commit")
 end
 
 --- Handler for enemy-related events sent by the editor.

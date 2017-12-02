@@ -177,8 +177,12 @@ function M.AddMusic (info)
 end
 
 --
-local function LinkMusic (music, other, gsub, osub)
-	bind.LinkActionsAndEvents(music, other, gsub, osub, Events, Actions, "actions")
+local function LinkMusic (music, other, msub, osub)
+	local helper = bind.PrepLink(music, other, msub, osub)
+
+	helper("try_actions", Actions)
+	helper("try_events", Events)
+	helper("commit")
 end
 
 --- DOCME
