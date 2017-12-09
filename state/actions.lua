@@ -165,23 +165,9 @@ function M.EditorEvent (type, what, arg1, arg2, arg3)
 	if cons then
 		local event = cons("editor_event") or NoEvent
 
-		-- Build --
-		-- arg1: Level
-		-- arg2: Original entry
-		-- arg3: Action to build
-		if what == "build" then
-			-- 
-
-		-- Enumerate Defaults --
-		-- arg1: Defaults
-		elseif what == "enum_defs" then
-			-- link to action object (more likely, that should extend this)
-			-- then / else links
-			-- "then" condition
-
 		-- Enumerate Properties --
 		-- arg1: Dialog
-		elseif what == "enum_props" then
+		if what == "enum_props" then
 			arg1:StockElements()
 			arg1:AddSeparator()
 

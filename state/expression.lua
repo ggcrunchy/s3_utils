@@ -86,7 +86,7 @@ local function ValidateName (grammar, name)
 	end
 end
 
-local function ValidateOperator (name, info)
+local function ValidateOperator (info)
 	local op, prec = info.op, tonumber(info.prec)
 
 	assert(type(op) == "function", "Non-function op")
@@ -95,17 +95,7 @@ local function ValidateOperator (name, info)
 	return { op, prec }
 end
 
-local Int = "%d+"
-local Float = "%d+%.?%d*[Ee]?"
-
-local NumberPatts = {
-	number = "[%+%-]?" .. Float,
-	negative_number = "%-" .. Float,
-	positive_number = "%+?" .. Float,
-	integer = "[%+%-]?" .. Int,
-	negative_integer = "%-" .. Int,
-	positive_integer = "%+?" .. Int
-}
+local NumberPatts = { number = "%d+%.?%d*[Ee]?", integer = "%d+" }
 
 local function AddOps (grammar, params, what)
 	if params[what] then
@@ -114,7 +104,7 @@ local function AddOps (grammar, params, what)
 		for name, info in pairs(params[what]) do
 			ValidateName(grammar, name)
 
-			ops[name] = ValidateOperator(name, info)
+			ops[name] = ValidateOperator(info)
 		end
 
 		return ops
@@ -140,10 +130,9 @@ end
 --            `{ func = X, identity = I }`, where `X` is either a function taking `N` arguments
 --            or a function taking `I` plus a variable number of arguments, and in either
 --            case returning a single value.
---   * **numbers**: If present, one of **"number"**, **"negative\_number"**, **"positive\_number"**,
---              **"integer"**, **"negative\_integer"**, or **"positive\_number"**, indicating
---              what sort of numeric constants to allow, with **"number"** being the most
---              general. (Infinities and NaNs are unsupported, as are hexademical et al.)
+--   * **numbers**: If present, either **"number"** or **"integer"**, indicating what sort of
+--              numeric constants to allow, with **"number"** being more general. (Infinities
+--              and NaNs are unsupported, as are hexademical et al.)
 --   * **unary\_ops**: As per **binary\_ops**, but with unary functions called as
 --                 `value = unary(oper, params)`.
 --
@@ -282,7 +271,7 @@ end
 
 local Lookup
 
-local function LookupVar (grammar, item, next_pos)
+local function LookupVar (item, next_pos)
 	Lookup = Lookup or {}
 	Lookup[item] = Lookup[item] or function(params)
 		return params[item]
@@ -311,7 +300,7 @@ local function GetNextToken (grammar, expr, pos)
 					if tname then
 						return next_pos, tname, resolved
 					else
-						return LookupVar(grammar, item, next_pos)
+						return LookupVar(item, next_pos)
 					end
 				elseif ttype == "number" then
 					local value = tonumber(item)
