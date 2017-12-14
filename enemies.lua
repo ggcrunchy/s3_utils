@@ -362,6 +362,14 @@ function M.EditorEvent (type, what, arg1, arg2, arg3)
 			arg1:AddCheckbox{ text = "Can Attach To Event Block?", value_name = "can_attach" }
 			arg1:AddSeparator()
 
+		-- Get Link Grouping --
+		elseif what == "get_link_grouping" then
+			return {
+				{ text = "ACTIONS", font = "bold", color = "actions" }, "do_kill", "do_wake",
+				{ text = "EVENTS", font = "bold", color = "events", is_source = true }, "on_die", "on_wake",
+				{ text = "OUT-PROPERTIES", font = "bold", color = "props", is_source = true }, "alive", "enemy_x", "enemy_y", "sp_x", "sp_y", "local_vars"
+			}
+
 		-- Get Link Info --
 		-- arg1: Info to populate
 		elseif what == "get_link_info" then
@@ -369,12 +377,12 @@ function M.EditorEvent (type, what, arg1, arg2, arg3)
 			arg1.on_wake = "On(wake)"
 			arg1.do_kill = "Kill enemy"
 			arg1.do_wake = "Wake spawner"
-			arg1.alive = { friendly_name = "BOOL: Is alive?", is_source = true }
-			arg1.enemy_x = { friendly_name = "NUM: Enemy's x", is_source = true }
-			arg1.enemy_y = { friendly_name = "NUM: Enemy's y", is_source = true }
-			arg1.local_vars = { friendly_name = "FAM: Enemy vars", is_source = true }
-			arg1.sp_x = { friendly_name = "NUM: Spawner's x", is_source = true }
-			arg1.sp_y = { friendly_name = "NUM: Spawner's y", is_source = true }
+			arg1.alive = "BOOL: Is alive?"
+			arg1.enemy_x = "NUM: Enemy's x"
+			arg1.enemy_y = "NUM: Enemy's y"
+			arg1.local_vars = "FAM: Enemy vars"
+			arg1.sp_x = "NUM: Spawner's x"
+			arg1.sp_y = "NUM: Spawner's y"
 
 		-- Get Tag --
 		elseif what == "get_tag" then

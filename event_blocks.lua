@@ -432,10 +432,16 @@ function M.EditorEvent (type, what, arg1, arg2, arg3)
 --			arg1:AddCheckbox{ text = "On By Default?", value_name = "starts_on" }
 --			arg1:AddSeparator()
 
+		-- Get Link Grouping --
+		elseif what == "get_link_grouping" then
+			return {
+				{ text = "ACTIONS", font = "bold", color = "actions" }, "fire"
+			}
+
 		-- Get Link Info --
 		-- arg1: Info to populate
 		elseif what == "get_link_info" then
-			arg1.fire = "Link to event source"
+			arg1.fire = "Do area effect"
 
 		-- Get Tag --
 		elseif what == "get_tag" then

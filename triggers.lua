@@ -218,15 +218,21 @@ function M.EditorEvent (_, what, arg1, arg2)
 
 		--
 		arg1:SetStateFromValue_Watch(restore_section, "deactivate")
+	-- Get Link Grouping --
+	elseif what == "get_link_grouping" then
+		return {
+			{ text = "ACTIONS", font = "bold", color = "actions" }, "do_enter", "do_leave", "do_impulse",
+			{ text = "EVENTS", font = "bold", color = "events", is_source = true }, "on_enter", "on_leave"
+		}
 
 	-- Get Link Info --
 	-- arg1: Info to populate
 	elseif what == "get_link_info" then
-		arg1.on_enter = "Event links: On(enter)"
-		arg1.on_leave = "Event links: On(leave)"
-		arg1.do_enter = "Action links: Do(enter)"
-		arg1.do_leave = "Action links: Do(leave)"
-		arg1.do_impulse = "Action links: Do(impulse)"
+		arg1.on_enter = "On(enter)"
+		arg1.on_leave = "On(leave)"
+		arg1.do_enter = "Enter"
+		arg1.do_leave = "Leave"
+		arg1.do_impulse = "Impulse"
 
 	-- Get Tag --
 	elseif what == "get_tag" then

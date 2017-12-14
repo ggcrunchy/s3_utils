@@ -177,16 +177,22 @@ function M.EditorEvent (_, what, arg1, arg2)
 
 		--
 		arg1:SetStateFromValue_Watch(loop_count_section, "looping", "use_false")
+	-- Get Link Grouping --
+	elseif what == "get_link_grouping" then
+		return {
+			{ text = "ACTIONS", font = "bold", color = "actions" }, "do_play", "do_pause", "do_resume", "do_stop",
+			{ text = "EVENTS", font = "bold", color = "events", is_source = true }, "on_done", "on_stop"
+		}
 
 	-- Get Link Info --
 	-- arg1: Info to populate
 	elseif what == "get_link_info" then
-		arg1.on_done = "Event links: On(done)"
-		arg1.on_stop = "Event links: On(stop)"
-		arg1.do_play = "Action links: Do(play)"
-		arg1.do_pause = "Action links: Do(pause)"
-		arg1.do_resume = "Action links: Do(resume)"
-		arg1.do_stop = "Action links: Do(stop)"
+		arg1.on_done = "On(done)"
+		arg1.on_stop = "On(stop)"
+		arg1.do_play = "Play"
+		arg1.do_pause = "Pause"
+		arg1.do_resume = "Resume"
+		arg1.do_stop = "Stop"
 
 	-- Get Tag --
 	elseif what == "get_tag" then
