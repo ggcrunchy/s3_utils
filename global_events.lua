@@ -110,9 +110,17 @@ local function LinkGlobal (global, other, gsub, osub)
 end
 
 --- DOCME
-function M.EditorEvent (_, what)
+function M.EditorEvent (_, what, arg1)
+	-- Get Link Grouping --
+	if what == "get_link_grouping" then
+		return {
+			{ text = "ACTIONS", font = "bold", color = "actions" }, -- filled in automatically
+			{ text = "OUT-PROPERTIES", font = "bold", color = "props", is_source = true }, "random", "time",
+			{ text = "EVENTS", font = "bold", color = "events", is_source = true } -- filled in automatically
+		}
+
 	-- Get Tag --
-	if what == "get_tag" then
+	elseif what == "get_tag" then
 		return "global"
 
 	-- New Tag --
