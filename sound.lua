@@ -105,7 +105,7 @@ for _, v in ipairs{ "on_done", "on_stop" } do
 end
 
 --- DOCME
-function M.AddSound (info)
+function M.AddSound (info, wlist)
 	--
 	local sample, sound = {
 		file = info.filename,
@@ -125,7 +125,7 @@ function M.AddSound (info)
 
 	--
 	for k, event in pairs(Events) do
-		event.Subscribe(sound, info[k])
+		event.Subscribe(sound, info[k], wlist)
 	end
 
 	--

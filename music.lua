@@ -139,7 +139,7 @@ end
 local PlayOnEnter, PlayOnReset
 
 --- DOCME
-function M.AddMusic (info)
+function M.AddMusic (info, wlist)
 	--
 	local music, track = {}, { file = info.filename, is_streaming = true, loops = info.looping and "forever" or info.loop_count }
 
@@ -164,7 +164,7 @@ function M.AddMusic (info)
 
 	--
 	for k, event in pairs(Events) do
-		event.Subscribe(music, info[k])
+		event.Subscribe(music, info[k], wlist)
 	end
 
 	--
