@@ -115,7 +115,7 @@ function M.EditorEvent (_, what, arg1)
 	if what == "get_link_grouping" then
 		return {
 			{ text = "ACTIONS", font = "bold", color = "actions" }, -- filled in automatically
-			{ text = "OUT-PROPERTIES", font = "bold", color = "props", is_source = true }, "random", "time",
+			{ text = "OUT-PROPERTIES", font = "bold", color = "props", is_source = true }, "random", "time", -- TODO: configurable...
 			{ text = "EVENTS", font = "bold", color = "events", is_source = true } -- filled in automatically
 		}
 

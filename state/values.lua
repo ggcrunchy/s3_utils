@@ -97,7 +97,7 @@ local function NewTag (vtype, result, ...)
 	if result and result ~= "extend" and result ~= "extend_properties" then
 		return result, ...
 	else
-		local events, actions, sources, targets = { before = Before }, nil, { [vtype] = "get" }
+		local events, actions, sources, targets = "before", nil, { [vtype] = "get" }
 
 		if result then
 			local w1, w2, w3, w4
@@ -109,8 +109,14 @@ local function NewTag (vtype, result, ...)
 			end
 
 			if w1 then
+				if adaptive.InSet(w1, "no_before") then
+					events = nil
+				end
+
 				for k in adaptive.IterSet(w1) do
-					events[k] = true
+					if k ~= "no_before" then
+						events = adaptive.AddToSet(events, k)
+					end
 				end
 			end
 

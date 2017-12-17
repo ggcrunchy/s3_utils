@@ -25,13 +25,19 @@
 
 -- Standard library imports --
 local assert = assert
+local huge = math.huge
 local pairs = pairs
 
 -- Modules --
 local require_ex = require("tektite_core.require_ex")
 local adaptive = require("tektite_core.table.adaptive")
 local bind = require("tektite_core.bind")
+local frames = require("corona_utils.frames")
 local table_funcs = require("tektite_core.table.funcs")
+
+-- Corona globals --
+local Runtime = Runtime
+local system = system
 
 -- Exports --
 local M = {}
@@ -46,16 +52,41 @@ local Next = bind.BroadcastBuilder_Helper(nil)
 local NamedSources = table_funcs.Weak("v") 
 
 -- --
-local Depth, CallCount = 0
+local CallLimit, CallCount = 1000
 
-local function TooMany ()
-	if Depth == 0 then
-		CallCount = 0
+local ResetCount = frames.OnFirstCallInFrame(function()
+	CallCount = 0
+end)
+
+local Tally, LastReported, OnTooManyEvent = 0, 0
+
+local function TryToReport ()
+	local now = system.getTimer()
+
+	Tally = Tally + 1
+
+	if LastReported - now >= 3000 then -- throttle the reports
+		OnTooManyEvent = OnTooManyEvent or {}
+		OnTooManyEvent.name, OnTooManyEvent.tally = "too_many_actions", Tally
+
+		Runtime:dispatchEvent(OnTooManyEvent)
+
+		LastReported, Tally = now, 0
+	end	
+end
+
+local function CanRun ()
+	ResetCount()
+
+	if CallCount < CallLimit then
+		CallCount = CallCount + 1
+
+		return true
+	elseif CallCount == CallLimit then
+		TryToReport()
+
+		CallCount = huge -- no more calls this frame
 	end
-
-	CallCount, Depth = CallCount + 1, Depth + 1
-
-	return CallCount == 200
 end
 
 --- DOCME
@@ -65,33 +96,26 @@ function M.AddAction (info, wname)
 
 	if not body then
 		function action (what)
-			if what == "fire" then
-				return Next(action, "fire", false) -- tail call: leave call count intact
+			if what == "fire" and CanRun() then
+				return Next(action, "fire", false)
 			elseif what == "is_done" then
 				return true
 			end
 		end
 	elseif how == "no_next" then
 		function action (what)
-			if what == "fire" then
-				if not TooMany() then
-					body()
-
-					Depth = Depth - 1
-				end
+			if what == "fire" and CanRun() then
+				return body()
 			elseif what == "is_done" then
 				return true
 			end
 		end
 	else
 		function action (what)
-			if what == "fire" then
-				if not TooMany() then
-					body()
-					Next(action, "fire", false)
+			if what == "fire" and CanRun() then
+				body()
 
-					Depth = Depth - 1
-				end
+				return Next(action, "fire", false)
 			elseif what == "is_done" then
 				return true
 			end
@@ -163,14 +187,14 @@ local function NewTag (result, ...)
 			end
 
 			if w1 then
-				events = { next = Next } -- copy to not mutate
-
-				for k in adaptive.IterSet(w1) do
-					events[k] = true
+				if adaptive.InSet(w1, "no_next") then
+					events = nil
 				end
 
-				if events.no_next then
-					events.next, events.no_next = nil
+				for k in adaptive.IterSet(w1) do
+					if k ~= "no_next" then
+						events = adaptive.AddToSet(events, k)
+					end
 				end
 			end
 
