@@ -97,9 +97,9 @@ function M.CallNamedSource (name, what)
 end
 
 --
-local function LinkAction (action, other, sub, other_sub)
-	if sub == "next" then
-		bind.AddId(action, sub, other.uid, other_sub)
+local function LinkAction (action, other, asub, other_sub)
+	if asub == "next" then
+		bind.AddId(action, asub, other.uid, other_sub)
 	end
 end
 

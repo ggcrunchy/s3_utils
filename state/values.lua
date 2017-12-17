@@ -43,9 +43,9 @@ local Before = bind.BroadcastBuilder_Helper("loading_level")
 --- DOCME
 function M.AddValue (info, wname)
 	local wlist = wname or "loading_level"
-	local value = assert(ValueList[info.type], "Invalid value")(info, wlist)
+	local value, how = assert(ValueList[info.type], "Invalid value")(info, wlist)
 
-	if info.before then
+	if how ~= "no_before" and info.before then -- some values want it but must handle it specially
 		local body = value
 
 		function value ()
@@ -62,8 +62,26 @@ function M.AddValue (info, wname)
 	return value
 end
 
-local function LinkValue ()
-	--
+--
+local function LinkValue (value, other, vsub, other_sub)
+	if vsub == "before" then
+		bind.AddId(value, vsub, other.uid, other_sub)
+	end
+end
+
+--
+local function PopulateProperties (from, to)
+	if from then
+		to = to or {}
+
+		for vtype, list in pairs(from) do
+			for k in adaptive.IterSet(list) do
+				to[vtype] = adaptive.AddToSet(to[vtype], k)
+			end
+		end
+
+		return to
+	end
 end
 
 --
@@ -92,23 +110,7 @@ local function NewTag (vtype, result, ...)
 				actions = adaptive.AddToSet(actions, k)
 			end
 
-			if w3 then
-				for vtype, list in pairs(w3) do
-					for k in adaptive.IterSet(list) do
-						sources[vtype] = adaptive.AddToSet(sources[vtype], k)
-					end
-				end
-			end
-
-			if w4 then
-				targets = {}
-
-				for vtype, list in pairs(w4) do
-					for k in adaptive.IterSet(list) do
-						targets[vtype] = adaptive.AddToSet(targets[vtype], k)
-					end
-				end
-			end
+			sources, targets = PopulateProperties(w3, sources), PopulateProperties(w4, nil)
 		end
 
 		return "sources_and_targets", events, actions, sources, targets
