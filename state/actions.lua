@@ -45,6 +45,19 @@ local Next = bind.BroadcastBuilder_Helper(nil)
 -- --
 local NamedSources = table_funcs.Weak("v") 
 
+-- --
+local Depth, CallCount = 0
+
+local function TooMany ()
+	if Depth == 0 then
+		CallCount = 0
+	end
+
+	CallCount, Depth = CallCount + 1, Depth + 1
+
+	return CallCount == 200
+end
+
 --- DOCME
 function M.AddAction (info, wname)
 	local wlist, action = wname or "loading_level"
@@ -53,7 +66,7 @@ function M.AddAction (info, wname)
 	if not body then
 		function action (what)
 			if what == "fire" then
-				return Next(action, "fire", false)
+				return Next(action, "fire", false) -- tail call: leave call count intact
 			elseif what == "is_done" then
 				return true
 			end
@@ -61,7 +74,11 @@ function M.AddAction (info, wname)
 	elseif how == "no_next" then
 		function action (what)
 			if what == "fire" then
-				return body()
+				if not TooMany() then
+					body()
+
+					Depth = Depth - 1
+				end
 			elseif what == "is_done" then
 				return true
 			end
@@ -69,9 +86,12 @@ function M.AddAction (info, wname)
 	else
 		function action (what)
 			if what == "fire" then
-				body()
+				if not TooMany() then
+					body()
+					Next(action, "fire", false)
 
-				return Next(action, "fire", false)
+					Depth = Depth - 1
+				end
 			elseif what == "is_done" then
 				return true
 			end
@@ -100,6 +120,14 @@ end
 local function LinkAction (action, other, asub, other_sub)
 	if asub == "next" then
 		bind.AddId(action, asub, other.uid, other_sub)
+	end
+end
+
+local PrepLinkFuncs = {}
+
+local function LinkActionEx (action, other, asub, other_sub, links)
+	if not PrepLinkFuncs[action.type](action, other, asub, other_sub, links) then
+		LinkAction(action, other, asub, other_sub)
 	end
 end
 
@@ -197,13 +225,19 @@ function M.EditorEvent (type, what, arg1, arg2, arg3)
 		-- arg1: Level
 		-- arg2: Built
 		elseif what == "prep_link" then
-			return event("prep_link:action", LinkAction, arg1, arg2) or LinkAction
-		
-		-- Verify --
-		elseif what == "verify" then
-			-- COMMON STUFF...
-			-- if first in chain, follow it and see if we loop
-				-- if so, fail if no custom conditions exist along the way
+			if not PrepLinkFuncs[arg2.type] then
+				local func, how = event("prep_link:action", LinkAction, arg1, arg2)
+
+				if how == "complete" then
+					return func
+				elseif func then
+					PrepLinkFuncs[arg2.type] = func
+
+					return LinkActionEx
+				else
+					return LinkAction
+				end
+			end
 		end
 
 		return event(what, arg1, arg2, arg3)
