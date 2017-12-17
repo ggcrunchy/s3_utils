@@ -40,57 +40,81 @@ local M = {}
 local ActionList
 
 -- --
-local Events = {}
+local Next = bind.BroadcastBuilder_Helper(nil)
 
-for _, v in ipairs{ "instead", "next" } do
-	Events[v] = bind.BroadcastBuilder_Helper("loading_level")
-end
-
-local CanFire = table_funcs.Weak("k")
-
-local function BindCanFire (can_fire, action)
-	CanFire[action] = can_fire
-end
+-- --
+local NamedSources = table_funcs.Weak("v") 
 
 --- DOCME
 function M.AddAction (info, wname)
-	local wlist = wname or "loading_level"
-	local body = assert(ActionList[info.type], "Invalid action")(info, wlist)
+	local wlist, action = wname or "loading_level"
+	local body, how = assert(ActionList[info.type], "Invalid action")(info, wlist)
 
-	local function action (what)
-		-- Resolve the action itself.
-		if what == "fire" then
-			local can_fire = CanFire[action]
-
-			if can_fire and not can_fire() then
-				return Events.instead(action, "fire", false)
-			else
+	if not body then
+		function action (what)
+			if what == "fire" then
+				return Next(action, "fire", false)
+			elseif what == "is_done" then
+				return true
+			end
+		end
+	elseif how == "no_next" then
+		function action (what)
+			if what == "fire" then
+				return body()
+			elseif what == "is_done" then
+				return true
+			end
+		end
+	else
+		function action (what)
+			if what == "fire" then
 				body()
 
-				return Events.next(action, "fire", false)
+				return Next(action, "fire", false)
+			elseif what == "is_done" then
+				return true
 			end
-		elseif what == "is_done" then
-			return true
 		end
 	end
 
-	--
-	for k, event in pairs(Events) do
-		event.Subscribe(action, info[k], wlist)
+	if how == "named" then
+		NamedSources[info.name] = action
 	end
 
-	bind.Subscribe(wlist, info.can_fire, BindCanFire, action)
+	Next.Subscribe(action, info.next, wlist)
 
-	--
 	bind.Publish(wlist, action, info.uid, "fire")
 
 	return action
 end
 
+--- DOCME
+function M.CallNamedSource (name, what)
+	local action = NamedSources[name]
+
+	return action and action(what)
+end
+
 --
 local function LinkAction (action, other, sub, other_sub)
-	if sub == "can_fire" or sub == "instead" or sub == "next" then
+	if sub == "next" then
 		bind.AddId(action, sub, other.uid, other_sub)
+	end
+end
+
+--
+local function PopulateProperties (from)
+	if from then
+		local props = {}
+
+		for vtype, list in pairs(from) do
+			for k in adaptive.IterSet(list) do
+				props[vtype] = adaptive.AddToSet(props[vtype], k)
+			end
+		end
+
+		return props
 	end
 end
 
@@ -99,7 +123,7 @@ local function NewTag (result, ...)
 	if result and result ~= "extend" and result ~= "extend_properties" then
 		return result, ...
 	else
-		local events, actions, sources, targets = Events, "fire", nil, { boolean = "can_fire" }
+		local events, actions, sources, targets = "next", "fire"
 
 		if result then
 			local w1, w2, w3, w4
@@ -111,14 +135,14 @@ local function NewTag (result, ...)
 			end
 
 			if w1 then
-				events = {}
-
-				for k, v in pairs(Events) do -- copy to not mutate
-					events[k] = v
-				end
+				events = { next = Next } -- copy to not mutate
 
 				for k in adaptive.IterSet(w1) do
 					events[k] = true
+				end
+
+				if events.no_next then
+					events.next, events.no_next = nil
 				end
 			end
 
@@ -126,23 +150,7 @@ local function NewTag (result, ...)
 				actions = adaptive.AddToSet(actions, k)
 			end
 
-			if w3 then
-				sources = {}
-
-				for vtype, list in pairs(w3) do
-					for k in adaptive.IterSet(list) do
-						sources[vtype] = adaptive.AddToSet(sources[vtype], k)
-					end
-				end
-			end
-
-			if w4 then
-				for vtype, list in pairs(w4) do
-					for k in adaptive.IterSet(list) do
-						targets[vtype] = adaptive.AddToSet(targets[vtype], k)
-					end
-				end
-			end
+			sources, targets = PopulateProperties(w3), PopulateProperties(w4)
 		end
 
 		return "sources_and_targets", events, actions, sources, targets
@@ -175,9 +183,7 @@ function M.EditorEvent (type, what, arg1, arg2, arg3)
 		-- arg1: Info to populate
 		elseif what == "get_link_info" then
 			arg1.fire = "Do action"
-			arg1.can_fire = "BOOL: Okay to do?"
 			arg1.next = "Follow-up"
-			arg1.instead = "Instead"
 
 		-- Get Tag --
 		elseif what == "get_tag" then
