@@ -32,7 +32,7 @@ local rawequal = rawequal
 
 -- Modules --
 local adaptive = require("tektite_core.table.adaptive")
-local bind = require("tektite_core.bind")
+local bind = require("corona_utils.bind")
 local config = require("config.GlobalEvents")
 local state_vars = require("config.StateVariables")
 

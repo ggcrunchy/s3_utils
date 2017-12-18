@@ -35,7 +35,7 @@ local sin = math.sin
 -- Modules --
 local require_ex = require("tektite_core.require_ex")
 local adaptive = require("tektite_core.table.adaptive")
-local bind = require("tektite_core.bind")
+local bind = require("corona_utils.bind")
 local collision = require("corona_utils.collision")
 local enemy_events = require("annex.EnemyEvents")
 local flow_ops = require("coroutine_ops.flow")

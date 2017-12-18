@@ -43,7 +43,7 @@ local yield = coroutine.yield
 
 -- Modules --
 local require_ex = require("tektite_core.require_ex")
-local bind = require("tektite_core.bind")
+local bind = require("corona_utils.bind")
 local fx = require("s3_utils.fx")
 local range = require("tektite_core.number.range")
 local tile_flags = require("s3_utils.tile_flags")

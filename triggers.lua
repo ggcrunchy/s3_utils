@@ -29,7 +29,7 @@ local ipairs = ipairs
 
 -- Modules --
 local adaptive = require("tektite_core.table.adaptive")
-local bind = require("tektite_core.bind")
+local bind = require("corona_utils.bind")
 local collision = require("corona_utils.collision")
 local operators = require("bitwise_ops.operators")
 local tile_maps = require("s3_utils.tile_maps")

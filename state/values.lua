@@ -30,7 +30,7 @@ local pairs = pairs
 -- Modules --
 local require_ex = require("tektite_core.require_ex")
 local adaptive = require("tektite_core.table.adaptive")
-local bind = require("tektite_core.bind")
+local bind = require("corona_utils.bind")
 
 -- Exports --
 local M = {}

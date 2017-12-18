@@ -30,7 +30,7 @@ local pairs = pairs
 -- Modules --
 local adaptive = require("tektite_core.table.adaptive")
 local audio = require("corona_utils.audio")
-local bind = require("tektite_core.bind")
+local bind = require("corona_utils.bind")
 
 -- Exports --
 local M = {}
