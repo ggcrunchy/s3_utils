@@ -116,7 +116,7 @@ local Events = {}
 -- Behavior of an enemy between phasing in and being killed
 local function Alive (enemy, type_info)
 	--
-	Events.on_wake(enemy, "fire", false)
+	Events.on_wake(enemy)
 
 	-- Make sure the enemy is visible and alive, i.e. able to hurt you and be hurt itself.
 	-- Account for enemies that were phasing in when the dots got cleared.
@@ -140,7 +140,7 @@ end
 -- Behavior of an enemy once killed and while in its death throes
 local function Die (enemy, type_info)
 	--
-	Events.on_die(enemy, "fire", false)
+	Events.on_die(enemy)
 
 	-- If possible, die in some enemy-specific way. Otherwise, fly off.
 	if type_info.Die then
@@ -224,29 +224,15 @@ local EnemyList
 local Actions = {
 	-- Do Kill --
 	do_kill = function(enemy)
-		return function(what)
-			-- Fire --
-			if what == "fire" then
-				Kill(enemy)
-
-			-- Is Done? --
-			elseif what == "is_done" then
-				return true
-			end
+		return function()
+			return Kill(enemy)
 		end
 	end,
 
 	-- Do Wake --
 	do_wake = function(enemy)
-		return function(what)
-			-- Fire --
-			if what == "fire" then
-				enemy.m_ready = true
-
-			-- Is Done? --
-			elseif what == "is_done" then
-				return true
-			end
+		return function()
+			enemy.m_ready = true
 		end
 	end
 }

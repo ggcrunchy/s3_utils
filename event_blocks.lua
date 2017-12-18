@@ -386,9 +386,10 @@ local EventBlockList
 -- @todo Detect null blocks? Mention construction, block:Reset
 function M.AddBlock (info)
 	local block = NewBlock(info.col1, info.row1, info.col2, info.row2)
-	local event = assert(EventBlockList[info.type], "Invalid event block")(info, block)
+	local event, cmds = assert(EventBlockList[info.type], "Invalid event block")(info, block)
 
 	bind.Publish("loading_level", event, info.uid, "fire")
+	bind.SetActionCommands(event, cmds)
 
 	Events[#Events + 1] = event -- TODO: Forgo this when not debugging?
 end
@@ -496,7 +497,13 @@ function M.FireAll (forward)
 	forward = not not forward
 
 	for _, v in ipairs(Events) do
-		v("fire", forward)
+		local commands = bind.GetCommandsFunc(v)
+
+		if commands then
+			commands("set_direction", forward)
+		end
+
+		v()
 	end
 end
 

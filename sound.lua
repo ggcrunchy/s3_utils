@@ -42,57 +42,37 @@ local Sounds
 local Actions = {
 	-- Play --
 	do_play = function(sound)
-		return function(what)
-			-- Fire --
-			if what == "fire" then
-				sound.group:PlaySound("sample")
+		local function play ()
+			return sound.group:PlaySound("sample")
+		end
 
-			-- Is Done? --
-			elseif what == "is_done" then
+		bind.SetActionCommands(play, function(what)
+			if what == "is_done" then
 				return not sound.group:IsActive()
 			end
-		end
+		end)
+
+		return play
 	end,
 
 	-- Pause --
 	do_pause = function(sound)
-		return function(what)
-			-- Fire --
-			if what == "fire" then
-				sound.group:PauseAll()
-
-			-- Is Done? --
-			elseif what == "is_done" then
-				return true
-			end
+		return function()
+			return sound.group:PauseAll()
 		end
 	end,
 
 	-- Resume --
 	do_resume = function(sound)
-		return function(what)
-			-- Fire --
-			if what == "fire" then
-				sound.group:ResumeAll()
-
-			-- Is Done? --
-			elseif what == "is_done" then
-				return true
-			end
+		return function()
+			return sound.group:ResumeAll()
 		end
 	end,
 
 	-- Stop --
 	do_stop = function(sound)
 		return function(what)
-			-- Fire --
-			if what == "fire" then
-				sound.group:StopAll()
-
-			-- Is Done? --
-			elseif what == "is_done" then
-				return true
-			end
+			return sound.group:StopAll()
 		end
 	end
 }
@@ -116,7 +96,7 @@ function M.AddSound (info, wlist)
 	if info.on_done or info.on_stop then
 		function sample.on_complete (done)
 			if Sounds then
-				Events[done and "on_done" or "on_stop"](sound, "fire", false)
+				Events[done and "on_done" or "on_stop"](sound)
 			end
 		end
 	end

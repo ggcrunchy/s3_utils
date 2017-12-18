@@ -55,14 +55,14 @@ local function Enter (trigger)
 	if not trigger.off then
 		trigger.off = trigger.deactivate
 
-		Events.on_enter(trigger, "fire", false)
+		Events.on_enter(trigger)
 	end
 end
 
 --
 local function Leave (trigger)
 	if not trigger.off then
-		Events.on_leave(trigger, "fire", false)
+		Events.on_leave(trigger)
 	end
 end
 
@@ -70,44 +70,24 @@ end
 local Actions = {
 	-- Play --
 	do_enter = function(trigger)
-		return function(what)
-			-- Fire --
-			if what == "fire" then
-				Enter(trigger)
-
-			-- Is Done? --
-			elseif what == "is_done" then
-				return true
-			end
+		return function()
+			return Enter(trigger)
 		end
 	end,
 
 	-- Pause --
 	do_leave = function(trigger)
-		return function(what)
-			-- Fire --
-			if what == "fire" then
-				Leave(trigger)
-
-			-- Is Done? --
-			elseif what == "is_done" then
-				return true
-			end
+		return function()
+			return Leave(trigger)
 		end
 	end,
 
 	-- Resume --
 	do_impulse = function(trigger)
-		return function(what)
-			-- Fire --
-			if what == "fire" then
-				Enter(trigger)
-				Leave(trigger)
+		return function()
+			Enter(trigger)
 
-			-- Is Done? --
-			elseif what == "is_done" then
-				return true
-			end
+			return Leave(trigger)
 		end
 	end
 }

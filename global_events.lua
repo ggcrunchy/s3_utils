@@ -67,14 +67,14 @@ for _, v in ipairs(config.events) do
 	Runtime:addEventListener(v, function()
 		--
 		for _, event in bind.IterEvents(object_to_broadcaster[EventNonce]) do
-			event("fire", false)
+			event()
 		end
 
 		--
 		local def = Defaults and Defaults[v]
 
 		if def then
-			Actions[def]("fire", false)
+			Actions[def]()
 		end
 	end)
 end
@@ -91,7 +91,7 @@ function M.AddEvents (events)
 		bind.Publish("loading_level", Actions[k], events.uid, k)
 	end
 
-	state_vars.PublishProperties(events.props, OutProperties, events.uid)
+	state_vars.PublishProperties(events and events.props, OutProperties, events and events.uid)
 
 	--
 	if not adaptive.InSet(events and events.actions, "win") then
@@ -138,19 +138,12 @@ for _, v in ipairs(config.actions) do
 	local list = {}
 
 	Actions[v] = function(what, func)
-		-- Extend Action --
-		if rawequal(what, Actions) then
+		if rawequal(what, Actions) then -- extend action
 			list[#list + 1] = func
-
-		-- Fire --
-		elseif what == "fire" then
+		else
 			for _, action in ipairs(list) do
 				action()
 			end
-
-		-- Is Done? --
-		elseif what == "is_done" then
-			return true
 		end
 	end
 end
@@ -166,7 +159,7 @@ end
 
 local function EnterFrame ()
 	for _, event in bind.IterEvents(EnterFrameMapping[EventNonce]) do
-		event("fire", false)
+		event()
 	end
 end
 

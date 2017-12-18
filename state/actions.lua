@@ -25,19 +25,13 @@
 
 -- Standard library imports --
 local assert = assert
-local huge = math.huge
 local pairs = pairs
 
 -- Modules --
 local require_ex = require("tektite_core.require_ex")
 local adaptive = require("tektite_core.table.adaptive")
 local bind = require("tektite_core.bind")
-local frames = require("corona_utils.frames")
 local table_funcs = require("tektite_core.table.funcs")
-
--- Corona globals --
-local Runtime = Runtime
-local system = system
 
 -- Exports --
 local M = {}
@@ -51,74 +45,22 @@ local Next = bind.BroadcastBuilder_Helper(nil)
 -- --
 local NamedSources = table_funcs.Weak("v") 
 
--- --
-local CallLimit, CallCount = 1000
-
-local ResetCount = frames.OnFirstCallInFrame(function()
-	CallCount = 0
-end)
-
-local Tally, LastReported, OnTooManyEvent = 0, 0
-
-local function TryToReport ()
-	local now = system.getTimer()
-
-	Tally = Tally + 1
-
-	if LastReported - now >= 3000 then -- throttle the reports
-		OnTooManyEvent = OnTooManyEvent or {}
-		OnTooManyEvent.name, OnTooManyEvent.tally = "too_many_actions", Tally
-
-		Runtime:dispatchEvent(OnTooManyEvent)
-
-		LastReported, Tally = now, 0
-	end	
-end
-
-local function CanRun ()
-	ResetCount()
-
-	if CallCount < CallLimit then
-		CallCount = CallCount + 1
-
-		return true
-	elseif CallCount == CallLimit then
-		TryToReport()
-
-		CallCount = huge -- no more calls this frame
-	end
-end
-
 --- DOCME
 function M.AddAction (info, wname)
 	local wlist, action = wname or "loading_level"
 	local body, how = assert(ActionList[info.type], "Invalid action")(info, wlist)
 
 	if not body then
-		function action (what)
-			if what == "fire" and CanRun() then
-				return Next(action, "fire", false)
-			elseif what == "is_done" then
-				return true
-			end
+		function action ()
+			return Next(action)
 		end
 	elseif how == "no_next" then
-		function action (what)
-			if what == "fire" and CanRun() then
-				return body()
-			elseif what == "is_done" then
-				return true
-			end
-		end
+		action = body
 	else
-		function action (what)
-			if what == "fire" and CanRun() then
-				body()
+		function action ()
+			body()
 
-				return Next(action, "fire", false)
-			elseif what == "is_done" then
-				return true
-			end
+			return Next(action)
 		end
 	end
 

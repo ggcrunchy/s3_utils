@@ -49,7 +49,7 @@ function M.AddValue (info, wname)
 		local body = value
 
 		function value ()
-			Before(value, "fire", false)
+			Before(value)
 
 			return body()
 		end

@@ -59,71 +59,52 @@ end
 local Actions = {
 	-- Play --
 	do_play = function(music)
-		return function(what)
-			-- Fire --
-			if what == "fire" then
-				PlayNewTrack(music.group)
+		local function play (what)
+			return PlayNewTrack(music.group)
+		end
 
-			-- Is Done? --
-			elseif what == "is_done" then
+		bind.SetActionCommands(play, function(what)
+			if what == "is_done" then
 				return not music.group:IsActive()
 			end
-		end
+		end)
+
+		return play
 	end,
 
 	-- Play (No Cancel) --
 	do_play_no_cancel = function(music)
-		return function(what)
-			-- Fire --
-			if what == "fire" then
-				music.group:PlaySound("track")
+		local function play ()
+			return music.group:PlaySound("track")
+		end
 
-			-- Is Done? --
-			elseif what == "is_done" then
+		bind.SetActionCommands(play, function(what)
+			if what == "is_done" then
 				return not music.group:IsActive()
 			end
-		end
+		end)
+
+		return play
 	end,
 
 	-- Pause --
 	do_pause = function(music)
-		return function(what)
-			-- Fire --
-			if what == "fire" then
-				music.group:PauseAll()
-
-			-- Is Done? --
-			elseif what == "is_done" then
-				return true
-			end
+		return function()
+			return music.group:PauseAll()
 		end
 	end,
 
 	-- Resume --
 	do_resume = function(music)
-		return function(what)
-			-- Fire --
-			if what == "fire" then
-				music.group:ResumeAll()
-
-			-- Is Done? --
-			elseif what == "is_done" then
-				return true
-			end
+		return function()
+			return music.group:ResumeAll()
 		end
 	end,
 
 	-- Stop --
 	do_stop = function(music)
-		return function(what)
-			-- Fire --
-			if what == "fire" then
-				music.group:StopAll()
-
-			-- Is Done? --
-			elseif what == "is_done" then
-				return true
-			end
+		return function()
+			return music.group:StopAll()
 		end
 	end
 }
@@ -146,7 +127,7 @@ function M.AddMusic (info, wlist)
 	if info.on_done or info.on_stop then
 		function track.on_complete (done)
 			if Music then
-				Events[done and "on_done" or "on_stop"](music, "fire", false)
+				Events[done and "on_done" or "on_stop"](music)
 			end
 		end
 	end
