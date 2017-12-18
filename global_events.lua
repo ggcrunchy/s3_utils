@@ -53,24 +53,14 @@ local OutProperties = config.out_properties
 local Defaults, EventNonce
 
 -- Deferred global event <-> event bindings
-local GetEvent, EnterFrameMapping = {}
+local GetEvent = {}
 
 for _, v in ipairs(config.events) do
-	local object_to_broadcaster
-
-	GetEvent[v], object_to_broadcaster = bind.BroadcastBuilder()
-
-	if v == "enter_frame" then
-		EnterFrameMapping = object_to_broadcaster
-	end
+	GetEvent[v] = bind.BroadcastBuilder_Helper("loading_level")
 
 	Runtime:addEventListener(v, function()
-		--
-		for _, event in bind.IterEvents(object_to_broadcaster[EventNonce]) do
-			event()
-		end
+		GetEvent[v](EventNonce)
 
-		--
 		local def = Defaults and Defaults[v]
 
 		if def then
@@ -80,10 +70,10 @@ for _, v in ipairs(config.events) do
 end
 
 --- DOCME
-function M.AddEvents (events)
+function M.AddEvents (events, wlist)
 	--
 	for k, v in pairs(GetEvent) do
-		bind.Subscribe("loading_level", events and events[k], v, EventNonce)
+		v.Subscribe(EventNonce, events and events[k])
 	end
 	
 	--
@@ -158,9 +148,7 @@ function M.ExtendAction (name, func)
 end
 
 local function EnterFrame ()
-	for _, event in bind.IterEvents(EnterFrameMapping[EventNonce]) do
-		event()
-	end
+	GetEvent.enter_frame(EventNonce)
 end
 
 -- Listen to events.
@@ -181,7 +169,7 @@ for k, v in pairs{
 
 	-- Things Loaded --
 	things_loaded = function()
-		for _ in bind.IterEvents(EnterFrameMapping[EventNonce]) do
+		for _ in GetEvent.enter_frame.Iter(EventNonce) do
 			Runtime:addEventListener("enterFrame", EnterFrame)
 
 			break
