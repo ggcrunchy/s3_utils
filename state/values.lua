@@ -170,7 +170,11 @@ function M.EditorEvent (type, what, arg1, arg2, arg3)
 		-- arg1: Level
 		-- arg2: Built
 		elseif what == "prep_link" then
-			if not PrepLinkFuncs[arg2.type] then
+			local prep = PrepLinkFuncs[arg2.type]
+
+			if prep then
+				return prep
+			else
 				local func, how = event("prep_link:value", LinkValue, arg1, arg2)
 
 				if how == "complete" then
