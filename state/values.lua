@@ -31,14 +31,20 @@ local pairs = pairs
 local require_ex = require("tektite_core.require_ex")
 local adaptive = require("tektite_core.table.adaptive")
 local bind = require("corona_utils.bind")
+local extend = require("s3_utils.state.extend")
 
 -- Exports --
 local M = {}
 
+--
+--
+--
+
 -- Value type lookup table --
 local ValueList
 
-local Before = bind.BroadcastBuilder_Helper("loading_level")
+-- --
+local Before = bind.BroadcastBuilder_Helper(nil)
 
 --- DOCME
 function M.AddValue (info, wname)
@@ -62,72 +68,19 @@ function M.AddValue (info, wname)
 	return value
 end
 
---
-local function LinkValue (value, other, vsub, other_sub)
+-- --
+local PrepValue = extend.PrepLinkHelper(function(value, other, vsub, other_sub)
 	if vsub == "before" then
 		bind.AddId(value, vsub, other.uid, other_sub)
 	end
-end
-
-local PrepLinkFuncs = {}
-
-local function LinkValueEx (value, other, vsub, other_sub, links)
-	if not PrepLinkFuncs[value.type](value, other, vsub, other_sub, links) then
-		LinkValue(value, other, vsub, other_sub)
-	end
-end
-
---
-local function PopulateProperties (from, to)
-	if from then
-		to = to or {}
-
-		for vtype, list in pairs(from) do
-			for k in adaptive.IterSet(list) do
-				to[vtype] = adaptive.AddToSet(to[vtype], k)
-			end
-		end
-	end
-
-	return to
-end
+end, "prep_link:value")
 
 --
 local function NewTag (vtype, result, ...)
 	if result and result ~= "extend" and result ~= "extend_properties" then
 		return result, ...
 	else
-		local events, actions, sources, targets = "before", nil, { [vtype] = "get" }
-
-		if result then
-			local w1, w2, w3, w4
-
-			if result == "extend" then
-				w1, w2, w3, w4 = ...
-			else
-				w3, w4 = ...
-			end
-
-			if w1 then
-				if adaptive.InSet(w1, "no_before") then
-					events = nil
-				end
-
-				for k in adaptive.IterSet(w1) do
-					if k ~= "no_before" then
-						events = adaptive.AddToSet(events, k)
-					end
-				end
-			end
-
-			for k in adaptive.IterSet(w2) do
-				actions = adaptive.AddToSet(actions, k)
-			end
-
-			sources, targets = PopulateProperties(w3, sources), PopulateProperties(w4, nil)
-		end
-
-		return "sources_and_targets", events, actions, sources, targets
+		return "sources_and_targets", extend.AugmentTag(result, "before", nil, { [vtype] = "get" }, nil, "no_before", ...)
 	end
 end
 
@@ -170,27 +123,7 @@ function M.EditorEvent (type, what, arg1, arg2, arg3)
 		-- arg1: Level
 		-- arg2: Built
 		elseif what == "prep_link" then
-			local prep = PrepLinkFuncs[arg2.type]
-
-			if prep then
-				return prep
-			else
-				local func, how = event("prep_link:value", LinkValue, arg1, arg2)
-
-				if how == "complete" then
-					return func
-				elseif func then
-					PrepLinkFuncs[arg2.type] = func
-
-					return LinkValueEx
-				else
-					return LinkValue
-				end
-			end
-
-		-- Verify --
-		elseif what == "verify" then
-			-- chase down loops?
+			return PrepValue(arg2.type, event, arg1, arg2)
 		end
 
 		return event(what, arg1, arg2, arg3)
