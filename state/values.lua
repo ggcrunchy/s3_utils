@@ -80,7 +80,7 @@ local function NewTag (vtype, result, ...)
 	if result and result ~= "extend" and result ~= "extend_properties" then
 		return result, ...
 	else
-		return "sources_and_targets", extend.AugmentTag(result, "before", nil, { [vtype] = "get" }, nil, "no_before", ...)
+		return "sources_and_targets", extend.NewTag(result, "before", nil, { [vtype] = "get" }, nil, "no_before", ...)
 	end
 end
 
