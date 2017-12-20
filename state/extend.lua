@@ -83,7 +83,7 @@ end
 
 --- DOCME
 function M.PrepLinkHelper (prep_link_base, command)
-	local funcs = {}
+	local funcs, cfuncs = {}
 
 	local function prep_link_ex (object, other, osub, other_sub, links)
 		if not funcs[object.type](object, other, osub, other_sub, links) then
@@ -95,16 +95,21 @@ function M.PrepLinkHelper (prep_link_base, command)
 		local prep = funcs[object_type]
 
 		if prep then
-			return prep
+			return prep, cfuncs and cfuncs[object_type]
 		else
-			local func, how = event(command, prep_link_base, arg1, arg2)
+			local func, cleanup, how = event(command, prep_link_base, arg1, arg2)
 
-			if how == "complete" then
-				return func
+			if (how or cleanup) == "complete" then -- allow optional cleanup as well
+				return func, cleanup ~= "complete" and cleanup
 			elseif func then
 				funcs[object_type] = func
 
-				return prep_link_ex
+				if cleanup then
+					cfuncs = cfuncs or {}
+					cfuncs[object_type] = cleanup
+				end
+
+				return prep_link_ex, cleanup
 			else
 				return prep_link_base
 			end
