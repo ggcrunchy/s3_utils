@@ -408,9 +408,11 @@ local BlockKeys = { "type", "col1", "row1", "col2", "row2" }
 -- @param arg3 Argument #3.
 -- @return Result(s) of the event, if any.
 function M.EditorEvent (type, what, arg1, arg2, arg3)
-	local factory = EventBlockList[type]
+	local cons = EventBlockList[type]
 
-	if factory then
+	if cons then
+		local event = cons("editor_event")
+
 		-- Build --
 		-- arg1: Level
 		-- arg2: Original entry
@@ -428,7 +430,7 @@ function M.EditorEvent (type, what, arg1, arg2, arg3)
 		-- Enumerate Properties --
 		-- arg1: Dialog
 		elseif what == "enum_props" then
-			arg1:StockElements("EventBlock", type)
+			arg1:StockElements(event and event("get_thumb_filename"))
 			arg1:AddSeparator()
 --			arg1:AddCheckbox{ text = "On By Default?", value_name = "starts_on" }
 --			arg1:AddSeparator()
@@ -461,7 +463,7 @@ function M.EditorEvent (type, what, arg1, arg2, arg3)
 			-- Has one or more source...
 		end
 
-		local event, result, r2, r3 = factory("editor_event")
+		local result, r2, r3
 
 		if event then
 			result, r2, r3 = event(what, arg1, arg2, arg3)

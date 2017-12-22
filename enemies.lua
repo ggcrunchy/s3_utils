@@ -321,8 +321,9 @@ end
 -- @return Result of the event, if any.
 function M.EditorEvent (type, what, arg1, arg2, arg3)
 	local type_info = EnemyList[type]
+	local event = type_info and type_info.EditorEvent
 
-	if type_info and type_info.EditorEvent then
+	if event then
 		-- Build --
 		-- arg1: Level
 		-- arg2: Original entry
@@ -341,7 +342,7 @@ function M.EditorEvent (type, what, arg1, arg2, arg3)
 		-- Enumerate Properties --
 		-- arg1: Dialog
 		elseif what == "enum_props" then
-			arg1:StockElements("Enemy", type)
+			arg1:StockElements(event("get_thumb_filename"))
 			arg1:AddSeparator()
 			arg1:AddCheckbox{ text = "Asleep By Default?", value_name = "asleep" }
 			arg1:AddCheckbox{ text = "Fall Asleep If Killed?", value_name = "sleep_on_death" }
@@ -387,7 +388,7 @@ function M.EditorEvent (type, what, arg1, arg2, arg3)
 			-- COMMON STUFF... nothing yet, I don't think, assuming well-formed editor
 		end
 
-		return type_info.EditorEvent(what, arg1, arg2, arg3)
+		return event(what, arg1, arg2, arg3)
 	end
 end
 

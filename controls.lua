@@ -34,7 +34,7 @@
 local action = require("s3_utils.hud.action")
 local device = require("corona_utils.device")
 local move = require("s3_utils.hud.move")
-local player = require("game.Player")
+local player = require("game.player.core")
 local touch = require("corona_ui.utils.touch")
 
 -- Corona globals --

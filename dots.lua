@@ -159,6 +159,8 @@ function M.EditorEvent (type, what, arg1, arg2, arg3)
 	local cons = DotList[type]
 
 	if cons then
+		local event = cons("editor_event")
+
 		-- Build --
 		-- arg1: Level
 		-- arg2: Original entry
@@ -176,7 +178,7 @@ function M.EditorEvent (type, what, arg1, arg2, arg3)
 		-- Enumerate Properties --
 		-- arg1: Dialog
 		elseif what == "enum_props" then
-			arg1:StockElements("Dot", type)
+			arg1:StockElements(event and event("get_thumb_filename"))
 			arg1:AddSeparator()
 --			arg1:AddCheckbox{ text = "On By Default?", value_name = "starts_on" }
 			arg1:AddCheckbox{ text = "Can Attach To Event Block?", value_name = "can_attach" }
@@ -187,7 +189,7 @@ function M.EditorEvent (type, what, arg1, arg2, arg3)
 			-- COMMON STUFF... nothing yet, I don't think, assuming well-formed editor
 		end
 
-		local event, result, r2, r3 = cons("editor_event")
+		local result, r2, r3
 
 		if event then
 			result, r2, r3 = event(what, arg1, arg2, arg3)
@@ -320,7 +322,7 @@ end
 
 -- Install various types of dots.
 DotList = require_ex.DoList("config.Dots")
-vdump(DotList)
+
 -- Cache module members.
 _AddBody_ = M.AddBody
 _DeductDot_ = M.DeductDot
