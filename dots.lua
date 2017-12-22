@@ -320,7 +320,7 @@ end
 
 -- Install various types of dots.
 DotList = require_ex.DoList("config.Dots")
-
+vdump(DotList)
 -- Cache module members.
 _AddBody_ = M.AddBody
 _DeductDot_ = M.DeductDot

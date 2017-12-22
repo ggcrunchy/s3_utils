@@ -51,7 +51,7 @@ function M.EditorEvent (_, what, arg1, arg2)
 	-- Enumerate Properties --
 	-- arg1: Dialog
 	if what == "enum_props" then
-		arg1:StockElements(nil)
+		arg1:StockElements()
 		-- TODO: "dynamic" boolean?
 
 	-- Get Link Info --

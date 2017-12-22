@@ -40,7 +40,7 @@ local collision = require("corona_utils.collision")
 local enemy_events = require("annex.EnemyEvents")
 local flow_ops = require("coroutine_ops.flow")
 local movement = require("s3_utils.movement")
-local state_vars = require("config.StateVariables")
+local object_vars = require("config.ObjectVariables")
 local tile_maps = require("s3_utils.tile_maps")
 local wrapper = require("coroutine_ops.wrapper")
 
@@ -376,7 +376,7 @@ function M.EditorEvent (type, what, arg1, arg2, arg3)
 
 		-- New Tag --
 		elseif what == "new_tag" then
-			return "sources_and_targets", Events, Actions, state_vars.UnfoldPropertyFunctionsAsTagReadyList(Properties)
+			return "sources_and_targets", Events, Actions, object_vars.UnfoldPropertyFunctionsAsTagReadyList(Properties)
 
 		-- Prep Link --
 		elseif what == "prep_link" then
@@ -503,7 +503,7 @@ function M.SpawnEnemy (group, info)
 		bind.Publish("loading_level", Actions[k](enemy), info.uid, k)
 	end
 
-	state_vars.PublishProperties(info.props, Properties, info.uid, enemy)
+	object_vars.PublishProperties(info.props, Properties, info.uid, enemy)
 
 	--- Allows an enemy to send an alert to other enemies.
 	-- @function enemy:AlertOthers

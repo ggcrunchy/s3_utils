@@ -178,7 +178,7 @@ function M.EditorEvent (_, what, arg1, arg2)
 	-- Enumerate Properties --
 	-- arg1: Dialog
 	elseif what == "enum_props" then
-		arg1:StockElements(nil, "music")
+		arg1:StockElements()
 		arg1:AddSeparator()
 		arg1:AddMusicPicker{ text = "Music file", value_name = "filename" }
 		arg1:AddCheckbox{ text = "Loop forever?", value_name = "looping" }

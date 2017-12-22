@@ -34,7 +34,7 @@ local rawequal = rawequal
 local adaptive = require("tektite_core.table.adaptive")
 local bind = require("corona_utils.bind")
 local config = require("config.GlobalEvents")
-local state_vars = require("config.StateVariables")
+local object_vars = require("config.ObjectVariables")
 
 -- Corona globals --
 local Runtime = Runtime
@@ -81,7 +81,7 @@ function M.AddEvents (events, wlist)
 		bind.Publish("loading_level", Actions[k], events.uid, k)
 	end
 
-	state_vars.PublishProperties(events and events.props, OutProperties, events and events.uid)
+	object_vars.PublishProperties(events and events.props, OutProperties, events and events.uid)
 
 	--
 	if not adaptive.InSet(events and events.actions, "win") then
@@ -115,7 +115,7 @@ function M.EditorEvent (_, what, arg1)
 
 	-- New Tag --
 	elseif what == "new_tag" then
-		return "sources_and_targets", GetEvent, Actions, state_vars.UnfoldPropertyFunctionsAsTagReadyList(OutProperties)
+		return "sources_and_targets", GetEvent, Actions, object_vars.UnfoldPropertyFunctionsAsTagReadyList(OutProperties)
 
 	-- Prep Link --
 	elseif what == "prep_link" then

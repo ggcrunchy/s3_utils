@@ -28,7 +28,7 @@ local assert = assert
 local pairs = pairs
 
 -- Modules --
-local state_vars = require("config.StateVariables")
+local object_vars = require("config.ObjectVariables")
 
 -- Exports --
 local M = {}
@@ -39,7 +39,7 @@ local M = {}
 
 local Vars = {}
 
-for _, family in ipairs(state_vars.families) do
+for _, family in ipairs(object_vars.families) do
 	Vars[family] = {}
 end
 
@@ -63,7 +63,7 @@ end
 
 --- DOCME
 function M.SetVariable (family, vtype, name, value)
-	assert(state_vars.properties[vtype], "Unknown variable type")
+	assert(object_vars.properties[vtype], "Unknown variable type")
 
 	if family ~= nil then
 		local fset = Vars[family] or CustomFamilies[family]
