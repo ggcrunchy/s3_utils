@@ -193,7 +193,8 @@ function M.EditorEvent (_, what, arg1, arg2)
 
 		local restore_section = arg1:BeginSection()
 
-		arg1:AddCheckbox{ text = "Restore on reset?", value_name = "restore" }
+			arg1:AddCheckbox{ text = "Restore on reset?", value_name = "restore" }
+
 		arg1:EndSection()
 
 		--

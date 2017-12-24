@@ -150,9 +150,11 @@ function M.EditorEvent (_, what, arg1, arg2)
 
 		local loop_count_section = arg1:BeginSection()
 
-		arg1:AddSpinner{ before = "Loop count: ", min = 1, value_name = "loop_count" }
+			arg1:AddStepperWithEditable{ before = "Loop count: ", min = 1, value_name = "loop_count" }
+
 		arg1:EndSection()
-		arg1:AddSpinner{ before = "Delay between sounds: ", min = 0, inc = 50, value_name = "delay" }
+
+		arg1:AddStepperWithEditable{ before = "Delay between sounds: ", value_name = "delay" }
 		-- Hook to position??
 
 		--

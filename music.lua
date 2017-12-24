@@ -185,7 +185,8 @@ function M.EditorEvent (_, what, arg1, arg2)
 
 		local loop_count_section = arg1:BeginSection()
 
-		arg1:AddSpinner{ before = "Loop count: ", min = 1, value_name = "loop_count" }
+			arg1:AddStepperWithEditable{ before = "Loop count: ", min = 1, value_name = "loop_count" }
+
 		arg1:EndSection()
 
 		-- volume?
