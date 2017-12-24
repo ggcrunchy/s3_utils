@@ -41,6 +41,7 @@ local enemy_events = require("annex.EnemyEvents")
 local flow_ops = require("coroutine_ops.flow")
 local movement = require("s3_utils.movement")
 local object_vars = require("config.ObjectVariables")
+local store = require("s3_utils.state.store")
 local tile_maps = require("s3_utils.tile_maps")
 local wrapper = require("coroutine_ops.wrapper")
 
@@ -99,10 +100,19 @@ local function PhaseIn (enemy, type_info, info, is_sleeping)
 	enemy.alpha = 1
 end
 
+--
+local function ClearLocalVars (enemy)
+	store.RemoveFamily(enemy.m_local_vars)
+
+	enemy.m_local_vars = nil
+end
+
 -- Common logic to apply when an enemy is killed
 local function Kill (enemy, other)
 	if enemy.m_alive then
-		enemy.m_alive, enemy.m_local_vars = false
+		ClearLocalVars(enemy)
+
+		enemy.m_alive = false
 
 		collision.SetVisibility(enemy, false)
 
@@ -616,6 +626,10 @@ local events = {
 	leave_level = function()
 		_AlertEnemies_("about_to_leave")
 
+		for _, enemy in ipairs(Enemies) do
+			ClearLocalVars(enemy)
+		end
+
 		Coros, Enemies = nil
 
 		Runtime:removeEventListener("enterFrame", OnEnterFrame)
@@ -626,7 +640,9 @@ local events = {
 		_AlertEnemies_("about_to_reset")
 
 		for i, enemy in ipairs(Enemies) do
-			enemy.m_alive, enemy.m_local_vars = false
+			ClearLocalVars(enemy)
+
+			enemy.m_alive = false
 
 			enemy_events.base_reset(enemy)
 
