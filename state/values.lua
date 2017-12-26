@@ -41,7 +41,7 @@ local M = {}
 --
 
 -- Value type lookup table --
-local ValueList
+local ValueList, Categories
 
 -- --
 local Before = bind.BroadcastBuilder_Helper(nil)
@@ -139,11 +139,11 @@ function M.GetTypes ()
 		types[#types + 1] = k
 	end
 
-	return types
+	return types, Categories
 end
 
 -- Install various types of values.
-ValueList = require_ex.DoList("config.Values")
+ValueList, Categories = require_ex.DoList("config.Values")
 
 -- Export the module.
 return M

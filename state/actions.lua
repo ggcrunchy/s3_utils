@@ -41,7 +41,7 @@ local M = {}
 --
 
 -- Action type lookup table --
-local ActionList
+local ActionList, Categories
 
 -- --
 local Next = bind.BroadcastBuilder_Helper(nil)
@@ -158,11 +158,11 @@ function M.GetTypes ()
 		types[#types + 1] = k
 	end
 
-	return types
+	return types, Categories
 end
 
 -- Install various types of actions.
-ActionList = require_ex.DoList("config.Actions")
+ActionList, Categories = require_ex.DoList("config.Actions")
 
 -- Export module.
 return M
