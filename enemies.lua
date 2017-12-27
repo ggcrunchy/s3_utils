@@ -213,16 +213,18 @@ function M.AlertEnemies (what, arg, how)
 	-- Filter out alert recipients: an enemy alerting others must not alert itself, and
 	-- otherwise screen out those either alive or not. The "omit self" flag is consumed
 	-- immediately, so clean it up in order to not confused subsequent alerts.
-	omit, OmitArg = OmitArg and arg
+	if Enemies then -- ignore alerts coeval with condition than ends level
+		omit, OmitArg = OmitArg and arg
 
-	if how ~= "all" then
-		live_value = how ~= "dead"
-	end
+		if how ~= "all" then
+			live_value = how ~= "dead"
+		end
 
-	-- Send the alert to all valid recipients.
-	for _, enemy in ipairs(Enemies) do
-		if enemy ~= omit and live_value ~= not enemy.m_alive then
-			enemy:ReactTo(what, arg)
+		-- Send the alert to all valid recipients.
+		for _, enemy in ipairs(Enemies) do
+			if enemy ~= omit and live_value ~= not enemy.m_alive then
+				enemy:ReactTo(what, arg)
+			end
 		end
 	end
 end
@@ -600,6 +602,7 @@ end
 local events = {
 	-- Enter Level --
 	enter_level = function()
+		print("YEP")
 		Coros, Enemies = {}, {}
 	end,
 
