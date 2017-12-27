@@ -523,7 +523,7 @@ function M.SpawnEnemy (group, info)
 	enemy.AlertOthers = AlertOthers
 
 	-- Perform any create-time response.
-	enemy:ReactTo("create")
+	enemy:ReactTo("create", info)
 
 	-- Find the start tile to (re)spawn the enemy there, and kick off its behavior. Unless
 	-- fixed, this starting position may attach to an event block and be moved around.

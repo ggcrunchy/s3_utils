@@ -31,7 +31,7 @@ local pairs = pairs
 local require_ex = require("tektite_core.require_ex")
 local bind = require("corona_utils.bind")
 local extend = require("s3_utils.state.extend")
-local table_funcs = require("tektite_core.table.funcs")
+local meta = require("tektite_core.table.meta")
 
 -- Exports --
 local M = {}
@@ -47,7 +47,7 @@ local ActionList, Categories
 local Next = bind.BroadcastBuilder_Helper(nil)
 
 -- --
-local NamedSources = table_funcs.Weak("v") 
+local NamedSources = meta.Weak("v") 
 
 --- DOCME
 function M.AddAction (info, wname)
