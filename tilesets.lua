@@ -23,6 +23,9 @@
 -- [ MIT license: http://www.opensource.org/licenses/mit-license.php ]
 --
 
+-- Extension imports --
+local copy = table.copy
+
 -- Standard library imports --
 local assert = assert
 local ipairs = ipairs
@@ -37,6 +40,7 @@ local loader = require("corona_shader.loader")
 -- Corona globals --
 local display = display
 local graphics = graphics
+local Runtime = Runtime
 
 -- Exports --
 local M = {}
@@ -66,18 +70,24 @@ for _, row in ipairs(Names) do
 	end
 end
 
--- --
-local Image
+local Shorthand = { "_H", "_V", "UL", "UR", "LL", "LR", "TT", "LT", "RT", "BT", "_4", "_T", "_L", "_R", "_B" }
 
--- --
-local Sheet
-
--- --
-local TileShader
+local Expansions = {
+	_H = "Horizontal", _V = "Vertical",
+	UL = "UpperLeft", UR = "UpperRight", LL = "LowerLeft", LR = "LowerRight",
+	TT = "TopT", LT = "LeftT", RT = "RightT", BT = "BottomT",
+	_4 = "FourWays", _T = "TopNub", _L = "LeftNub", _R = "RightNub", _B = "BottomNub"
+}
 
 --- DOCME
-function M.GetShader ()
-	return TileShader and TileShader.name
+function M.GetExpansions ()
+	local expansions = {}
+
+	for k, v in pairs(Expansions) do
+		expansions[k] = v
+	end
+
+	return expansions
 end
 
 -- --
@@ -102,6 +112,57 @@ function M.GetFrameCenter (index)
 	return (rect.u1 + rect.u2) / 2, (rect.v1 + rect.v2) / 2
 end
 
+--- DOCME
+function M.GetFrameFromName (name)
+	return NameToIndex[name]
+end
+
+--- DOCME
+function M.GetNames ()
+	local names = {}
+
+	for _, short in ipairs(Shorthand) do -- keep order in sync
+		names[#names + 1] = Expansions[short]
+	end
+
+	return names
+end
+
+-- --
+local TileShader
+
+--- DOCME
+function M.GetShader ()
+	return TileShader and TileShader.name
+end
+
+-- --
+local Sheet
+
+--- DOCME
+function M.GetSheet ()
+	return Sheet
+end
+
+--- DOCME
+function M.GetShorthands ()
+	return copy(Shorthand)
+end
+
+--  Tileset lookup table --
+local TilesetList
+
+--- DOCME
+function M.GetTypes ()
+	local list = {}
+
+	for name in pairs(TilesetList) do
+		list[#list + 1] = name
+	end
+
+	return list
+end
+
 -- --
 local VertexDataNames
 
@@ -114,6 +175,16 @@ function M.GetVertexDataNames ()
 	end
 end
 
+local function SetShader (tile, name, index)
+	tile.fill.effect = TileShader.name
+
+	local set_vdata = TileShader.set_vdata
+
+	if set_vdata then
+		set_vdata(tile, name, index)
+	end
+end
+
 --- DOCME
 function M.NewTile (group, name, x, y, w, h)
 	local index = NameToIndex[name]
@@ -122,16 +193,19 @@ function M.NewTile (group, name, x, y, w, h)
 	tile.x, tile.y = x, y
 
 	if TileShader then
-		tile.fill.effect = TileShader.name
-
-		local set_vdata = TileShader.set_vdata
-
-		if set_vdata then
-			set_vdata(tile, name, index)
-		end
+		SetShader(tile, name, index)
 	end
 
 	return tile
+end
+
+--- DOCME
+function M.SetTileShader (tile, name)
+	local index = NameToIndex[name]
+
+	if index and tile.fill and TileShader then
+		SetShader(tile, name, index)
+	end
 end
 
 -- --
@@ -282,9 +356,6 @@ local TileCore = [[
 
 ]]
 
---  Tileset lookup table --
-local TilesetList
-
 -- --
 local Dim = 64
 
@@ -433,6 +504,9 @@ local function LoadEffects (config, prelude)
 	return effects
 end
 
+-- --
+local Image
+
 --
 local function RenderTile (x, y, w, h, effect)
 	local tile = display.newRect(x, y, w, h)
@@ -442,11 +516,7 @@ local function RenderTile (x, y, w, h, effect)
 	Image:draw(tile)
 end
 
---
-function M.UseTileset (name, prefer_raw)
-	assert(not Image, "Tileset already loaded")
-
-	local ts = assert(TilesetList[name], "Invalid tileset")
+local function GetEffects (ts)
 	local category, gname, prelude, datum_prefix = ts.category, ts.group, ts.prelude, ts.datum_prefix
 
 	assert(category == "generator" or category == "filter" or category == "composite", "Invalid category")
@@ -456,7 +526,6 @@ function M.UseTileset (name, prefer_raw)
 
 	prelude = prelude .. TileCore
 
-	--
 	local config, effects = ts.config, Groups[gname]
 
 	if not effects then
@@ -500,78 +569,129 @@ function M.UseTileset (name, prefer_raw)
 		Groups[gname] = effects
 	end
 
-	--
-	local ex, ey = ts.extra_x or 0, ts.extra_y or 0
-	local w, h = (Cols + ex) * Dim, (Rows + ey) * Dim
+	return effects
+end
 
-	Image = graphics.newTexture{ type = "canvas", width = w, height = h }
+--
+function M.UseTileset (name, prefer_raw)
+	local ts = assert(TilesetList[name], "Invalid tileset")
+	local effects = GetEffects(ts)
+	local sname = not prefer_raw and effects.tile_shader
 
-	--
-	local sname, list = not prefer_raw and effects.tile_shader
+	if not Image or Image.m_name ~= name or Image.m_sname ~= sname then
+		local ex, ey = ts.extra_x or 0, ts.extra_y or 0
+		local w, h, old_w, old_h = (Cols + ex) * Dim, (Rows + ey) * Dim, -1, -1
 
-	if sname then
-		TileShader, list = {
-			name = effects.tile_shader, set_vdata = ts.set_vdata
-		}, effects.with_shader
+		if Image then
+			old_w, old_h = Image.width, Image.height
 
-		VertexDataNames = {}
+			if w > old_w or h > old_h then
+				Image:releaseSelf()
 
-		for i = 1, #(ts.vdata or "") do
-			VertexDataNames[ts.vdata[i].index + 1] = ts.vdata[i].name
+				Image = nil
+			end
 		end
-	else
-		list = effects.raw
-	end
 
-	--
-	TextureRects, w, h = {}, Image.width, Image.height
+		Image = Image or graphics.newTexture{ type = "canvas", width = w, height = h }
+		Image.m_name, Image.m_sname = name, sname
 
-	local frames, x0, y0 = {}, (Dim - w) / 2, (Dim - h) / 2
+		local cache, list = Image.cache
 
-	for ri, row in ipairs(Names) do
-		local y = (ri - 1) * Dim
+		if sname then
+			TileShader, list = {
+				name = effects.tile_shader, set_vdata = ts.set_vdata
+			}, effects.with_shader
 
-		for ci, name in ipairs(row) do
-			local x = (ci - 1) * Dim
+			VertexDataNames = {}
 
-			RenderTile(x0 + x, y0 + y, Dim, Dim, list[name])
-
-			TextureRects[#TextureRects + 1] = { u1 = x / w, v1 = y / h, u2 = (x + Dim - 1) / w, v2 = (y + Dim - 1) / h }
-
-			frames[#frames + 1] = { x = x + 1, y = y + 1, width = Dim, height = Dim }
+			for i = 1, #(ts.vdata or "") do
+				VertexDataNames[ts.vdata[i].index + 1] = ts.vdata[i].name
+			end
+		else
+			list, TileShader, VertexDataNames = effects.raw
 		end
+
+		--
+		w, h = Image.width, Image.height
+
+		local changed = not TextureRects or old_w ~= w or old_h ~= h
+
+		if changed or cache.numChildren == 0 then
+			if changed then
+				TextureRects = {}
+			end
+
+			for i = cache.numChildren, 1, -1 do
+				cache:remove(i)
+			end
+
+			local frames, x0, y0 = {}, (Dim - w) / 2, (Dim - h) / 2
+
+			for ri, row in ipairs(Names) do
+				local y = (ri - 1) * Dim
+
+				for ci, name in ipairs(row) do
+					local x = (ci - 1) * Dim
+
+					RenderTile(x0 + x, y0 + y, Dim, Dim, list[name])
+
+					if changed then
+						TextureRects[#TextureRects + 1] = { u1 = x / w, v1 = y / h, u2 = (x + Dim - 1) / w, v2 = (y + Dim - 1) / h }
+
+						frames[#frames + 1] = { x = x + 1, y = y + 1, width = Dim, height = Dim }
+					end
+				end
+			end
+
+			if changed then
+				Sheet = graphics.newImageSheet(Image.filename, Image.baseDir, {
+					frames = frames, sheetContentWidth = Image.width, sheetContentHeight = Image.height
+				})
+			end
+
+			if TileShader then
+				local empty = display.newRect(x0 + 5 * Dim, y0 + 1.5 * Dim, w - 4 * Dim, h - Dim)
+
+				empty:setFillColor(0, 0)
+
+				Image:draw(empty)
+			end
+		else
+			local index = 1
+
+			for _, row in ipairs(Names) do -- can leave empty TileShader rect alone
+				for ci, name in ipairs(row) do
+					index, cache[index].fill.effect = index + 1, list[name]
+				end
+			end
+		end
+
+		--
+		Image:invalidate()
+
+		Runtime:dispatchEvent{ name = "tileset_details_changed" }
 	end
-
-	if TileShader then
-		local empty = display.newRect(x0 + 5 * Dim, y0 + 1.5 * Dim, w - 4 * Dim, h - Dim)
-
-		empty:setFillColor(0, 0)
-
-		Image:draw(empty)
-	end
-
-	--
-	Image:invalidate()
-
-	--
-	Sheet = graphics.newImageSheet(Image.filename, Image.baseDir, {
-		frames = frames, sheetContentWidth = Image.width, sheetContentHeight = Image.height
-	})
 end
 
 -- Install the tilesets.
 TilesetList = require_ex.DoList("config.TileSets")
 
+--
+local function Clear ()
+	if Image then
+		Image:releaseSelf()
+	end
+
+	Image, Sheet, TextureRects, TileShader, VertexDataNames = nil
+end
+
 -- Listen to events.
 for k, v in pairs{
 	-- Leave Level --
-	leave_level = function()
-		if Image then
-			Image:releaseSelf()
-		end
+	leave_level = Clear,
 
-		Image, Sheet, TextureRects, TileShader, VertexDataNames = nil
-	end
+	-- Leave Menus --
+	leave_menus = Clear
 } do
 	Runtime:addEventListener(k, v)
 end

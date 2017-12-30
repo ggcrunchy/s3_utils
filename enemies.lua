@@ -602,7 +602,6 @@ end
 local events = {
 	-- Enter Level --
 	enter_level = function()
-		print("YEP")
 		Coros, Enemies = {}, {}
 	end,
 

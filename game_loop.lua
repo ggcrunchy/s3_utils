@@ -222,12 +222,7 @@ function M.BeforeEntering (w, h)
 end
 
 -- Tile names, expanded from two-character shorthands --
-local Names = {
-	_H = "Horizontal", _V = "Vertical",
-	UL = "UpperLeft", UR = "UpperRight", LL = "LowerLeft", LR = "LowerRight",
-	TT = "TopT", LT = "LeftT", RT = "RightT", BT = "BottomT",
-	_4 = "FourWays", _U = "Up", _L = "Left", _R = "Right", _D = "Down"
-}
+local Expansions = tilesets.GetExpansions()
 
 --- DOCME
 function M.DecodeTileLayout (level)
@@ -236,7 +231,7 @@ function M.DecodeTileLayout (level)
 	level.start_row = level.player.row
 
 	for i, tile in ipairs(level.tiles.values) do
-		level[i] = Names[tile] or false
+		level[i] = Expansions[tile] or false
 	end
 end
 
