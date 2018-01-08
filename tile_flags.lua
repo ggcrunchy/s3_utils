@@ -27,6 +27,8 @@
 --
 
 -- Standard library imports --
+local pairs = pairs
+local rawequal = rawequal
 
 -- Modules --
 local array_index = require("tektite_core.array.index")
@@ -42,8 +44,20 @@ local Runtime = Runtime
 local IsSet = powers_of_2.IsSet
 local PowersOf2 = powers_of_2.PowersOf2
 
+-- Cached module references --
+local _ResolveFlags_
+
 -- Exports --
 local M = {}
+
+-- Name of current flag group --
+local Current
+
+--- Getter.
+-- @return Name of current flag group.
+function M.GetCurrentGroup ()
+	return Current
+end
 
 -- Flags for each cardinal direction --
 local DirFlags = { left = 0x1, right = 0x2, up = 0x4, down = 0x8 }
@@ -280,6 +294,64 @@ function M.SetFlags (index, flags)
 	return old or 0
 end
 
+local function AuxBindGroup (fgroup)
+	Flags, ResolvedFlags = fgroup.flags, fgroup.resolved
+end
+
+local function MaybeNil (name)
+	if name == nil then
+		return DirFlags -- arbitrary nonce
+	else
+		return name
+	end
+end
+
+-- Various groups of flags, working and resolved --
+local FlagGroups
+
+local function AuxUseFlags (name)
+	Current, name = name, MaybeNil(name)
+
+	local fgroup = FlagGroups[name] or { flags = {}, resolved = {} }
+
+	FlagGroups[name] = fgroup
+
+	AuxBindGroup(fgroup)
+end
+
+--- Swap out the current working / resolved flags for another group (created on first use).
+--
+-- This is a no-op if _name_ is already the current group.
+-- @param name Name of set, or **nil** for the default.
+-- @treturn Name of group in use before call.
+function M.UseFlags (name)
+	local current = Current
+
+	if not rawequal(name, current) then
+		AuxUseFlags(name)
+	end
+
+	return current
+end
+
+--- Visits all flag groups, namely the default one and anything instantiated by @{UseFlags}.
+-- For each one, _func_ is called with the group name after making the given flags current.
+--
+-- The group current before this call is restored afterward.
+function M.VisitGroups (func)
+	local current = Current
+
+	for name, fgroup in pairs(FlagGroups) do
+		if name ~= current then
+			AuxBindGroup(fgroup)
+			func(name)
+		end
+	end
+
+	AuxBindGroup(FlagGroups[MaybeNil(current)])
+	func(current)
+end
+
 --- Clears all tile flags, in both the working and resolved sets, in a given region.
 --
 -- Neighboring tiles' flags remain unaffected. Flag resolution is not performed.
@@ -309,30 +381,33 @@ for k, v in pairs{
 		Deltas.up = -level.ncols
 		Deltas.down = level.ncols
 
-		Flags = {}
-		ResolvedFlags = {}
 		NCols = level.ncols
 		NRows = level.nrows
-		Area = NCols * NRows
+		Area, FlagGroups, Current = NCols * NRows, {}
+
+		AuxUseFlags(nil)
 	end,
 
 	-- Leave Level --
 	leave_level = function()
-		Flags, ResolvedFlags = nil
+		FlagGroups, Flags, ResolvedFlags = nil
 	end,
 
 	-- Reset Level --
 	reset_level = function()
-		M.ResolveFlags()
+		_ResolveFlags_()
 	end,
 
 	-- Tiles Changed --
 	tiles_changed = function()
-		M.ResolveFlags(true)
+		_ResolveFlags_(true)
 	end
 } do
 	Runtime:addEventListener(k, v)
 end
+
+-- Cache module members.
+_ResolveFlags_ = M.ResolveFlags
 
 -- Export the module.
 return M

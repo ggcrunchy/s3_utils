@@ -44,6 +44,11 @@ local GetResolvedFlags = tile_flags.GetResolvedFlags
 local IndexToCell = grid.IndexToCell
 local SetFlags = tile_flags.SetFlags
 
+-- Cached module references --
+local _GetCell_XY_
+local _GetTileIndex_
+local _GetTilePos_
+
 -- Module --
 local M = {}
 
@@ -161,7 +166,7 @@ end
 -- @number y ...and y-coordinate.
 -- @treturn int Tile index, or -1 if outside the level.
 function M.GetTileIndex_XY (x, y)
-	return M.GetTileIndex(M.GetCell_XY(x, y))
+	return _GetTileIndex_(_GetCell_XY_(x, y))
 end
 
 --- Getter.
@@ -180,7 +185,7 @@ end
 -- @uint index Tile index (see the caveat for @{GetTilePos}).
 -- @param object The tile center is assigned to this object's **x** and **y** fields.
 function M.PutObjectAt (index, object)
-	local x, y = M.GetTilePos(index)
+	local x, y = _GetTilePos_(index)
 
 	object.x = x
 	object.y = y
@@ -243,6 +248,11 @@ for k, v in pairs{
 } do
 	Runtime:addEventListener(k, v)
 end
+
+-- Cache module members.
+_GetCell_XY_ = M.GetCell_XY
+_GetTileIndex_ = M.GetTileIndex
+_GetTilePos_ = M.GetTilePos
 
 -- Export the module.
 return M

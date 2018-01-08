@@ -225,6 +225,17 @@ local function DotLess (a, b)
 	return a.m_index < b.m_index
 end
 
+-- Default logic for dot in block's list
+local function BlockFunc (what, dot, arg1, arg2)
+	if what == "get_local_xy" then
+		return arg1, arg2
+	elseif what == "set_content_xy" then
+		dot.x, dot.y = dot.parent:contentToLocal(arg1, arg2)
+	elseif what == "set_angle" then
+		dot.rotation = arg1
+	end
+end
+
 -- Listen to events.
 for k, v in pairs{
 	-- Act On Dot --
@@ -261,9 +272,9 @@ for k, v in pairs{
 			Dots.sorted = true
 		end
 
-		-- Accumulate any non-omitted dot inside the event block region into its dots list.
+		-- Accumulate any non-omitted dot inside the event block region into its list.
 		local block = event.block
-		local slot, n, dots = 1, #Dots
+		local slot, n = 1, #Dots
 
 		for index in block:IterSelf() do
 			while slot <= n and Dots[slot].m_index < index do
@@ -273,15 +284,9 @@ for k, v in pairs{
 			local dot = Dots[slot]
 
 			if dot and dot.m_index == index and not dot:GetProperty("omit_from_event_blocks") then
-				dots = dots or {}
-
-				dots[#dots + 1] = dot
-				dots[#dots + 1] = dot.x
-				dots[#dots + 1] = dot.y
+				block:AddToList(dot, dot:GetProperty("block_func", BlockFunc) or BlockFunc, dot.x, dot.y)
 			end
 		end
-
-		block.dots = dots
 	end,
 
 	-- Leave Level --

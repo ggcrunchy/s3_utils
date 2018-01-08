@@ -61,9 +61,23 @@ local PeriodTime = 1.15
 -- Phasing time coefficient --
 local PhaseFactor = 2 * pi / PeriodTime
 
+--
+local function SetPos (enemy)
+	local x, y = enemy.m_start:localToContent(0, 0)
+
+	enemy.x, enemy.y = enemy.parent:contentToLocal(x, y)
+end
+
 -- Phase-in effect on spawning enemy
 local function PhaseSpawning (t, _, enemy)
 	enemy.alpha = abs(sin(PhaseFactor * t.time))
+
+	-- Update the position, since the start point might be moving.
+	SetPos(enemy)
+end
+
+local function SetTile (enemy)
+	enemy.m_tile = tile_maps.GetTileIndex_XY(enemy.x, enemy.y)
 end
 
 -- Behavior of an enemy after (re)spawning and while waiting to become alive
@@ -72,12 +86,8 @@ local function PhaseIn (enemy, type_info, info, is_sleeping)
 	enemy.m_facing = info.facing
 	enemy.m_pref_turn, enemy.m_alt_turn = movement.Turns(not info.prefers_left)
 
-	--
-	local x, y = enemy.m_start:localToContent(0, 0)
-
-	enemy.x, enemy.y = enemy.parent:contentToLocal(x, y)
-
-	enemy.m_tile = tile_maps.GetTileIndex_XY(enemy.x, enemy.y)
+	SetPos(enemy)
+	SetTile(enemy)
 
 	--
 	if type_info.Start then
@@ -98,6 +108,8 @@ local function PhaseIn (enemy, type_info, info, is_sleeping)
 	flow_ops.Wait(type_info.spawn_time, PhaseSpawning, enemy)
 
 	enemy.alpha = 1
+
+	SetTile(enemy)
 end
 
 --
@@ -598,27 +610,50 @@ local function OnEnterFrame ()
 	end
 end
 
+-- --
+local BlockAlert
+
+-- Logic for start positions in blocks
+local function BlockFunc (what, start, arg1, arg2)
+	if what == "get_local_xy" then
+		return arg1, arg2
+	elseif what == "set_content_xy" then
+		start.x, start.y = start.parent:contentToLocal(arg1, arg2)
+	elseif what == "set_angle" then
+		start.rotation = arg1
+	end
+end
+
 -- Listen to events.
 local events = {
 	-- Enter Level --
 	enter_level = function()
-		Coros, Enemies = {}, {}
+		BlockAlert, Coros, Enemies = {}, {}, {}
+	end,
+
+	-- Event Block --
+	event_block = function(event)
+		BlockAlert.block, BlockAlert.how, BlockAlert.phase = event.block, event.how, event.phase
+
+		_AlertEnemies_("event_block", BlockAlert)
+
+		BlockAlert.block = nil
 	end,
 
 	-- Event Block Setup --
 	event_block_setup = function(event)
 		local block = event.block
+		local cmin, cmax = block:GetColumns()
+		local rmin, rmax = block:GetRows()
 
 		for _, enemy in ipairs(Enemies) do
 			if enemy.m_can_attach then
-				local col, row = tile_maps.GetCell(enemy.m_tile)
-				local cmin, cmax = block:GetColumns()
-				local rmin, rmax = block:GetRows()
+				local start, col, row = enemy.m_start, tile_maps.GetCell(enemy.m_tile)
 
 				if col >= cmin and col <= cmax and row >= rmin and row <= rmax then
-					block:GetGroup():insert(enemy.m_start)
+					block:AddToList(start, BlockFunc, start.x, start.y)
 
-					enemy.m_can_attach = false
+					start.m_block = block
 				end
 			end
 		end
@@ -632,7 +667,7 @@ local events = {
 			ClearLocalVars(enemy)
 		end
 
-		Coros, Enemies = nil
+		BlockAlert, Coros, Enemies = nil
 
 		Runtime:removeEventListener("enterFrame", OnEnterFrame)
 	end,
