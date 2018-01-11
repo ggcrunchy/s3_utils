@@ -26,6 +26,9 @@
 -- Standard library imports --
 local ipairs = ipairs
 
+-- Cached module references --
+local _ChooseBranch_Facing_
+
 -- Exports --
 local M = {}
 
@@ -49,7 +52,7 @@ function M.Advance (cur, how, arg)
 	if index < #cur then
 		cur.index = index
 	elseif cur.next then
-		return M.ChooseBranch_Facing(cur.next, arg)
+		return _ChooseBranch_Facing_(cur.next, arg)
 	end
 
 	return cur
@@ -100,6 +103,9 @@ end
 function M.CurrentDir (cur)
 	return cur[cur.index + 1]
 end
+
+-- Cache module members.
+_ChooseBranch_Facing_ = M.ChooseBranch_Facing
 
 -- Export the module.
 return M

@@ -73,8 +73,8 @@ local Dirs = { {}, {}, {} }
 local N
 
 -- Tries to head in a given direction from a tile
-local function TryDir (tile, dir, headed)
-	local dir, dt = movement.NextDirection(dir, headed, "tile_delta")
+local function TryDir (tile, cur_dir, headed)
+	local dir, dt = movement.NextDirection(cur_dir, headed, "tile_delta")
 
 	if tile_flags.IsFlagSet(tile, dir) then
 		N = N + 1

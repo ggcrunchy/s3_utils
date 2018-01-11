@@ -41,6 +41,10 @@ local tile_maps = require("s3_utils.tile_maps")
 -- Corona globals --
 local display = display
 
+-- Cached module references --
+local _IsClose_
+local _NotZero_
+
 -- Exports --
 local M = {}
 
@@ -70,12 +74,12 @@ local MaxX, MaxY
 function M.FindNearestBorder (px, py, vx, vy, nx, ny)
 	BestT = huge
 
-	if M.NotZero(vx) then
+	if _NotZero_(vx) then
 		TryNormal(-px / vx, 1, 0, nx, ny)
 		TryNormal((MaxX - px) / vx, -1, 0, nx, ny)
 	end
 
-	if M.NotZero(vy) then
+	if _NotZero_(vy) then
 		TryNormal(-py / vy, 0, 1, nx, ny)
 		TryNormal((MaxY - py) / vy, 0, -1, nx, ny)
 	end
@@ -195,7 +199,7 @@ function M.SamplePositions (n, tolerx, tolery, target, dt, update, arg)
 		end
 
 		--
-		if i > 1 and not M.IsClose(x - prevx, y - prevy, tolerx, tolery) then
+		if i > 1 and not _IsClose_(x - prevx, y - prevy, tolerx, tolery) then
 			return false
 		end		
 
@@ -274,7 +278,7 @@ function M.TryToMove (entity, dist, dir, near, path_funcs, update)
 			local tile = tile_maps.GetTileIndex_XY(x, y)
 			local tx, ty = tile_maps.GetTilePos(tile)
 
-			if not tile_flags.IsStraight(tile) and gtile ~= tile and M.IsClose(tx - x, ty - y, near) then
+			if not tile_flags.IsStraight(tile) and gtile ~= tile and _IsClose_(tx - x, ty - y, near) then
 				dir = update(dir, tile, entity)
 			end
 		end
@@ -282,7 +286,7 @@ function M.TryToMove (entity, dist, dir, near, path_funcs, update)
 
 	--
 	-- CONSIDER: What if 'dist' happened to be low?
-	local no_move = M.IsClose(x - x0, y - y0, 1e-3)
+	local no_move = _IsClose_(x - x0, y - y0, 1e-3)
 
 	if no_move and path_funcs and path_funcs.IsFollowingPath(entity) then
 		NoMove[entity] = min(NoMove[entity] + 1, TooManyMoves)
@@ -304,6 +308,10 @@ Runtime:addEventListener("things_loaded", function(level)
 	MaxX = max(level.ncols * level.w, display.contentWidth)
 	MaxY = max(level.nrows * level.h, display.contentHeight)
 end)
+
+-- Cache module members.
+_IsClose_ = M.IsClose
+_NotZero_ = M.NotZero
 
 -- Export the module.
 return M
