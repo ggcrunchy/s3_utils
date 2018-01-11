@@ -644,7 +644,7 @@ function M.FireAll (forward)
 	forward = not not forward
 
 	for _, v in ipairs(Events) do
-		local commands = bind.GetCommandsFunc(v)
+		local commands = bind.GetActionCommands(v)
 
 		if commands then
 			commands("set_direction", forward)

@@ -113,8 +113,8 @@ function M.FindPath (start, goal)
 	-- Launch an expedition in each direction.
 	local probes = {}
 
-	for dir in movement.Ways(start) do
-		local dir, dt = movement.NextDirection(dir, "forward", "tile_delta")
+	for cur_dir in movement.Ways(start) do
+		local dir, dt = movement.NextDirection(cur_dir, "forward", "tile_delta")
 
 		probes[#probes + 1] = { dt = dt, start, dir }
 	end
