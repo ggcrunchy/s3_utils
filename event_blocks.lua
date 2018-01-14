@@ -346,6 +346,11 @@ function EventBlock:InjectGroup ()
 	return new
 end
 
+--- DOCME
+function EventBlock:IsDone ()
+	return self.m_cmds("is_done")
+end
+
 --- Iterates over a given region.
 -- @int col1 A column...
 -- @int row1 ... and row.
@@ -535,6 +540,8 @@ function M.AddBlock (info)
 
 	bind.Publish("loading_level", event, info.uid, "fire")
 	bind.SetActionCommands(event, cmds)
+
+	block.m_cmds = cmds
 
 	Events[#Events + 1] = event -- TODO: Forgo this when not debugging?
 end
