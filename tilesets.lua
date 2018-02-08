@@ -211,7 +211,7 @@ end
 -- --
 local TileCore = [[
 	#ifndef INNER_RADIUS
-		#error "Inner radius must be specified"
+		#error Inner radius must be specified
 	#endif
 
 	//
@@ -691,7 +691,14 @@ for k, v in pairs{
 	leave_level = Clear,
 
 	-- Leave Menus --
-	leave_menus = Clear
+	leave_menus = Clear,
+
+	-- System --
+	system = function(event)
+		if event.type == "applicationResume" and Image then
+			Image:invalidate("cache")
+		end
+	end
 } do
 	Runtime:addEventListener(k, v)
 end

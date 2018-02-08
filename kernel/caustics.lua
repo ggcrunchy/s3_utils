@@ -35,37 +35,45 @@ kernel.vertexData = {
 
 kernel.isTimeDependent = true
 
-kernel.fragment = loader.FragmentShader{
-	main = [[
-		P_POSITION vec2 GetPosition (P_UV float epoch)
-		{
-			P_POSITION vec2 p = vec2(epoch) + vec2(0., -3.1);
-			
-			return vec2(IQ(p.xy), IQ(p.yx));
-		}
+local Code = [[
+	_POS_ vec2 GetPosition (_UV_ float epoch)
+	{
+		_POS_ vec2 p = vec2(epoch) + vec2(0., -3.1);
+		
+		return vec2(IQ(p.xy), IQ(p.yx));
+	}
 
-		P_UV float GetContribution (P_UV vec2 uv, P_UV float epoch)
-		{
-			P_POSITION vec2 p = GetPosition(epoch);
+	_UV_ float GetContribution (_UV_ vec2 uv, P_UV float epoch)
+	{
+		_POS_ vec2 p = GetPosition(epoch);
 
-			return smoothstep(.375, 0., distance(p, uv));
-		}
+		return smoothstep(.375, 0., distance(p, uv));
+	}
 
-		P_COLOR vec4 FragmentKernel (P_UV vec2 uv)
-		{
-			P_UV float epoch = (CoronaVertexUserData.x + CoronaTotalTime) / 2., contrib = 0.;
+	P_COLOR vec4 FragmentKernel (P_UV vec2 uv)
+	{
+		_UV_ float epoch = (CoronaVertexUserData.x + CoronaTotalTime) / 2., contrib = 0.;
 
-			contrib += GetContribution(uv, epoch) * .125;
-			contrib += GetContribution(uv, epoch + 1.) * .125;
-            contrib += GetContribution(uv, epoch + 2.) * .125;
+		contrib += GetContribution(uv, epoch) * .125;
+		contrib += GetContribution(uv, epoch + 1.) * .125;
+		contrib += GetContribution(uv, epoch + 2.) * .125;
 
-			P_COLOR vec4 color = CoronaColorScale(texture2D(CoronaSampler0, uv + contrib * .00625));
+		P_COLOR vec4 color = CoronaColorScale(texture2D(CoronaSampler0, uv + contrib * .00625));
 
-            color.rgb *= pow(.87 + contrib, 1.43);
-            
-			return min(color, vec4(1.));
-		}
-	]]
-}
+		color.rgb *= pow(.87 + contrib, 1.43);
+		
+		return min(color, vec4(1.));
+	}
+]]
+
+if system.getInfo("gpuSupportsHighPrecisionFragmentShaders") then
+	Code = Code:gsub([[_UV_]], [[P_DEFAULT]])
+	Code = Code:gsub([[_POS_]], [[P_DEFAULT]])
+else
+	Code = Code:gsub([[_UV_]], [[P_UV]])
+	Code = Code:gsub([[_POS_]], [[P_POSITION]])
+end
+
+kernel.fragment = loader.FragmentShader(Code)
 
 graphics.defineEffect(kernel)

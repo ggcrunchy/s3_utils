@@ -36,6 +36,9 @@ local Runtime = Runtime
 local contentHeight = display.contentHeight
 local contentWidth = display.contentWidth
 
+-- Cached module references --
+local _Follow_
+
 -- Exports --
 local M = {}
 
@@ -171,11 +174,14 @@ for k, v in pairs{
 
 	-- Leave Level --
 	leave_level = function()
-		M.Follow(nil)
+		_Follow_(nil)
 	end
 } do
 	Runtime:addEventListener(k, v)
 end
+
+-- Cache module members.
+_Follow_ = M.Follow
 
 -- Export the module.
 return M

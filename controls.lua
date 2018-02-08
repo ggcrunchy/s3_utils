@@ -219,6 +219,9 @@ end
 
 -- Listen to events.
 for k, v in pairs{
+	-- Began Path --
+	began_path = ResetLevel,
+
 	-- Enter Level --
 	enter_level = function(level)
 		local hg = level.hud_group
