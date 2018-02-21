@@ -22,14 +22,86 @@
 -- [ MIT license: http://www.opensource.org/licenses/mit-license.php ]
 --
 
+-- Standard library imports --
+local min = math.min
+local sqrt = math.sqrt
+
 -- Modules --
-local args = require("iterator_ops.args")
+local touch = require("corona_ui.utils.touch")
 
 -- Corona globals --
 local display = display
+local Runtime = Runtime
+local timer = timer
 
 -- Exports --
 local M = {}
+
+--
+--
+--
+
+local AxisEvent = { name = "axis", axis = {}, device = { type = "joystick" } } -- cf. corona_utils.device.AxisToKey()
+
+local StickRange = 75
+
+local function AuxSendEvent (num, value)
+	AxisEvent.axis.number, AxisEvent.normalizedValue = num, value
+
+	Runtime:dispatchEvent(AxisEvent)
+end
+
+local function SendAxisEvents (dx, dy)
+	AuxSendEvent(1, dx / StickRange)
+	AuxSendEvent(2, dy / StickRange)
+end
+
+local function StickTimer (stick)
+	return function(event)
+		if not display.isValid(stick) then
+			timer.cancel(event.source)
+		else
+			local base = stick.m_base
+			local dx, dy = stick.x - base.x, stick.y - base.y
+
+			if stick.m_x then
+				SendAxisEvents(dx, dy)
+			else
+				local dist_sq = dx^2 + dy^2
+
+				if dist_sq > 4 then
+					local scale = min(15 / sqrt(dist_sq), 1)
+
+					stick.x, stick.y = stick.x - scale * dx, stick.y - scale * dy
+				else
+					stick.x, stick.y = base.x, base.y
+				end
+			end
+		end
+	end
+end
+
+local JoystickTouch = touch.TouchHelperFunc(function(event, stick)
+	stick.m_x, stick.m_y = event.x - stick.x, event.y - stick.y
+	stick.m_update = stick.m_update or timer.performWithDelay(50, StickTimer(stick), 0)
+end, function(event, stick)
+	local base, x, y = stick.m_base, event.x - stick.m_x, event.y - stick.m_y
+	local bx, by = base.x, base.y
+	local dx, dy = x - bx, y - by
+	local dist_sq = dx^2 + dy^2
+
+	if dist_sq > StickRange * StickRange then
+		local scale = StickRange / sqrt(dist_sq)
+
+		x, y = bx + dx * scale, by + dy * scale
+	end
+
+	stick.x, stick.y = x, y
+end, function(_, stick)
+	stick.m_x, stick.m_y = nil
+
+	SendAxisEvents(0, 0)
+end)
 
 --- DOCME
 -- @pgroup group
@@ -41,22 +113,24 @@ function M.AddMoveButtons (group, on_touch)
 	local y1 = h * .7
 	local y2 = y1 + dh + h * .03
 	local x = w * .17
+	local jgroup = display.newGroup()
 
-	for _, name, bx, by, bw, bh in args.ArgsByN(5,
-		"up", x, y1, dw, dh,
-		"left", x - (dw + .02 * w), y2, dw, dh,
-		"right", x + (dw + .02 * w), y2, dw, dh,
-		"down", x, y2, dw, dh
-	) do
-		local button = display.newRoundedRect(group, bx, by, bw, bh, 20)
+	group:insert(jgroup)
 
-		button.m_dir = name
+	local base = display.newCircle(jgroup, x, y2, StickRange)
 
-		button.alpha = .6
+	base:setFillColor(.2)
+	base:setStrokeColor(.7, .7)
 
-		button:addEventListener("touch", on_touch)
-		button:translate(bw / 2, 0)
-	end
+	local stick = display.newCircle(jgroup, x, y2, 50)
+
+	stick:addEventListener("touch", JoystickTouch)
+	stick:setFillColor(.4)
+	stick:setStrokeColor(0)
+
+	base.strokeWidth, stick.strokeWidth = 2, 2
+
+	stick.m_base = base
 end
 
 -- Export the module.

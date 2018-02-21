@@ -240,7 +240,7 @@ for k, v in pairs{
 		-- Add buttons.
 		action.AddActionButton(hg, DoActions)
 
-		if TouchFunc then
+		if true then--TouchFunc then
 			move.AddMoveButtons(hg, TouchFunc)
 		end
 
