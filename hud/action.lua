@@ -58,7 +58,7 @@ local Sequence
 -- Fading icon transition --
 local FadeIconParams = { tag = "action_fading" }
 
--- Helper to get extract action from the sequence
+-- Helper to extract action from the sequence
 local function IndexOf (name)
 	for i, v in ipairs(Sequence) do
 		if v.name == name then
