@@ -80,6 +80,103 @@ local function StickTimer (stick)
 		end
 	end
 end
+--[[
+
+function M.newStick(startAxis, innerRadius, outerRadius)
+
+  startAxis = startAxis or 1
+  innerRadius, outerRadius = innerRadius or 48, outerRadius or 96
+  local instance = display.newGroup()
+
+  local outerArea 
+  if type(outerRadius) == "number" then
+    outerArea = display.newCircle( instance, 0,0, outerRadius )
+    outerArea.strokeWidth = 8
+    outerArea:setFillColor( 0.2, 0.2, 0.2, 0.9 )
+    outerArea:setStrokeColor( 1, 1, 1, 1 )
+  else
+    outerArea = display.newImage( instance, outerRadius, 0,0 )
+    outerRadius = (outerArea.contentWidth + outerArea.contentHeight) * 0.25
+  end
+
+  local joystick 
+  if type(innerRadius) == "number" then
+    joystick = display.newCircle( instance, 0,0, innerRadius )
+    joystick:setFillColor( 0.4, 0.4, 0.4, 0.9 )
+    joystick.strokeWidth = 6
+    joystick:setStrokeColor( 1, 1, 1, 1 )
+  else
+    joystick = display.newImage( instance, innerRadius, 0,0 )
+    innerRadius = (joystick.contentWidth + joystick.contentHeight) * 0.25
+  end  
+
+  -- where should joystick motion be stopped?
+  local stopRadius = outerRadius - innerRadius
+
+  function joystick:touch(event)
+    local phase = event.phase
+    if phase=="began" or (phase=="moved" and self.isFocus) then
+      if phase == "began" then
+        stage:setFocus(event.target, event.id)
+        self.eventID = event.id
+        self.isFocus = true
+      end
+      local parent = self.parent
+      local posX, posY = parent:contentToLocal(event.x, event.y)
+      local angle = -math.atan2(posY, posX)
+      local distance = math.sqrt((posX*posX)+(posY*posY))
+
+      if( distance >= stopRadius ) then
+        distance = stopRadius
+        self.x = distance*math.cos(angle)
+        self.y = -distance*math.sin(angle)
+      else
+        self.x = posX
+        self.y = posY
+      end
+    else
+      self.x = 0
+      self.y = 0
+      stage:setFocus(nil, event.id)
+      self.isFocus = false
+    end
+    instance.axisX = self.x / stopRadius
+    instance.axisY = self.y / stopRadius
+    local axisEvent
+    if not (self.y == (self._y or 0)) then
+      axisEvent = {name = "axis", axis = { number = startAxis }, normalizedValue = instance.axisX }
+      Runtime:dispatchEvent(axisEvent)
+    end
+    if not (self.x == (self._x or 0))  then 
+      axisEvent = {name = "axis", axis = { number = startAxis+1 }, normalizedValue = instance.axisY }
+      Runtime:dispatchEvent(axisEvent)
+    end
+    self._x, self._y = self.x, self.y
+    return true
+  end
+
+  function instance:activate()
+    self:addEventListener("touch", joystick )
+    self.axisX = 0
+    self.axisY = 0
+  end
+
+  function instance:deactivate()
+    stage:setFocus(nil, joystick.eventID)
+    joystick.x, joystick.y = outerArea.x, outerArea.y
+    self:removeEventListener("touch", self.joystick )
+    self.axisX = 0
+    self.axisY = 0
+  end
+
+  instance:activate()
+  return instance
+end
+
+
+]]
+-- Partially adapted from ponywolf's vjoy
+local InnerRadius, OuterRadius = 48, 96
 
 local JoystickTouch = touch.TouchHelperFunc(function(event, stick)
 	stick.m_x, stick.m_y = event.x - stick.x, event.y - stick.y
