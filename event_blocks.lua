@@ -673,6 +673,30 @@ function M.GetTypes ()
 	return types
 end
 
+--- DOCME
+function M.GlobalToLocal (x, y, lcs)
+	if lcs then
+		local cx, cy, lx, ly, fx, fy, ux, uy = lcs()
+		local dx, dy, flen2, ulen2 = x - lx, y - ly, fx^2 + fy^2, ux^2 + uy^2
+
+		return cx + (dx * fx + dy * fy) / flen2, cy + (dx * ux + dy * uy) / ulen2
+	else
+		return x, y
+	end
+end
+
+--- DOCME
+function M.LocalToGlobal (x, y, lcs)
+	if lcs then
+		local cx, cy, lx, ly, fx, fy, ux, uy = lcs()
+		local dx, dy = x - lx, y - ly
+
+		return cx + dx * fx + dy * ux, cy + dx * fy + dy * uy
+	else
+		return x, y
+	end
+end
+
 -- Listen to events.
 for k, v in pairs{
 	-- Enter Level --
