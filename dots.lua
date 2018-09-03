@@ -232,7 +232,13 @@ local function BlockFunc (what, dot, arg1, arg2)
 	elseif what == "set_content_xy" then
 		dot.x, dot.y = dot.parent:contentToLocal(arg1, arg2)
 	elseif what == "set_angle" then
-		dot.rotation = arg1
+		local on_rotate = dot:GetProperty("on_rotate_block")
+
+		if on_rotate then
+			on_rotate(dot, arg1)
+		else
+			dot.rotation = arg1
+		end
 	end
 end
 
