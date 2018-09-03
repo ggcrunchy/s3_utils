@@ -82,14 +82,10 @@ local function EndDir (_, target)
 	end
 end
 
--- Helper to attach begin-end input to buttons --
-local TouchFunc
-
+-- Use a joystick? --
 local platform = system.getInfo("platform")
 
-if system.getInfo("environment") == "device" and (platform == "android" or platform == "ios") then
-	TouchFunc = touch.TouchHelperFunc(BeginDir, nil, EndDir)
-end
+local UseJoystick = system.getInfo("environment") == "device" and (platform == "android" or platform == "ios")
 
 -- Controls are active? --
 local Active
@@ -237,11 +233,11 @@ for k, v in pairs{
 
 		trap:addEventListener("touch", TrapTaps)
 
-		-- Add buttons.
+		-- Add input UI elements.
 		action.AddActionButton(hg, DoActions)
 
-		if true then--TouchFunc then
-			move.AddMoveButtons(hg, TouchFunc)
+		if UseJoystick then
+			move.AddJoystick(hg)
 		end
 
 		-- Bind controller input.

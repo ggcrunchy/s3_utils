@@ -27,6 +27,9 @@ local abs = math.abs
 local min = math.min
 local sqrt = math.sqrt
 
+-- Extension imports --
+local round = math.round
+
 -- Modules --
 local touch = require("corona_ui.utils.touch")
 
@@ -108,14 +111,13 @@ end)
 
 --- DOCME
 -- @pgroup group
--- @callable on_touch
-function M.AddMoveButtons (group, on_touch)
+function M.AddJoystick (group)
 	local w, h = display.contentWidth, display.contentHeight
 	local dw, dh = w * .13, h * .125
 
-	local y1 = math.round(h * .7)
-	local y2 = math.round(y1 + dh + h * .03)
-	local x = math.round(w * .17)
+	local y1 = round(h * .7)
+	local y2 = round(y1 + dh + h * .03)
+	local x = round(w * .17)
 	local jgroup = display.newGroup()
 
 	group:insert(jgroup)

@@ -35,9 +35,6 @@ local type = type
 local array_index = require("tektite_core.array.index")
 local touch = require("corona_ui.utils.touch")
 
--- Plugins --
-local animation = ANIMATION
-
 -- Corona globals --
 local display = display
 local easing = easing
@@ -57,6 +54,15 @@ local Sequence
 
 -- Fading icon transition --
 local FadeIconParams = { tag = "action_fading" }
+
+-- Helper to cancel a (possible) transition
+local function Cancel (trans)
+	if trans then
+		transition.cancel(trans)
+
+		return true
+	end
+end
 
 -- Helper to extract action from the sequence
 local function IndexOf (name)
@@ -206,23 +212,37 @@ local function MergeDotIntoSequence (dot, touch)
 	end
 end
 
--- Pulsing button transition --
-local Pulsing
+-- Pulsing button transition; button scaling in or out --
+local ScaleInOut, Scaling = { time = 250, transition = easing.outQuad }
 
--- Kick off a button pulse
-local function PulseActionButton (button)
-	button.xScale, button.yScale = 1.1, 1.1
+-- Kick off a scale (either in or out) in the button pulse
+local function ScaleActionButton (button, delta)
+	Cancel(Scaling)
 
-	if not Pulsing then
-		Pulsing = animation.to(button, { xScale = .9, yScale = .9 }, {
-			time = 500, easing = easing.outQuad, reflect = true, iterations = 0
-		})
+	ScaleInOut.xScale = 1 + delta
+	ScaleInOut.yScale = 1 + delta
 
-		button:addEventListener("finalize", animation.cancel)
+	button.m_scale_delta = delta
+
+	Scaling = transition.to(button, ScaleInOut)
+end
+
+-- De-pulsing transition --
+local ScaleToNormal = {
+	time = 250, xScale = 1, yScale = 1,
+
+	onComplete = function(button)
+		if button.parent and button.m_touches > 0 then
+			ScaleActionButton(button, -button.m_scale_delta)
+		end
 	end
+} 
 
-	Pulsing:setPosition(0)
-	Pulsing:resume()
+-- Completes the pulse sequence: normal -> out -> normal -> in -> normal -> out...
+function ScaleInOut.onComplete (object)
+	if display.isValid(object) then
+		Scaling = transition.to(object, ScaleToNormal)
+	end
 end
 
 -- Fading button transition --
@@ -245,8 +265,6 @@ local function ShowAction (show)
 	if show then
 		ActionGroup.isVisible = true
 	else
-		Pulsing:pause()
-
 		from, to = to, from
 	end
 
@@ -298,7 +316,7 @@ for k, v in pairs{
 	leave_level = function()
 		transition.cancel("action_fading")
 
-		ActionGroup, Current, Images, Pulsing, Sequence = nil
+		ActionGroup, Current, Images, Sequence = nil
 	end,
 
 	-- Touching Dot --
@@ -309,8 +327,7 @@ for k, v in pairs{
 		-- If this is the first dot being touched (the player might be overlapping several),
 		-- bring the action button into view.
 		if event.is_touching and ntouch == 0 then
-			PulseActionButton(action)
-
+			ScaleActionButton(action, .1)
 			ShowAction(true)
 		end
 
