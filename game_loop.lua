@@ -38,7 +38,6 @@ local event_blocks = require("s3_utils.event_blocks")
 local global_events = require("s3_utils.global_events")
 local loop = require_ex.Lazy("corona_boilerplate.game.loop")
 local music = require("s3_utils.music")
-local persistence = require("corona_utils.persistence")
 local player = require("game.player.core")
 local sound = require("s3_utils.sound")
 local tile_maps = require("s3_utils.tile_maps")
@@ -50,6 +49,7 @@ local values = require("s3_utils.state.values")
 local display = display
 local graphics = graphics
 local Runtime = Runtime
+local system = system
 
 -- Exports --
 local M = {}
@@ -246,7 +246,7 @@ end
 --- DOCME
 function M.ReturnTo_Win (win_scene, alt_scene)
 	return function(info)
-		if info.why == "won" and info.which > persistence.GetConfig().completed then
+		if info.why == "won" and info.which > (system.getPreference("app", "completed", "number") or 0) then
 			return win_scene
 		else
 			return alt_scene
