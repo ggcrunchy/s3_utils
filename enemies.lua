@@ -695,8 +695,8 @@ local events = {
 		end
 	end,
 
-	-- Things Loaded --
-	things_loaded = function()
+	-- Ready To Go --
+	ready_to_go = function()
 		Runtime:addEventListener("enterFrame", OnEnterFrame)
 	end
 }

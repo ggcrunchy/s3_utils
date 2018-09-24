@@ -273,11 +273,11 @@ for k, v in pairs{
 	-- Player Unstunned --
 	player_unstunned = ResetLevel,
 
-	-- Reset Level --
-	reset_level = ResetLevel,
+	-- Ready To Go --
+	ready_to_go = ResetLevel,
 
-	-- Things Loaded --
-	things_loaded = ResetLevel
+	-- Reset Level --
+	reset_level = ResetLevel
 } do
 	Runtime:addEventListener(k, v)
 end

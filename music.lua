@@ -235,11 +235,6 @@ for k, v in pairs{
 		Music = {}
 	end,
 
-	-- Enter Menus --
-	enter_menus = function()
-		-- What kind of menu? (e.g. editor shouldn't do anything...)
-	end,
-
 	-- Leave Level --
 	leave_level = function()
 		local music_list = Music
@@ -249,11 +244,6 @@ for k, v in pairs{
 		for _, music in ipairs(music_list) do
 			music.group:Remove()
 		end
-	end,
-
-	-- Leave Menus --
-	leave_menus = function()
-		--
 	end,
 
 	-- Reset Level --
@@ -269,7 +259,7 @@ for k, v in pairs{
 			music.group:Load()
 		end
 
-		if PlayOnEnter then
+		if PlayOnEnter then -- TODO: could also be in ready_to_go, etc.
 			PlayOnEnter:PlaySound("track")
 		end
 	end

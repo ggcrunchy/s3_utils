@@ -690,9 +690,6 @@ for k, v in pairs{
 	-- Leave Level --
 	leave_level = Clear,
 
-	-- Leave Menus --
-	leave_menus = Clear,
-
 	-- System --
 	system = function(event)
 		if event.type == "applicationResume" and Image then

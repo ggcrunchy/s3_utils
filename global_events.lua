@@ -167,8 +167,8 @@ for k, v in pairs{
 		end)
 	end,
 
-	-- Things Loaded --
-	things_loaded = function()
+	-- Ready To Go --
+	ready_to_go = function()
 		for _ in GetEvent.enter_frame.Iter(EventNonce) do
 			Runtime:addEventListener("enterFrame", EnterFrame)
 
