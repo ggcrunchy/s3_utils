@@ -47,9 +47,9 @@ local ValueList, Categories
 local Before = bind.BroadcastBuilder_Helper(nil)
 
 --- DOCME
-function M.AddValue (info, wname)
-	local wlist = wname or "loading_level"
-	local value, how = assert(ValueList[info.type], "Invalid value")(info, wlist)
+function M.AddValue (info, params)
+	local pubsub = params.pubsub
+	local value, how = assert(ValueList[info.type], "Invalid value")(info, pubsub)
 
 	if how ~= "no_before" and info.before then -- some values want it but must handle it specially
 		local body = value
@@ -60,10 +60,10 @@ function M.AddValue (info, wname)
 			return body()
 		end
 
-		Before.Subscribe(value, info.before, wlist)
+		Before.Subscribe(value, info.before, pubsub)
 	end
 
-	bind.Publish(wlist, value, info.uid, "get")
+	bind.Publish(pubsub, value, info.uid, "get")
 
 	return value
 end

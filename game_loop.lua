@@ -67,7 +67,7 @@ local function Ipairs (t)
 end
 
 --- DOCME
-function M.AddThings (current_level, level)
+function M.AddThings (current_level, level, params)
 	tilesets.UseTileset(level.tileset or "tree")
 
 	-- Add the tiles to the level...
@@ -79,12 +79,12 @@ function M.AddThings (current_level, level)
 
 	-- ...and the event blocks...
 	for _, block in Ipairs(level.event_blocks) do
-		event_blocks.AddBlock(block)
+		event_blocks.AddBlock(block, params)
 	end
 
 	-- ...and the dots...
 	for _, dot in Ipairs(level.dots) do
-		dots.AddDot(current_level.things_layer, dot)
+		dots.AddDot(current_level.things_layer, dot, params)
 	end
 
 	-- ...and the player...
@@ -92,35 +92,35 @@ function M.AddThings (current_level, level)
 
 	-- ...and the enemies...
 	for _, enemy in Ipairs(level.enemies) do
-		enemies.SpawnEnemy(current_level.things_layer, enemy)
+		enemies.SpawnEnemy(current_level.things_layer, enemy, params)
 	end
 
 	-- ...and any global events...
-	global_events.AddEvents(level.global_events)
+	global_events.AddEvents(level.global_events, params)
 
 	-- ...and any triggers...
 	for _, trigger in Ipairs(level.triggers) do
-		triggers.AddTrigger(current_level.things_layer, trigger)
+		triggers.AddTrigger(current_level.things_layer, trigger, params)
 	end
 
 	-- ...and actions...
 	for _, action in Ipairs(level.actions) do
-		actions.AddAction(action)
+		actions.AddAction(action, params)
 	end
 
 	-- ...and values...
 	for _, value in Ipairs(level.values) do
-		values.AddValue(value)
+		values.AddValue(value, params)
 	end
 
 	-- ...and music...
 	for _, track in Ipairs(level.music) do
-		music.AddMusic(track)
+		music.AddMusic(track, params)
 	end
 
 	-- ...and sounds.
 	for _, sample in Ipairs(level.sound) do
-		sound.AddSound(sample)
+		sound.AddSound(sample, params)
 	end
 end
 

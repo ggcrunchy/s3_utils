@@ -50,9 +50,9 @@ local Next = bind.BroadcastBuilder_Helper(nil)
 local NamedSources = meta.Weak("v") 
 
 --- DOCME
-function M.AddAction (info, wname)
-	local wlist, action = wname or "loading_level"
-	local body, how = assert(ActionList[info.type], "Invalid action")(info, wlist)
+function M.AddAction (info, params)
+	local pubsub, action = params.pubsub
+	local body, how = assert(ActionList[info.type], "Invalid action")(info, pubsub)
 
 	if not body then
 		function action ()
@@ -72,9 +72,9 @@ function M.AddAction (info, wname)
 		NamedSources[info.name] = action
 	end
 
-	Next.Subscribe(action, info.next, wlist)
+	Next.Subscribe(action, info.next, pubsub)
 
-	bind.Publish(wlist, action, info.uid, "fire")
+	bind.Publish(pubsub, action, info.uid, "fire")
 
 	return action
 end
