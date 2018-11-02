@@ -81,11 +81,11 @@ local Actions = {
 local Events = {}
 
 for _, v in ipairs{ "on_done", "on_stop" } do
-	Events[v] = bind.BroadcastBuilder_Helper("loading_level")
+	Events[v] = bind.BroadcastBuilder_Helper()
 end
 
 --- DOCME
-function M.AddSound (info, wlist)
+function M.AddSound (info, params)
 	--
 	local sample, sound = {
 		file = info.filename,
@@ -104,13 +104,15 @@ function M.AddSound (info, wlist)
 	sound.group = audio.NewSoundGroup{ sample = sample }
 
 	--
+	local pubsub = params.pubsub
+
 	for k, event in pairs(Events) do
-		event.Subscribe(sound, info[k], wlist)
+		event.Subscribe(sound, info[k], pubsub)
 	end
 
 	--
 	for k in adaptive.IterSet(info.actions) do
-		bind.Publish("loading_level", Actions[k](sound), info.uid, k)
+		bind.Publish(pubsub, Actions[k](sound), info.uid, k)
 	end
 
 	--

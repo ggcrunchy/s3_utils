@@ -447,7 +447,7 @@ local NoOp = function() end
 
 -- Enemy situation <-> events bindings --
 for _, v in ipairs{ "on_die", "on_wake" } do
-	Events[v] = bind.BroadcastBuilder_Helper("loading_level")
+	Events[v] = bind.BroadcastBuilder_Helper()
 end
 
 --- Add a new enemy of type _name_ to the level.
@@ -502,7 +502,7 @@ end
 --
 -- Instance-specific data may also be passed in other fields.
 -- @see s3_utils.movement.NextDirection
-function M.SpawnEnemy (group, info)
+function M.SpawnEnemy (group, info, params)
 	local type_info = EnemyList[info.type]
 
 	-- Make the enemy display object.
@@ -519,16 +519,18 @@ function M.SpawnEnemy (group, info)
 	Enemies[#Enemies + 1] = enemy
 
 	--
+	local pubsub = params.pubsub
+
 	for k, event in pairs(Events) do
-		event.Subscribe(enemy, info[k])
+		event.Subscribe(enemy, info[k], pubsub)
 	end
 
 	--
 	for k in adaptive.IterSet(info.actions) do
-		bind.Publish("loading_level", Actions[k](enemy), info.uid, k)
+		bind.Publish(pubsub, Actions[k](enemy), info.uid, k)
 	end
 
-	object_vars.PublishProperties(info.props, Properties, info.uid, enemy)
+	object_vars.PublishProperties(pubsub, info.props, Properties, info.uid, enemy)
 
 	--- Allows an enemy to send an alert to other enemies.
 	-- @function enemy:AlertOthers

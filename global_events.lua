@@ -56,7 +56,7 @@ local Defaults, EventNonce
 local GetEvent = {}
 
 for _, v in ipairs(config.events) do
-	GetEvent[v] = bind.BroadcastBuilder_Helper("loading_level")
+	GetEvent[v] = bind.BroadcastBuilder_Helper()
 
 	Runtime:addEventListener(v, function()
 		GetEvent[v](EventNonce)
@@ -70,18 +70,20 @@ for _, v in ipairs(config.events) do
 end
 
 --- DOCME
-function M.AddEvents (events, wlist)
+function M.AddEvents (events, params)
+	local pubsub = params.pubsub
+
 	--
 	for k, v in pairs(GetEvent) do
-		v.Subscribe(EventNonce, events and events[k])
+		v.Subscribe(EventNonce, events and events[k], pubsub)
 	end
 	
 	--
 	for k in adaptive.IterSet(events and events.actions) do
-		bind.Publish("loading_level", Actions[k], events.uid, k)
+		bind.Publish(pubsub, Actions[k], events.uid, k)
 	end
 
-	object_vars.PublishProperties(events and events.props, OutProperties, events and events.uid)
+	object_vars.PublishProperties(pubsub, events and events.props, OutProperties, events and events.uid)
 
 	--
 	if not adaptive.InSet(events and events.actions, "win") then

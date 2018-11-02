@@ -113,14 +113,14 @@ local Actions = {
 local Events = {}
 
 for _, v in ipairs{ "on_done", "on_stop" } do
-	Events[v] = bind.BroadcastBuilder_Helper("loading_level")
+	Events[v] = bind.BroadcastBuilder_Helper()
 end
 
 -- --
 local PlayOnEnter, PlayOnReset
 
 --- DOCME
-function M.AddMusic (info, wlist)
+function M.AddMusic (info, params)
 	--
 	local music, track = {}, { file = info.filename, is_streaming = true, loops = info.looping and "forever" or info.loop_count }
 
@@ -144,13 +144,15 @@ function M.AddMusic (info, wlist)
 	end
 
 	--
+	local pubsub = params.pubsub
+
 	for k, event in pairs(Events) do
-		event.Subscribe(music, info[k], wlist)
+		event.Subscribe(music, info[k], pubsub)
 	end
 
 	--
 	for k in adaptive.IterSet(info.actions) do
-		bind.Publish("loading_level", Actions[k](music), info.uid, k)
+		bind.Publish(pubsub, Actions[k](music), info.uid, k)
 	end
 
 	--

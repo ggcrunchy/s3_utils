@@ -47,7 +47,7 @@ local Triggers
 local Events = {}
 
 for _, v in ipairs{ "on_enter", "on_leave" } do
-	Events[v] = bind.BroadcastBuilder_Helper("loading_level")
+	Events[v] = bind.BroadcastBuilder_Helper()
 end
 
 --
@@ -96,7 +96,7 @@ local Actions = {
 local FlagGroups = { "player", "enemy", "projectile" }
 
 --- DOCME
-function M.AddTrigger (group, info)
+function M.AddTrigger (group, info, params)
 	--
 	local trigger, detect = { deactivate = info.deactivate, restore = info.restore }, info.detect_when
 
@@ -141,13 +141,15 @@ function M.AddTrigger (group, info)
 	end
 
 	--
+	local pubsub = params.pubsub
+
 	for k, event in pairs(Events) do
-		event.Subscribe(trigger, info[k])
+		event.Subscribe(trigger, info[k], pubsub)
 	end
 
 	--
 	for k in adaptive.IterSet(info.actions) do
-		bind.Publish("loading_level", Actions[k](trigger), info.uid, k)
+		bind.Publish(pubsub, Actions[k](trigger), info.uid, k)
 	end
 
 	--
