@@ -36,6 +36,7 @@ local sin = math.sin
 local require_ex = require("tektite_core.require_ex")
 local adaptive = require("tektite_core.table.adaptive")
 local bind = require("corona_utils.bind")
+local call = require("corona_utils.call")
 local collision = require("corona_utils.collision")
 local enemy_events = require("annex.EnemyEvents")
 local flow_ops = require("coroutine_ops.flow")
@@ -138,7 +139,7 @@ local Events = {}
 -- Behavior of an enemy between phasing in and being killed
 local function Alive (enemy, type_info)
 	--
-	Events.on_wake(enemy)
+	Events.on_wake:DispatchForObject(enemy)
 
 	-- Make sure the enemy is visible and alive, i.e. able to hurt you and be hurt itself.
 	-- Account for enemies that were phasing in when the dots got cleared.
@@ -162,7 +163,7 @@ end
 -- Behavior of an enemy once killed and while in its death throes
 local function Die (enemy, type_info)
 	--
-	Events.on_die(enemy)
+	Events.on_die:DispatchForObject(enemy)
 
 	-- If possible, die in some enemy-specific way. Otherwise, fly off.
 	if type_info.Die then
@@ -447,7 +448,7 @@ local NoOp = function() end
 
 -- Enemy situation <-> events bindings --
 for _, v in ipairs{ "on_die", "on_wake" } do
-	Events[v] = bind.BroadcastBuilder_Helper()
+	Events[v] = call.NewDispatcher()--bind.BroadcastBuilder_Helper()
 end
 
 --- Add a new enemy of type _name_ to the level.
@@ -519,18 +520,19 @@ function M.SpawnEnemy (group, info, params)
 	Enemies[#Enemies + 1] = enemy
 
 	--
-	local pubsub = params.pubsub
+	local ps_list = params.ps_list
 
 	for k, event in pairs(Events) do
-		event.Subscribe(enemy, info[k], pubsub)
+	--	event.Subscribe(enemy, info[k], pubsub)
+		ps_list:Subscribe(info[k], event:GetAdder(), enemy)
 	end
 
 	--
 	for k in adaptive.IterSet(info.actions) do
-		bind.Publish(pubsub, Actions[k](enemy), info.uid, k)
+		--[[bind.]]ps_list:Publish(--[[pubsub, ]]Actions[k](enemy), info.uid, k)
 	end
 
-	object_vars.PublishProperties(pubsub, info.props, Properties, info.uid, enemy)
+	object_vars.PublishProperties(ps_list, info.props, Properties, info.uid, enemy)
 
 	--- Allows an enemy to send an alert to other enemies.
 	-- @function enemy:AlertOthers

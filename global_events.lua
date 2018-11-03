@@ -33,6 +33,7 @@ local rawequal = rawequal
 -- Modules --
 local adaptive = require("tektite_core.table.adaptive")
 local bind = require("corona_utils.bind")
+local call = require("corona_utils.call")
 local config = require("config.GlobalEvents")
 local object_vars = require("config.ObjectVariables")
 
@@ -56,10 +57,10 @@ local Defaults, EventNonce
 local GetEvent = {}
 
 for _, v in ipairs(config.events) do
-	GetEvent[v] = bind.BroadcastBuilder_Helper()
+	GetEvent[v] = call.NewDispatcher()--bind.BroadcastBuilder_Helper()
 
 	Runtime:addEventListener(v, function()
-		GetEvent[v](EventNonce)
+		GetEvent[v]:DispatchForObject(EventNonce)
 
 		local def = Defaults and Defaults[v]
 
@@ -71,19 +72,20 @@ end
 
 --- DOCME
 function M.AddEvents (events, params)
-	local pubsub = params.pubsub
+	local ps_list = params.ps_list
 
 	--
 	for k, v in pairs(GetEvent) do
-		v.Subscribe(EventNonce, events and events[k], pubsub)
+	--	v.Subscribe(EventNonce, events and events[k], pubsub)
+		ps_list:Subscribe(events and events[k], v:GetAdder(), EventNonce)
 	end
 	
 	--
 	for k in adaptive.IterSet(events and events.actions) do
-		bind.Publish(pubsub, Actions[k], events.uid, k)
+		--[[bind.]]ps_list:Publish(--[[pubsub, ]]Actions[k], events.uid, k)
 	end
 
-	object_vars.PublishProperties(pubsub, events and events.props, OutProperties, events and events.uid)
+	object_vars.PublishProperties(ps_list, events and events.props, OutProperties, events and events.uid)
 
 	--
 	if not adaptive.InSet(events and events.actions, "win") then
@@ -171,7 +173,7 @@ for k, v in pairs{
 
 	-- Ready To Go --
 	ready_to_go = function()
-		for _ in GetEvent.enter_frame.Iter(EventNonce) do
+		for _ in GetEvent.enter_frame:IterateFunctionsForObject--[[.Iter]](EventNonce) do
 			Runtime:addEventListener("enterFrame", EnterFrame)
 
 			break
