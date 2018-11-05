@@ -201,6 +201,7 @@ function M.EditorEvent (_, what, arg1, arg2)
 
 		--
 		arg1:SetStateFromValue_Watch(restore_section, "deactivate")
+
 	-- Get Link Grouping --
 	elseif what == "get_link_grouping" then
 		return {

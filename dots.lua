@@ -108,9 +108,10 @@ local function NoOp () end
 -- * **type**: Name of dot type, q.v. _name_, above. This is also assigned as the dot's collision type.
 --
 -- Instance-specific data may also be passed in other fields.
+-- @ptable Load parameters.
 -- @see corona_utils.collision.GetType, s3_utils.shapes.RemoveAt
-function M.AddDot (group, info)
-	local dot = DotList[info.type](group, info)
+function M.AddDot (group, info, params)
+	local dot = DotList[info.type](group, info, params)
 	local index = tile_maps.GetTileIndex(info.col, info.row)
 
 	dot.GetProperty = dot.GetProperty or NoOp

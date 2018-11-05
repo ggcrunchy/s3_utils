@@ -520,19 +520,19 @@ function M.SpawnEnemy (group, info, params)
 	Enemies[#Enemies + 1] = enemy
 
 	--
-	local ps_list = params.ps_list
+	local psl = params.pub_sub_list
 
 	for k, event in pairs(Events) do
 	--	event.Subscribe(enemy, info[k], pubsub)
-		ps_list:Subscribe(info[k], event:GetAdder(), enemy)
+		psl:Subscribe(info[k], event:GetAdder(), enemy)
 	end
 
 	--
 	for k in adaptive.IterSet(info.actions) do
-		--[[bind.]]ps_list:Publish(--[[pubsub, ]]Actions[k](enemy), info.uid, k)
+		--[[bind.]]psl:Publish(--[[pubsub, ]]Actions[k](enemy), info.uid, k)
 	end
 
-	object_vars.PublishProperties(ps_list, info.props, Properties, info.uid, enemy)
+	object_vars.PublishProperties(psl, info.props, Properties, info.uid, enemy)
 
 	--- Allows an enemy to send an alert to other enemies.
 	-- @function enemy:AlertOthers

@@ -129,6 +129,7 @@ function M.EditorEvent (type, what, arg1, arg2, arg3)
 		elseif what == "get_link_info" then
 			arg1.fire = "Do action"
 			arg1.next = "Follow-up"
+			-- TODO: replace with "DoThen"?
 
 		-- Get Tag --
 		elseif what == "get_tag" then

@@ -72,20 +72,20 @@ end
 
 --- DOCME
 function M.AddEvents (events, params)
-	local ps_list = params.ps_list
+	local psl = params.pub_sub_list
 
 	--
 	for k, v in pairs(GetEvent) do
 	--	v.Subscribe(EventNonce, events and events[k], pubsub)
-		ps_list:Subscribe(events and events[k], v:GetAdder(), EventNonce)
+		psl:Subscribe(events and events[k], v:GetAdder(), EventNonce)
 	end
 	
 	--
 	for k in adaptive.IterSet(events and events.actions) do
-		--[[bind.]]ps_list:Publish(--[[pubsub, ]]Actions[k], events.uid, k)
+		--[[bind.]]psl:Publish(--[[pubsub, ]]Actions[k], events.uid, k)
 	end
 
-	object_vars.PublishProperties(ps_list, events and events.props, OutProperties, events and events.uid)
+	object_vars.PublishProperties(psl, events and events.props, OutProperties, events and events.uid)
 
 	--
 	if not adaptive.InSet(events and events.actions, "win") then

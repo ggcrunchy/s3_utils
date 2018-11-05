@@ -110,7 +110,7 @@ function M.EditorEvent (type, what, arg1, arg2, arg3)
 		-- arg1: Info to populate
 		elseif what == "get_link_info" then
 			arg1.before = "On(before)"
-	
+	-- TODO: replace this with a "DoThenGet" object...
 		-- Get Tag --
 		elseif what == "get_tag" then
 			return event("get_tag") or vtype

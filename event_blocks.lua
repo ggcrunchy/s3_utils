@@ -538,7 +538,7 @@ function M.AddBlock (info, params)
 	local block = NewBlock(info.col1, info.row1, info.col2, info.row2)
 	local event, cmds = assert(EventBlockList[info.type], "Invalid event block")(info, block)
 
-	bind.Publish(params.pubsub, event, info.uid, "fire")
+	bind.Publish(params.pub_sub_list, event, info.uid, "fire")
 	bind.SetActionCommands(event, cmds)
 
 	block.m_cmds = cmds

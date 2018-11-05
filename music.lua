@@ -26,11 +26,13 @@
 -- Standard library imports --
 local ipairs = ipairs
 local pairs = pairs
+local rawequal = rawequal
 
 -- Modules --
 local adaptive = require("tektite_core.table.adaptive")
 local audio = require("corona_utils.audio")
 local bind = require("corona_utils.bind")
+local entity = require("corona_utils.entity")
 
 -- Corona globals --
 local timer = timer
@@ -55,12 +57,18 @@ local function PlayNewTrack (group)
 	group:PlaySound("track")
 end
 
+local GetMusic, Nonce = entity.SelfRedirecter()
+
 -- --
 local Actions = {
 	-- Play --
 	do_play = function(music)
-		local function play (what)
-			return PlayNewTrack(music.group)
+		local function play (arg)
+			if rawequal(arg, Nonce) then
+				return music
+			else
+				return PlayNewTrack(music.group)
+			end
 		end
 
 		bind.SetActionCommands(play, function(what)
@@ -68,6 +76,8 @@ local Actions = {
 				return not music.group:IsActive()
 			end
 		end)
+	--	entity.Redirect(play, GetMusic)
+	--		and add "is_done" property to music
 
 		return play
 	end,
@@ -83,6 +93,8 @@ local Actions = {
 				return not music.group:IsActive()
 			end
 		end)
+
+		-- TODO: as with do_play
 
 		return play
 	end,
@@ -144,15 +156,15 @@ function M.AddMusic (info, params)
 	end
 
 	--
-	local pubsub = params.pubsub
+	local psl = params.pub_sub_list
 
 	for k, event in pairs(Events) do
-		event.Subscribe(music, info[k], pubsub)
+		event.Subscribe(music, info[k], psl)
 	end
 
 	--
 	for k in adaptive.IterSet(info.actions) do
-		bind.Publish(pubsub, Actions[k](music), info.uid, k)
+		bind.Publish(psl, Actions[k](music), info.uid, k)
 	end
 
 	--
