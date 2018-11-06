@@ -534,11 +534,12 @@ local EventBlockList
 -- These will be sorted and clamped, as with block operations.
 --
 -- @todo Detect null blocks? Mention construction, EventBlock:Reset
+-- @ptable params
 function M.AddBlock (info, params)
 	local block = NewBlock(info.col1, info.row1, info.col2, info.row2)
 	local event, cmds = assert(EventBlockList[info.type], "Invalid event block")(info, block)
 
-	bind.Publish(params.pub_sub_list, event, info.uid, "fire")
+	params.pub_sub_list:--[[bind.]]Publish(--[[params.pub_sub_list, ]]event, info.uid, "fire")
 	bind.SetActionCommands(event, cmds)
 
 	block.m_cmds = cmds
