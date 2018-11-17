@@ -157,7 +157,7 @@ function EventBlock:AddToList (item, func, arg1, arg2)
 
 	list.top = AuxAddToList(list, list.top, item, func, arg1, arg2)
 
-	self.m_list, self.m_new = list
+	self.m_list = list
 end
 
 -- --
