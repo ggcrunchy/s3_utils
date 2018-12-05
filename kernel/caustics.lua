@@ -26,7 +26,10 @@
 -- Modules --
 local loader = require("corona_shader.loader")
 
--- Kernel --
+--
+--
+--
+
 local kernel = { language = "glsl", category = "filter", group = "filler", name = "caustics" }
 
 kernel.vertexData = {
@@ -77,3 +80,5 @@ end
 kernel.fragment = loader.FragmentShader(Code)
 
 graphics.defineEffect(kernel)
+
+return "filter.filler.caustics"

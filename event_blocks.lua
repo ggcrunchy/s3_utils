@@ -537,7 +537,7 @@ local EventBlockList
 -- @ptable params
 function M.AddBlock (info, params)
 	local block = NewBlock(info.col1, info.row1, info.col2, info.row2)
-	local event, cmds = assert(EventBlockList[info.type], "Invalid event block")(info, block)
+	local event, cmds = assert(EventBlockList[info.type], "Invalid event block").game(info, block)
 
 	params.pub_sub_list:--[[bind.]]Publish(--[[params.pub_sub_list, ]]event, info.uid, "fire")
 	bind.SetActionCommands(event, cmds)
@@ -561,10 +561,10 @@ local BlockKeys = { "type", "col1", "row1", "col2", "row2" }
 -- @param arg3 Argument #3.
 -- @return Result(s) of the event, if any.
 function M.EditorEvent (type, what, arg1, arg2, arg3)
-	local cons = EventBlockList[type]
+	local cons = EventBlockList[type].editor
 
 	if cons then
-		local event = cons("editor_event")
+		local event = cons--("editor_event")
 
 		-- Build --
 		-- arg1: Level

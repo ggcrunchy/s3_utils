@@ -26,6 +26,10 @@
 -- Modules --
 local loader = require("corona_shader.loader")
 
+--
+--
+--
+
 -- Common vertex userdata components --
 local UberVertexData = {
 	-- These indicate which cells in the underlying 4x4 grid are active. The following
@@ -178,6 +182,8 @@ local UberFragment = [[
 	}
 ]]
 
+local Kernels = {}
+
 -- Common kernel setup
 local function NewKernel (suffix, prelude)
 	local kernel = { category = "filter", group = "filler", name = "grid4x4_" .. suffix, vertexData = {} }
@@ -186,6 +192,8 @@ local function NewKernel (suffix, prelude)
 	kernel.fragment = loader.FragmentShader{ prelude = prelude, main = UberFragment }
 
 	AddDatum(kernel, "bits")
+
+	Kernels[suffix] = kernel.category .. "." .. kernel.group .. "." .. kernel.name
 
 	return kernel
 end
@@ -233,3 +241,5 @@ do
 
 	graphics.defineEffect(kernel)
 end
+
+return Kernels

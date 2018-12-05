@@ -40,3 +40,5 @@ kernel.fragment = [[
 ]]
 
 graphics.defineEffect(kernel)
+
+return "filter.icyspark.water"

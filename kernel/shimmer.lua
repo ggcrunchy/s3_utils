@@ -28,7 +28,10 @@ local fx = require("s3_utils.fx")
 local loader = require("corona_shader.loader")
 local screen_fx = require("corona_shader.screen_fx")
 
--- Kernel --
+--
+--
+--
+
 local kernel = { language = "glsl", category = "filter", group = "screen", name = "shimmer" }
 
 local vertex_data = fx.DistortionKernelParams()
@@ -50,3 +53,5 @@ kernel.fragment = loader.FragmentShader[[
 ]]
 
 graphics.defineEffect(kernel)
+
+return "filter.screen.shimmer"

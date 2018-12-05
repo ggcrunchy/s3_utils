@@ -111,7 +111,7 @@ local function NoOp () end
 -- @ptable Load parameters.
 -- @see corona_utils.collision.GetType, s3_utils.shapes.RemoveAt
 function M.AddDot (group, info, params)
-	local dot = DotList[info.type](group, info, params)
+	local dot = DotList[info.type].game(group, info, params)
 	local index = tile_maps.GetTileIndex(info.col, info.row)
 
 	dot.GetProperty = dot.GetProperty or NoOp
@@ -157,10 +157,10 @@ end
 -- @param arg3 Argument #3.
 -- @return Result(s) of the event, if any.
 function M.EditorEvent (type, what, arg1, arg2, arg3)
-	local cons = DotList[type]
+	local cons = DotList[type].editor
 
 	if cons then
-		local event = cons("editor_event")
+		local event = cons--("editor_event")
 
 		-- Build --
 		-- arg1: Level
