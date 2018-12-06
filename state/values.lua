@@ -49,7 +49,7 @@ local Before = bind.BroadcastBuilder_Helper(nil)
 --- DOCME
 function M.AddValue (info, params)
 	local pubsub = params.pubsub
-	local value, how = assert(ValueList[info.type], "Invalid value")(info, pubsub)
+	local value, how = assert(ValueList[info.type], "Invalid value").game(info, pubsub)
 
 	if how ~= "no_before" and info.before then -- some values want it but must handle it specially
 		local body = value
@@ -95,11 +95,11 @@ local function NoEvent () end
 -- @param arg3 Argument #3.
 -- @return Result(s) of the event, if any.
 function M.EditorEvent (type, what, arg1, arg2, arg3)
-	local cons = ValueList[type]
+	local cons = ValueList[type].editor
 
 	if cons then
-		local event, vtype = cons("editor_event") or NoEvent, assert(cons("value_type"), "No value type specified")
-
+		local event, vtype = cons--[[("editor_event")]] or NoEvent, assert(ValueList[type].value_type--[[cons("value_type")]], "No value type specified")
+-- ^^^ URGH
 		-- Enumerate Properties --
 		-- arg1: Dialog
 		if what == "enum_props" then

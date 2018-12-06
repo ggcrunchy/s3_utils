@@ -156,7 +156,7 @@ function M.AddMusic (info, params)
 	end
 
 	--
-	local psl = params.pub_sub_list
+	local psl = params:GetPubSubList()
 
 	for k, event in pairs(Events) do
 		event.Subscribe(music, info[k], psl)

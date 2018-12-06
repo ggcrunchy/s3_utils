@@ -520,7 +520,7 @@ function M.SpawnEnemy (group, info, params)
 	Enemies[#Enemies + 1] = enemy
 
 	--
-	local psl = params.pub_sub_list
+	local psl = params:GetPubSubList()
 
 	for k, event in pairs(Events) do
 	--	event.Subscribe(enemy, info[k], pubsub)

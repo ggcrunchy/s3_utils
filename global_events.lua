@@ -72,15 +72,13 @@ end
 
 --- DOCME
 function M.AddEvents (events, params)
-	local psl = params.pub_sub_list
+	local psl = params:GetPubSubList()
 
-	--
 	for k, v in pairs(GetEvent) do
 	--	v.Subscribe(EventNonce, events and events[k], pubsub)
 		psl:Subscribe(events and events[k], v:GetAdder(), EventNonce)
 	end
-	
-	--
+
 	for k in adaptive.IterSet(events and events.actions) do
 		--[[bind.]]psl:Publish(--[[pubsub, ]]Actions[k], events.uid, k)
 	end

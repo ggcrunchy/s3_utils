@@ -52,8 +52,8 @@ local NamedSources = meta.Weak("v")
 --- DOCME
 function M.AddAction (info, params)
 	local pubsub, action = params.pubsub
-	local body, how = assert(ActionList[info.type], "Invalid action")(info, pubsub)
-
+	local body, how = assert(ActionList[info.type], "Invalid action").game(info, pubsub)
+-- ^^ TODO: will break for tether, other?
 	if not body then
 		function action ()
 			return Next(action)
@@ -113,10 +113,10 @@ local function NoEvent () end
 -- @param arg3 Argument #3.
 -- @return Result(s) of the event, if any.
 function M.EditorEvent (type, what, arg1, arg2, arg3)
-	local cons = ActionList[type]
+	local cons = ActionList[type].editor
 
 	if cons then
-		local event = cons("editor_event") or NoEvent
+		local event = cons--[[("editor_event")]] or NoEvent
 
 		-- Enumerate Properties --
 		-- arg1: Dialog
