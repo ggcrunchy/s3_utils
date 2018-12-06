@@ -104,15 +104,15 @@ function M.AddSound (info, params)
 	sound.group = audio.NewSoundGroup{ sample = sample }
 
 	--
-	local pubsub = params.pubsub
+	local psl = params:GetPubSubList()
 
 	for k, event in pairs(Events) do
-		event.Subscribe(sound, info[k], pubsub)
+		event.Subscribe(sound, info[k], psl)
 	end
 
 	--
 	for k in adaptive.IterSet(info.actions) do
-		bind.Publish(pubsub, Actions[k](sound), info.uid, k)
+		bind.Publish(psl, Actions[k](sound), info.uid, k)
 	end
 
 	--
