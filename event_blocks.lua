@@ -244,6 +244,7 @@ function EventBlock:Dust (nmin, nmax)
 
 	return total
 end
+-- TODO: ^^^ too hard-coded, remove
 
 --- Fills a region with occupancy information matching this block.
 -- @int col1 A column...
@@ -348,6 +349,7 @@ end
 
 --- DOCME
 function EventBlock:IsDone ()
+	-- TODO: send message back to event itself
 	return self.m_cmds("is_done")
 end
 
@@ -537,14 +539,16 @@ local EventBlockList
 -- @ptable params
 function M.AddBlock (info, params)
 	local block = NewBlock(info.col1, info.row1, info.col2, info.row2)
-	local event, cmds = assert(EventBlockList[info.type], "Invalid event block").game(info, block)
+	local event, cmds = assert(EventBlockList[info.type], "Invalid event block").make(info, block)
 
 	params:GetPubSubList():--[[bind.]]Publish(--[[params.pub_sub_list, ]]event, info.uid, "fire")
 	bind.SetActionCommands(event, cmds)
 
 	block.m_cmds = cmds
 
-	Events[#Events + 1] = event -- TODO: Forgo this when not debugging?
+	if Events then -- TODO: only set up for debugging
+		Events[#Events + 1] = event
+	end
 end
 
 -- Keys referenced in editor event --
@@ -626,6 +630,23 @@ function M.EditorEvent (type, what, arg1, arg2, arg3)
 	end
 end
 
+--- Fires all events.
+-- @bool forward Forward boolean, argument to event's **"fire"** handler.
+function M.FireAll (forward) -- to do, add "setup" that actually ensures Events exists...
+	forward = not not forward
+
+	for _, v in ipairs(Events) do -- TODO: for i = #(Events or "") do / local v = Events[i]
+									-- and so on
+		local commands = bind.GetActionCommands(v)
+
+		if commands then
+			commands("set_direction", forward)
+		end
+
+		v()
+	end
+end
+
 --- Getter.
 -- @param name Name used to register event in @{AddBlock}.
 -- @treturn callable If missing, a no-op. Otherwise, this is a function called as
@@ -645,22 +666,7 @@ end
 function M.GetEvent (name)
 	return Events[name] or function() end -- TODO: Remove this function?
 end
-
---- Fires all events.
--- @bool forward Forward boolean, argument to event's **"fire"** handler.
-function M.FireAll (forward)
-	forward = not not forward
-
-	for _, v in ipairs(Events) do
-		local commands = bind.GetActionCommands(v)
-
-		if commands then
-			commands("set_direction", forward)
-		end
-
-		v()
-	end
-end
+-- TODO: used anywhere but for debug?
 
 --- Getter.
 -- @treturn {string,...} Unordered list of event block type names.
@@ -705,6 +711,7 @@ for k, v in pairs{
 		Blocks, BlockIDs, Events, FlagsTemp, OldFlags = {}, {}, {}, {}, {}
 		MarkersLayer = level.markers_layer
 		TilesLayer = level.tiles_layer
+		-- TODO: leave Events nil
 	end,
 
 	-- Leave Level --

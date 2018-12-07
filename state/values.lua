@@ -49,7 +49,7 @@ local Before = bind.BroadcastBuilder_Helper(nil)
 --- DOCME
 function M.AddValue (info, params)
 	local pubsub = params.pubsub
-	local value, how = assert(ValueList[info.type], "Invalid value").game(info, pubsub)
+	local value, how = assert(ValueList[info.type], "Invalid value").make(info, pubsub)
 
 	if how ~= "no_before" and info.before then -- some values want it but must handle it specially
 		local body = value

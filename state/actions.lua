@@ -52,7 +52,7 @@ local NamedSources = meta.Weak("v")
 --- DOCME
 function M.AddAction (info, params)
 	local pubsub, action = params.pubsub
-	local body, how = assert(ActionList[info.type], "Invalid action").game(info, pubsub)
+	local body, how = assert(ActionList[info.type], "Invalid action").make(info, pubsub)
 -- ^^ TODO: will break for tether, other?
 	if not body then
 		function action ()

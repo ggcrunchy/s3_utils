@@ -108,7 +108,7 @@ local DotList
 -- @ptable Load parameters.
 -- @see corona_utils.collision.GetType, s3_utils.shapes.RemoveAt
 function M.AddDot (group, info, params)
-	local dot = DotList[info.type].game(group, info, params)
+	local dot = DotList[info.type].make(group, info, params)
 	local index = tile_maps.GetTileIndex(info.col, info.row)
 
 	tile_maps.PutObjectAt(index, dot)
