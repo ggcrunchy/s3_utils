@@ -60,10 +60,10 @@ local Dots = {}
 
 -- Try to add a body and report success
 local function AddBody (dot) 
-	local body_prop = dot:GetProperty("body")
+	local body_prop = dot.body_P
 
 	if body_prop ~= false then
-		collision.MakeSensor(dot, dot:GetProperty("body_type"), body_prop)
+		collision.MakeSensor(dot, dot.body_type_P, body_prop)
 
 		return true
 	end
@@ -75,9 +75,6 @@ local Remaining
 -- Dot type lookup table --
 local DotList
 
--- Dummy properties
-local function NoOp () end
-
 --- Adds a new _name_-type sensor dot to the level.
 --
 -- For each name, there must be a corresponding module, the value of which will be a
@@ -87,19 +84,19 @@ local function NoOp () end
 --
 -- These modules are loaded through @{tektite_core.require_ex.DoList} from **config.Dots**.
 --
--- Various dot properties are important:
+-- Various dot read properties (cf. @{tektite_core.table.meta.Augment}) are important:
 --
--- If the **"is_counted"** property is true, the dot will count toward the remaining dots
+-- If the **is_counted\_P** property is true, the dot will count toward the remaining dots
 -- total. If this count falls to 0, the **all\_dots\_removed** event is dispatched.
 --
--- If the **"add\_to\_shapes"** property is true, the dot will be added to / may be removed from
--- shapes, and assumes that its **is_counted** property is true.
+-- If the **add\_to\_shapes\_P** property is true, the dot will be added to / may be removed from
+-- shapes, and assumes that its **is_counted\_P** property is true.
 --
--- Unless the **"omit\_from\_event\_blocks"** property is true, a dot will be added to any event
+-- Unless the **omit\_from\_event\_blocks\_P** property is true, a dot will be added to any event
 -- block that it happens to occupy.
 --
--- The **"body"** and **"body_type"** properties can be supplied to @{corona_utils.collision.MakeSensor}.
--- If **"body"** is false, these properties are not assigned.
+-- The **body\_P** and **body_type\_P** properties can be supplied to @{corona_utils.collision.MakeSensor}.
+-- If **body\_P** is **false**, these properties are not assigned.
 -- @pgroup group Display group that will hold the dot.
 -- @ptable info Information about the new dot. Required fields:
 --
@@ -114,8 +111,6 @@ function M.AddDot (group, info, params)
 	local dot = DotList[info.type].game(group, info, params)
 	local index = tile_maps.GetTileIndex(info.col, info.row)
 
-	dot.GetProperty = dot.GetProperty or NoOp
-
 	tile_maps.PutObjectAt(index, dot)
 
 	if AddBody(dot) then
@@ -124,12 +119,12 @@ function M.AddDot (group, info, params)
 
 	local is_counted
 
-	if dot:GetProperty("add_to_shapes") then
+	if dot.add_to_shapes_P then
 		shapes.AddPoint(index)
 
 		is_counted = true
 	else
-		is_counted = dot:GetProperty("is_counted")
+		is_counted = dot.is_counted_P
 	end
 
 	dot.m_count = is_counted and 1 or 0
@@ -228,12 +223,18 @@ end
 
 -- Default logic for dot in block's list
 local function BlockFunc (what, dot, arg1, arg2)
+	local prep = dot.block_func_prep_P
+
+	if prep and prep(what, dot, arg1, arg2) == "ignore" then
+		return
+	end
+
 	if what == "get_local_xy" then
 		return arg1, arg2
 	elseif what == "set_content_xy" then
 		dot.x, dot.y = dot.parent:contentToLocal(arg1, arg2)
 	elseif what == "set_angle" then
-		local on_rotate = dot:GetProperty("on_rotate_block")
+		local on_rotate = dot.on_rotate_block_P
 
 		if on_rotate then
 			on_rotate(dot, arg1)
@@ -290,8 +291,8 @@ for k, v in pairs{
 
 			local dot = Dots[slot]
 
-			if dot and dot.m_index == index and not dot:GetProperty("omit_from_event_blocks") then
-				block:AddToList(dot, dot:GetProperty("block_func", BlockFunc) or BlockFunc, dot.x, dot.y)
+			if dot and dot.m_index == index and not dot.omit_from_event_blocks_P then
+				block:AddToList(dot, BlockFunc, dot.x, dot.y)
 			end
 		end
 	end,
