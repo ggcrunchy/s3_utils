@@ -42,8 +42,15 @@ local display = display
 local Runtime = Runtime
 local system = system
 
+-- Corona modules --
+local composer = require("composer")
+
 -- Exports --
 local M = {}
+
+--
+--
+--
 
 -- Which way are we trying to move?; which way were we moving? --
 local Dir, Was
@@ -160,7 +167,7 @@ local function KeyEvent (event)
 
 	-- Propagate other / unknown keys; otherwise, indicate that we consumed the input.
 	else
-		return false
+		return "call_next_handler"
 	end
 
 	return true
@@ -245,7 +252,11 @@ for k, v in pairs{
 
 		-- Track events to maintain input.
 		Runtime:addEventListener("enterFrame", UpdatePlayer)
-		Runtime:addEventListener("key", KeyEvent)
+
+		local handle_key = composer.getVariable("handle_key")
+
+		handle_key:Clear() -- TODO: kludge because we don't go through title screen to wipe quick test
+		handle_key:Push(KeyEvent)
 	end,
 
 	-- Level Done --
@@ -255,7 +266,8 @@ for k, v in pairs{
 		device.MapAxesToKeyEvents(false)
 
 		Runtime:removeEventListener("enterFrame", UpdatePlayer)
-		Runtime:removeEventListener("key", KeyEvent)
+
+		composer.getVariable("handle_key"):Pop()
 	end,
 
 	-- Move Done --

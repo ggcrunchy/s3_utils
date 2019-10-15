@@ -36,10 +36,11 @@ local type = type
 
 -- Modules --
 local line_ex = require("corona_ui.utils.line_ex")
-local timers = require("corona_utils.timers")
 
 -- Corona globals --
 local display = display
+local system = system
+local timer = timer
 
 -- Exports --
 local M = {}
@@ -181,12 +182,14 @@ function M.RingOfStars (group, nstars, x, y, dx, dy, opts)
 	end
 
 	--
-	timers.RepeatEx(function(event)
+	local start = system.getTimer()
+
+	timer.performWithDelay(10, function(event)
 		local front_valid, back_valid = display.isValid(front), display.isValid(back)
 
 		--
 		if front_valid and back_valid then
-			local t = event.m_elapsed * RotateSpeed / 1000
+			local t = (event.time - start) * RotateSpeed / 1000
 			local dt = _2pi / #stars
 
 			for i, star in ipairs(stars) do
@@ -205,9 +208,9 @@ function M.RingOfStars (group, nstars, x, y, dx, dy, opts)
 				back:removeSelf()
 			end
 
-			return "cancel"
+			timer.cancel(event.source)
 		end
-	end, 10)
+	end, 0)
 
 	return front, back
 end

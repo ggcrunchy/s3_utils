@@ -29,13 +29,17 @@ local remove = table.remove
 
 -- Modules --
 local lazy = require("tektite_core.table.lazy")
-local timers = require("corona_utils.timers")
 
 -- Corona globals --
 local display = display
+local timer = timer
 
 -- Exports --
 local M = {}
+
+--
+--
+--
 
 -- List of circle caches --
 local Circles
@@ -99,12 +103,14 @@ end
 
 -- Adds a display object to a cache (and in the stash as a dummy hierarchy)
 local function AddToCache (cache, object)
-	if Stash then
-		cache[#cache + 1] = object
+	if display.isValid(object) then
+		if display.isValid(Stash) then
+			cache[#cache + 1] = object
 
-		Stash:insert(object)
-	elseif display.isValid(object) then -- TODO: can replace with display.remove()?
-		object:removeSelf()
+			Stash:insert(object)
+		else
+			object:removeSelf()
+		end
 	end
 end
 
@@ -123,7 +129,7 @@ local function Push (list, what, object, how)
 		if how == "is_dead_group" then
 			object.isVisible = false
 
-			timers.RepeatEx(function()
+			timer.performWithDelay(100, function(event)
 				if display.isValid(object) then
 					AddFromGroup(cache, object, object.numChildren - 10)
 
@@ -134,8 +140,8 @@ local function Push (list, what, object, how)
 					end
 				end
 
-				return "cancel"
-			end, 100)
+				timer.cancel(event.source)
+			end, 0)
 		else
 			AddFromGroup(cache, object, 1)
 		end
@@ -181,7 +187,7 @@ for k, v in pairs{
 	leave_level = function()
 		local stash = Stash
 
-		timers.RepeatEx(function()
+		timer.performWithDelay(200, function(event)
 			local n = stash.numChildren
 
 			if n > 0 then
@@ -189,9 +195,11 @@ for k, v in pairs{
 					stash:remove(i)
 				end
 			else
-				return "cancel"
+				timer.cancel(event.source)
+
+				stash:removeSelf()
 			end
-		end, 200)
+		end, 0)
 
 		Circles, Rects, Stash = nil
 	end
@@ -199,5 +207,4 @@ for k, v in pairs{
 	Runtime:addEventListener(k, v)
 end
 
--- Export the module.
 return M

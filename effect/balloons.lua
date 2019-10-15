@@ -29,12 +29,11 @@ local floor = math.floor
 local min = math.min
 local random = math.random
 
--- Modules --
-local timers = require("corona_utils.timers")
-
 -- Corona globals --
 local display = display
 local native = native
+local system = system
+local timer = timer
 local transition = transition
 
 -- Exports --
@@ -165,9 +164,12 @@ function M.Thought (group, x, y, text, ndots)
 	end
 
 	-- Update the balloon until it has been removed.
-	timers.RepeatEx(function(event)
+	local start = system.getTimer()
+
+	timer.performWithDelay(150, function(event)
 		if display.isValid(tgroup) then
-			local nshown = ceil(event.m_elapsed / DotTime)
+			local elapsed = event.time - start
+			local nshown = ceil(elapsed / DotTime)
 
 			-- Fade in any dots for which time has elapsed.
 			for i = 1, min(nshown, ndots) * 3, 3 do
@@ -179,7 +181,7 @@ function M.Thought (group, x, y, text, ndots)
 			if nshown > ndots then
 				FadeIn(egroup, .4, 100)
 
-				local ntext = min(floor((event.m_elapsed - ndots * DotTime) / CharTime), #text)
+				local ntext = min(floor((elapsed - ndots * DotTime) / CharTime), #text)
 
 				ttext.text = text:sub(1, ntext)
 
@@ -208,9 +210,9 @@ function M.Thought (group, x, y, text, ndots)
 			end
 
 		else
-			return "cancel"
+			timer.cancel(event.source)
 		end
-	end, 150)
+	end, 0)
 
 	return tgroup
 end

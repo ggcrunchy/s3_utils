@@ -28,7 +28,6 @@ local abs = math.abs
 local ipairs = ipairs
 local pairs = pairs
 local pi = math.pi
-local remove = table.remove
 local require = require
 local sin = math.sin
 
@@ -40,21 +39,49 @@ local call = require("corona_utils.call")
 local collision = require("corona_utils.collision")
 local enemy_events = require("annex.EnemyEvents")
 local flow_ops = require("coroutine_ops.flow")
-local movement = require("s3_utils.movement")
 local object_vars = require("config.ObjectVariables")
 local store = require("s3_utils.state.store")
 local tile_maps = require("s3_utils.tile_maps")
-local wrapper = require("coroutine_ops.wrapper")
+local timers = require("corona_utils.timers")
 
 -- Corona globals --
 local display = display
 local Runtime = Runtime
+local timer = timer
 
 -- Cached module references --
-local _AlertEnemies_
+local _BroadcastEvent_
 
 -- Exports --
 local M = {}
+
+--
+--
+--
+
+local Enemies
+
+--- Dispatch an event to multiple enemies.
+-- @ptable event Dispatcher input, i.e. for `enemy:dispatchEvent(event)`.
+--
+-- If _event_ contains a **sender** field, 
+-- @string[opt="all"] how Indicates which non-sender enemies are considered: may be **"all"**
+-- for the whole set; **"dead"** for dead ones; or live ones otherwise.
+function M.BroadcastEvent (event, how)
+	local omit, live_value = event.sender
+
+	if how ~= "all" then
+		live_value = how ~= "dead"
+	end
+
+	for i = 1, #(Enemies or "") do -- ignore alerts if level ending
+		local enemy = Enemies[i]
+
+		if enemy ~= omit and live_value ~= not enemy.m_alive then -- live_value might be nil, but compared to boolean
+			enemy:dispatchEvent(event)
+		end
+	end
+end
 
 -- Phase-in period --
 local PeriodTime = 1.15
@@ -82,11 +109,7 @@ local function SetTile (enemy)
 end
 
 -- Behavior of an enemy after (re)spawning and while waiting to become alive
-local function PhaseIn (enemy, type_info, info, is_sleeping)
-	--
-	enemy.m_facing = info.facing
-	enemy.m_pref_turn, enemy.m_alt_turn = movement.Turns(not info.prefers_left)
-
+local function PhaseIn (enemy, type_info, is_sleeping)
 	SetPos(enemy)
 	SetTile(enemy)
 
@@ -185,59 +208,22 @@ local function WaitToRespawn (_, type_info)
 end
 
 -- Coroutine body: Common overall enemy logic
-local function EnemyFunc (enemy, type_info, info)
-	collision.MakeSensor(enemy, "dynamic", type_info.body)
-	collision.SetType(enemy, "enemy")
-
-	enemy.isVisible = false
+local function EnemyFunc (event, index, type_info, info)
+	local enemy = Enemies[index]
 
 	local is_sleeping = info.asleep
 
 	while true do
-		PhaseIn(enemy, type_info, info, is_sleeping)
+		PhaseIn(enemy, type_info, is_sleeping)
 		Alive(enemy, type_info)
 		Die(enemy, type_info)
 
-		is_sleeping = info.sleep_on_death
-
 		if enemy.m_no_respawn then
-			return "done"
+			timer.pause(event.source)
 		else
+			is_sleeping = info.sleep_on_death
+
 			WaitToRespawn(enemy, type_info)
-		end
-	end
-end
-
--- Enemy behavior coroutines; enemy objects --
-local Coros, Enemies
-
--- Omit the "self" enemy (in the relevant case, passed as "arg") when sending an alert? --
-local OmitArg
-
---- Sends an alert to the enemies in the level, which can respond in their **ReactTo** method,
--- cf. @{SpawnEnemy}.
--- @string what Name of alert, passed to **ReactTo**.
--- @param arg Alert argument, also passed to **ReactTo**.
--- @string how If this is **"all"**, all enemies are sent the alert. If it is **"dead"**,
--- only dead enemies are alerted. Otherwise, only live enemies are alerted.
-function M.AlertEnemies (what, arg, how)
-	local live_value, omit
-
-	-- Filter out alert recipients: an enemy alerting others must not alert itself, and
-	-- otherwise screen out those either alive or not. The "omit self" flag is consumed
-	-- immediately, so clean it up in order to not confused subsequent alerts.
-	if Enemies then -- ignore alerts coeval with condition than ends level
-		omit, OmitArg = OmitArg and arg
-
-		if how ~= "all" then
-			live_value = how ~= "dead"
-		end
-
-		-- Send the alert to all valid recipients.
-		for _, enemy in ipairs(Enemies) do
-			if enemy ~= omit and live_value ~= not enemy.m_alive then
-				enemy:ReactTo(what, arg)
-			end
 		end
 	end
 end
@@ -436,16 +422,6 @@ function M.KillAll ()
 	end
 end
 
--- Enemy alert method
-local function AlertOthers (enemy, what, how)
-	OmitArg = true
-
-	_AlertEnemies_(what, enemy, how)
-end
-
--- Dummy for reaction-less enemies --
-local NoOp = function() end
-
 -- Enemy situation <-> events bindings --
 for _, v in ipairs{ "on_die", "on_wake" } do
 	Events[v] = call.NewDispatcher()--bind.BroadcastBuilder_Helper()
@@ -463,9 +439,14 @@ end
 --
 -- * **Do**: Function which updates the enemy while alive, called as
 --    result, other = Do(enemy).
+--
 -- A _result_ of **"dead"** will put _enemy_ into the killed state; if _other_ is non-**nil**,
 -- it is assumed to be a physics object, its `getLinearVelocity` method is called, and the
 -- results are assigned to _enemy_'s **m_vx** and **m_vy** fields.
+--
+-- * **New**: Function which instantiates the appropriate display object for the enemy
+-- along with any state derived from _info_, called as
+--    enemy = New(group, info).
 --
 -- * **respawn_delay**: Delay, in seconds, between the death throes and respawn of this type.
 -- * **spawn_time**: Time, in seconds, over which this enemy type phases in.
@@ -476,18 +457,10 @@ end
 -- * **Die**: Function which performs the death throes for this enemy type, called with
 -- _enemy_ as argument.
 --
--- * **ReactTo**: Function that takes _enemy_, _what_, and _arg_ as arguments, allowing the
--- enemy to react to various events.
---
 -- * **Start**: Function used to prepare the enemy before it begins to phase in, called with
 -- _enemy_ as argument.
 --
 -- **Do**, **Die**, and **Start** are each called within a coroutine context.
---
--- In order to generate the display object, _enemy_, one of the following must be provided:
---
--- * **image**: A filename, as per `display.newImage`.
--- * **sprite_factory**: A factory returned by @{corona_utils.sheet.NewSpriteFactory}.
 -- @pgroup group Display group that will hold the enemy.
 -- @ptable info Information about the new enemy. Required fields:
 --
@@ -495,27 +468,10 @@ end
 -- * **row**: Row on which enemy spawns.
 -- * **type**: Name of enemy type, q.v. _name_, above.
 --
--- Optional elements include:
---
--- * **facing**: Direction enemy faces when it spawns.
--- * **prefers_left**: If true, the enemy prefers left turns, when available; otherwise,
--- it prefers right turns.
---
 -- Instance-specific data may also be passed in other fields.
--- @see s3_utils.movement.NextDirection
 function M.SpawnEnemy (group, info, params)
 	local type_info = EnemyList[info.type]
-
-	-- Make the enemy display object.
-	local enemy
-
-	if type_info.sprite_factory then
-		enemy = type_info.sprite_factory:NewSprite(group)
-	elseif type_info.image then
-		enemy = display.newImage(group, type_info.image)	
-	end
-
-	enemy.ReactTo = type_info.ReactTo or NoOp
+	local enemy = type_info.New(group, info)
 
 	Enemies[#Enemies + 1] = enemy
 
@@ -534,15 +490,6 @@ function M.SpawnEnemy (group, info, params)
 
 	object_vars.PublishProperties(psl, info.props, Properties, info.uid, enemy)
 
-	--- Allows an enemy to send an alert to other enemies.
-	-- @function enemy:AlertOthers
-	-- @string what Name of alert, passed to **ReactTo**.
-	-- @string how As per @{AlertEnemies}, except the enemy itself is excluded as well.
-	enemy.AlertOthers = AlertOthers
-
-	-- Perform any create-time response.
-	enemy:ReactTo("create", info)
-
 	-- Find the start tile to (re)spawn the enemy there, and kick off its behavior. Unless
 	-- fixed, this starting position may attach to an event block and be moved around.
 	enemy.m_start = display.newCircle(group, 0, 0, 5)
@@ -553,25 +500,38 @@ function M.SpawnEnemy (group, info, params)
 
 	enemy.m_can_attach = not type_info.fixed
 
-	local coro = wrapper.Wrap(function()
-		return EnemyFunc(enemy, type_info, info)
+	collision.MakeSensor(enemy, "dynamic", type_info.body)
+	collision.SetType(enemy, "enemy")
+
+	enemy.isVisible = false
+
+	local index = #Enemies -- avoid enemy being an upvalue
+
+	enemy.m_func = timers.Wrap(30, function(event)
+		return EnemyFunc(event, index, type_info, info)
 	end)
 
-	coro()
-
-	Coros[#Coros + 1] = coro
+	timer.pause(enemy.m_func)
 end
+
+local ReactEvent = {}
 
 --
 local function TryConfigFunc (key, arg)
 	local func = enemy_events[key]
 
 	return func and func({
-		alert_enemies = M.AlertEnemies, kill = Kill,
+		broadcast_event = _BroadcastEvent_, kill = Kill,
 
 		-- Helper for getting hit by harmful things
-		die_or_react = function(enemy, what, object)
-			if not enemy:ReactTo(what, object) then
+		die_or_react = function(enemy, name, okey, object)
+			ReactEvent.name, ReactEvent[okey], ReactEvent.result = name, object, "dead"
+
+			enemy:dispatchEvent(ReactEvent)
+
+			ReactEvent[okey] = nil
+
+			if ReactEvent.result == "dead" then
 				Kill(enemy, object)
 			end
 		end,
@@ -588,11 +548,17 @@ end
 --
 local OnCollision = TryConfigFunc("on_collision")
 
+local TouchedEnemyEvent = { name = "touched_enemy" }
+
 -- Add enemy-OBJECT collision handler.
 collision.AddHandler("enemy", function(phase, enemy, other, other_type)
 	-- Enemy touched enemy: delegate reaction to enemy.
 	if other_type == "enemy" then
-		enemy:ReactTo("touched_enemy", other, phase == "began")
+		TouchedEnemyEvent.phase, TouchedEnemyEvent.enemy = phase, other
+
+		enemy:dispatchEvent(TouchedEnemyEvent)
+	
+		TouchedEnemyEvent.target = nil
 	elseif OnCollision then
 		OnCollision(phase, enemy, other, other_type)
 	end
@@ -602,20 +568,6 @@ end)
 
 -- Define enemy properties.
 collision.AddInterfaces("enemy", "harmable")
-
--- Per-frame setup / update
-local function OnEnterFrame ()
-	for i = #Coros, 1, -1 do
-		local coro = Coros[i]
-
-		if wrapper.Status(coro) == "dead" or coro() == "done" then
-			remove(Coros, i)
-		end
-	end
-end
-
--- --
-local BlockAlert
 
 -- Logic for start positions in blocks
 local function BlockFunc (what, start, arg1, arg2)
@@ -630,21 +582,23 @@ local function BlockFunc (what, start, arg1, arg2)
 	end
 end
 
+local EventToBroadcast
+
+local function Broadcast (name)
+	EventToBroadcast.name = name
+
+	_BroadcastEvent_(EventToBroadcast)
+end
+
 -- Listen to events.
 local events = {
 	-- Enter Level --
 	enter_level = function()
-		BlockAlert, Coros, Enemies = {}, {}, {}
+		EventToBroadcast, Enemies = {}, {}
 	end,
 
 	-- Event Block --
-	event_block = function(event)
-		BlockAlert.block, BlockAlert.how, BlockAlert.phase = event.block, event.how, event.phase
-
-		_AlertEnemies_("event_block", BlockAlert)
-
-		BlockAlert.block = nil
-	end,
+	event_block = _BroadcastEvent_,
 
 	-- Event Block Setup --
 	event_block_setup = function(event)
@@ -667,22 +621,22 @@ local events = {
 
 	-- Leave Level --
 	leave_level = function()
-		_AlertEnemies_("about_to_leave")
+		Broadcast("about_to_leave")
 
 		for _, enemy in ipairs(Enemies) do
 			ClearLocalVars(enemy)
+
+			timer.cancel(enemy.m_func)
 		end
 
-		BlockAlert, Coros, Enemies = nil
-
-		Runtime:removeEventListener("enterFrame", OnEnterFrame)
+		EventToBroadcast, Enemies = nil
 	end,
 
 	-- Reset Level --
 	reset_level = function()
-		_AlertEnemies_("about_to_reset")
+		Broadcast("about_to_reset")
 
-		for i, enemy in ipairs(Enemies) do
+		for _, enemy in ipairs(Enemies) do
 			ClearLocalVars(enemy)
 
 			enemy.m_alive = false
@@ -691,17 +645,21 @@ local events = {
 
 			enemy.isVisible = true
 
-			local coro = Coros[i]
+			if timers.IsPaused(enemy.m_func) then
+				timer.resume(enemy.m_func)
+			else
+				timer.cancel(enemy.m_func)
 
-			if coro then
-				wrapper.Reset(coro)
+				enemy.m_func = timers.PerformWithDelayFromExample(30, enemy.m_func)
 			end
 		end
 	end,
 
 	-- Ready To Go --
 	ready_to_go = function()
-		Runtime:addEventListener("enterFrame", OnEnterFrame)
+		for _, enemy in ipairs(Enemies) do
+			timer.resume(enemy.m_func)
+		end
 	end
 }
 
@@ -716,8 +674,6 @@ EnemyList = require_ex.DoList("config.Enemies")
 
 -- TODO: Bosses too?
 
--- Cache module members.
-_AlertEnemies_ = M.AlertEnemies
+_BroadcastEvent_ = M.BroadcastEvent
 
--- Export the module.
 return M

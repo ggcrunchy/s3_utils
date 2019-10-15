@@ -37,10 +37,11 @@ local sqrt = math.sqrt
 -- Modules --
 local glow = require("s3_utils.effect.glow")
 local length = require("tektite_core.number.length")
-local timers = require("corona_utils.timers")
 
 -- Corona globals --
 local display = display
+local system = system
+local timer = timer
 
 -- Cached module references --
 local _LineOfArrows_
@@ -293,16 +294,18 @@ function M.PointFromTo (group, from, to, width, alpha, dir)
 
 	aline.alpha = alpha
 
-	timers.RepeatEx(function(event)
+	local start = system.getTimer()
+
+	timer.performWithDelay(25, function(event)
 		if display.isValid(aline) then
-			local dt = event.m_elapsed % delay
+			local dt = (event.time - start) % delay
 
 			aline:SetColor(ArrowRGB())
 			aline:SetEndPoints(from.x, from.y, to.x, to.y, dt / delay)
 		else
-			return "cancel"
+			timer.cancel(event.source)
 		end
-	end, 25)
+	end, 0)
 
 	return aline
 end

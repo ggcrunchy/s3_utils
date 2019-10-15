@@ -43,10 +43,10 @@ local collision = require("corona_utils.collision")
 local require_ex = require("tektite_core.require_ex")
 local shapes = require("s3_utils.shapes")
 local tile_maps = require("s3_utils.tile_maps")
-local timers = require("corona_utils.timers")
 
 -- Corona globals --
 local Runtime = Runtime
+local timer = timer
 
 -- Cached module references --
 local _AddBody_
@@ -321,7 +321,7 @@ for k, v in pairs{
 			Remaining = Remaining + dot.m_count
 		end
 
-		timers.Defer(function()
+		timer.performWithDelay(0, function()
 			for _, dot in ipairs(Dots) do
 				if collision.RemoveBody(dot) then
 					AddBody(dot)

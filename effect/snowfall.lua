@@ -25,22 +25,20 @@
 
 -- Standard library imports --
 local ceil = math.ceil
-local ipairs = ipairs
 local min = math.min
 local random = math.random
 local remove = table.remove
 local sqrt = math.sqrt
-local type = type
 local unpack = unpack
 
 -- Modules --
 local array_index = require("tektite_core.array.index")
 local curves = require("tektite_core.number.curves")
 local frames = require("corona_utils.frames")
-local timers = require("corona_utils.timers")
 
 -- Corona globals --
 local display = display
+local timer = timer
 
 -- Classes --
 local TimerClass = require("tektite_base_classes.Timer")
@@ -137,99 +135,99 @@ function M.Snowfall (group, images, max)
 	--
 	local nslots = ceil(max / 3)
 
-	timers.RepeatEx(function()
-		if not display.isValid(snowfall) then
-			return "cancel"
-		end
+	timer.performWithDelay(35, function(event)
+		if display.isValid(snowfall) then
+			-- Divide the screen up into slots. Update the flakes.
+			local lapse = frames.DiffTime()
+			local sw = Width / (nslots - 1)
 
-		-- Divide the screen up into slots. Update the flakes.
-		local lapse = frames.DiffTime()
-		local sw = Width / (nslots - 1)
+			for i = 1, snowfall.numChildren do
+				local flake = snowfall[i]
 
-		for i = 1, snowfall.numChildren do
-			local flake = snowfall[i]
+				if flake.isVisible then
+					local state = states[i]
 
-			if flake.isVisible then
-				local state = states[i]
+					if state.timer:Check() > 0 then
+						flake.isVisible = false
 
-				if state.timer:Check() > 0 then
-					flake.isVisible = false
+						-- Cache and remove the state.
+						state_cache[#state_cache + 1], states[i] = state
 
-					-- Cache and remove the state.
-					state_cache[#state_cache + 1], states[i] = state
+					else
+						-- Put the snowflake at the current positions on its curve and spin.
+						flake.x, flake.y = SolvePath(state.path, state.timer:GetCounter(true))
+						flake.rotation = state.da * state.timer:GetCounter()
 
-				else
-					-- Put the snowflake at the current positions on its curve and spin.
-					flake.x, flake.y = SolvePath(state.path, state.timer:GetCounter(true))
-					flake.rotation = state.da * state.timer:GetCounter()
+						-- Update the snowflake age.
+						state.timer:Update(lapse)
+					end
 
-					-- Update the snowflake age.
-					state.timer:Update(lapse)
+				-- Replace a dead flake if desired.
+				elseif states[i] == nil then
+					-- Assign a random alpha to the flake, and pick a horizontal slot.
+					slot = array_index.RotateIndex(slot, nslots)
+
+					-- Choose a position above the screen at the current slot. Choose another
+					-- below the screen, displaced a bit horizontally from the first. Assign a
+					-- random square size to the flake.
+					local size, state, path, count = random(32, 110) / Diameter, GetState(state_cache)
+					local x1, y1 = RBy(sw * (slot - .5), sw), -size * Rand(2, 6)
+					local x2, y2 = RBy(x1, size * 3), Height + size * 2
+
+					-- Build a random curve between the top and bottom positions.
+					local dx, dy = x2 - x1, y2 - y1
+					local mag = sqrt(dx^2 + dy^2)
+					local u_dx, u_dy = dx / mag, dy / mag
+
+					AddToPath(path, x1, y1)
+
+					for j = 2, count - 1 do
+						local t = (j - 1) / (count - 1)
+
+						AddToPath(path, x1 + dx * t - u_dy * Rand(-1.5, 1.5), y1 + dy * t + u_dx * Rand(-1.5, 1.5))
+					end
+
+					AddToPath(path, x2, y2)
+
+					-- Assign a random speed/lifetime to the flake.
+					state.timer:Start(Rand(2, 7))
+
+					-- Assign flake mask properties.
+					flake.alpha = random(32, 100) / 255
+					flake.xScale, flake.yScale = size, size
+					flake.x, flake.y = x1, y1
+
+	--				flake:SetRotationCenter(Rand(0, size), Rand(0, size))
+
+					-- Cache a snowflake with random spin and speed/lifetime.
+					state.da = Rand(-25, 25)
+					state.index = i
+
+					cache[#cache + 1], states[i] = state, false
 				end
-
-			-- Replace a dead flake if desired.
-			elseif states[i] == nil then
-				-- Assign a random alpha to the flake, and pick a horizontal slot.
-				slot = array_index.RotateIndex(slot, nslots)
-
-				-- Choose a position above the screen at the current slot. Choose another
-				-- below the screen, displaced a bit horizontally from the first. Assign a
-				-- random square size to the flake.
-				local size, state, path, count = random(32, 110) / Diameter, GetState(state_cache)
-				local x1, y1 = RBy(sw * (slot - .5), sw), -size * Rand(2, 6)
-				local x2, y2 = RBy(x1, size * 3), Height + size * 2
-
-				-- Build a random curve between the top and bottom positions.
-				local dx, dy = x2 - x1, y2 - y1
-				local mag = sqrt(dx^2 + dy^2)
-				local u_dx, u_dy = dx / mag, dy / mag
-
-				AddToPath(path, x1, y1)
-
-				for i = 2, count - 1 do
-					local t = (i - 1) / (count - 1)
-
-					AddToPath(path, x1 + dx * t - u_dy * Rand(-1.5, 1.5), y1 + dy * t + u_dx * Rand(-1.5, 1.5))
-				end
-
-				AddToPath(path, x2, y2)
-
-				-- Assign a random speed/lifetime to the flake.
-				state.timer:Start(Rand(2, 7))
-
-				-- Assign flake mask properties.
-				flake.alpha = random(32, 100) / 255
-				flake.xScale, flake.yScale = size, size
-				flake.x, flake.y = x1, y1
-
---				flake:SetRotationCenter(Rand(0, size), Rand(0, size))
-
-				-- Cache a snowflake with random spin and speed/lifetime.
-				state.da = Rand(-25, 25)
-				state.index = i
-
-				cache[#cache + 1], states[i] = state, false
 			end
-		end
 
-		-- Put a few cached flakes into play.
-		for _ = 1, min(#cache, new_flake:Check("continue")) do
-			local item = remove(cache)
+			-- Put a few cached flakes into play.
+			for _ = 1, min(#cache, new_flake:Check("continue")) do
+				local item = remove(cache)
 
-			-- Transfer the state from the cache.
-			states[item.index] = item
+				-- Transfer the state from the cache.
+				states[item.index] = item
 
-			-- Display the flake.
-			snowfall[item.index].isVisible = true
-		end
+				-- Display the flake.
+				snowfall[item.index].isVisible = true
+			end
 
-		-- If there are more flakes waiting, update the timer. Otherwise, reset it.
-		if #cache > 0 then
-			new_flake:Update(lapse)
+			-- If there are more flakes waiting, update the timer. Otherwise, reset it.
+			if #cache > 0 then
+				new_flake:Update(lapse)
+			else
+				new_flake:SetCounter(0)
+			end
 		else
-			new_flake:SetCounter(0)
+			timer.cancel(event.source)
 		end
-	end, 35)
+	end, 0)
 
 	return snowfall
 end

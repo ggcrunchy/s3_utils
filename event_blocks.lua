@@ -41,7 +41,6 @@ local pairs = pairs
 local random = math.random
 local rawequal = rawequal
 local remove = table.remove
-local yield = coroutine.yield
 
 -- Modules --
 local require_ex = require("tektite_core.require_ex")
@@ -49,9 +48,9 @@ local bind = require("corona_utils.bind")
 local fx = require("s3_utils.fx")
 local meta = require("tektite_core.table.meta")
 local range = require("tektite_core.number.range")
+local rect_iters = require("iterator_ops.grid.rect")
 local tile_flags = require("s3_utils.tile_flags")
 local tile_maps = require("s3_utils.tile_maps")
-local wrapper = require("coroutine_ops.wrapper")
 
 -- Corona globals --
 local display = display
@@ -62,47 +61,35 @@ local GetFlags = tile_flags.GetFlags
 local GetImage = tile_maps.GetImage
 local SetFlags = tile_flags.SetFlags
 
--- Module --
+-- Exports --
 local M = {}
 
--- Column and row extrema of currently iterated block --
-local CMin, CMax, RMin, RMax
+--
+--
+--
 
--- Block iterator body
-local BlockIter = wrapper.Wrap(function()
-	local left = tile_maps.GetTileIndex(CMin, RMin)
-	local col, ncols = CMin, tile_maps.GetCounts()
+local NCols, NRows
 
-	for row = RMin, RMax do
-		for i = 0, CMax - CMin do
-			yield(left + i, col + i, row)
-		end
-
-		left = left + ncols
-	end
-end)
-
--- Binds column and row extents, performing any clamping and sorting
-local function BindExtents (col1, row1, col2, row2)
-	local ncols, nrows = tile_maps.GetCounts()
-
-	CMin, CMax = range.MinMax_N(col1, col2, ncols)
-	RMin, RMax = range.MinMax_N(row1, row2, nrows)
+local function AuxBlock (col1, row1, col2, row2)
+	return rect_iters.GridIter(col1, row1, col2, row2, NCols)
 end
 
--- Iterates over a block defined by input
+local function GetExtents (col1, row1, col2, row2)
+	col1, col2 = range.MinMax_N(col1, col2, NCols)
+	row1, row2 = range.MinMax_N(row1, row2, NRows)
+
+	return col1, row1, col2, row2
+end
+
 local function Block (col1, row1, col2, row2)
-	BindExtents(col1, row1, col2, row2)
-
-	return BlockIter
+	return AuxBlock(GetExtents(col1, row1, col2, row2))
 end
 
--- Iterates over a block defined by its members
 local function BlockSelf (block)
-	CMin, CMax = block:GetColumns()
-	RMin, RMax = block:GetRows()
+	local col1, col2 = block:GetColumns()
+	local row1, row2 = block:GetRows()
 
-	return BlockIter	
+	return AuxBlock(col1, row1, col2, row2)
 end
 
 -- List of loaded event blocks --
@@ -449,10 +436,10 @@ end
 -- @int col2 Another column...
 -- @int row2 ...and row.
 function EventBlock:SetRect (col1, row1, col2, row2)
-	BindExtents(col1, row1, col2, row2)
+	col1, row1, col2, row2 = GetExtents(col1, row1, col2, row2)
 
-	self.m_cmin, self.m_cmax = CMin, CMax
-	self.m_rmin, self.m_rmax = RMin, RMax
+	self.m_cmin, self.m_cmax = col1, col2
+	self.m_rmin, self.m_rmax = row1, row2
 end
 
 --- Wipes event block state (flags, occupancy) in a given region.
@@ -476,10 +463,12 @@ end
 
 -- Prepares a new event block
 local function NewBlock (col1, row1, col2, row2)
+	col1, row1, col2, row2 = GetExtents(col1, row1, col2, row2)
+
 	-- Validate the block region, saving indices as we go to avoid repeating some work.
 	local block = {}
 
-	for index in Block(col1, row1, col2, row2) do
+	for index in AuxBlock(col1, row1, col2, row2) do
 		assert(not OldFlags[index], "Tile used by another block")
 
 		block[#block + 1] = index
@@ -487,8 +476,8 @@ local function NewBlock (col1, row1, col2, row2)
 
 	-- Now that the true column and row values are known (from running the iterator),
 	-- initialize the current values.
-	block.m_cmin, block.m_rmin = CMin, RMin
-	block.m_cmax, block.m_rmax = CMax, RMax
+	block.m_cmin, block.m_rmin = col1, row1
+	block.m_cmax, block.m_rmax = col2, row2
 	block.m_bgroup = display.newGroup()
 
 	-- Save the initial rect, given the current values --
@@ -711,6 +700,7 @@ for k, v in pairs{
 		Blocks, BlockIDs, Events, FlagsTemp, OldFlags = {}, {}, {}, {}, {}
 		MarkersLayer = level.markers_layer
 		TilesLayer = level.tiles_layer
+		NCols, NRows = tile_maps.GetCounts()
 		-- TODO: leave Events nil
 	end,
 
@@ -766,5 +756,4 @@ end
 -- Install various types of events.
 EventBlockList = require_ex.DoList("config.EventBlocks")
 
--- Export the module.
 return M

@@ -26,11 +26,9 @@
 -- Standard library imports --
 local pairs = pairs
 
--- Modules --
-local timers = require("corona_utils.timers")
-
 -- Corona globals --
 local display = display
+local timer = timer
 
 -- Exports --
 local M = {}
@@ -118,7 +116,7 @@ function M.Shadow (func, arg, shadow)
 		shadow:removeSelf()
 	end
 
-	timers.RepeatEx(function()
+	timer.performWithDelay(25, function(event)
 		if display.isValid(shadow) and (not DecalsLayer or func(shadow, arg) == "quit") then
 			-- TODO: use display.remove()?
 			shadow:removeSelf()
@@ -129,9 +127,9 @@ function M.Shadow (func, arg, shadow)
 				func("quitting", arg)
 			end
 
-			return "cancel"
+			timer.cancel(event.source)
 		end
-	end, 25)
+	end, 0)
 
 	return shadow
 end

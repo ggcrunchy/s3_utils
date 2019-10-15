@@ -33,7 +33,6 @@ local remove = table.remove
 -- Modules --
 local grid = require("tektite_core.array.grid")
 local match_slot_id = require("tektite_core.array.match_slot_id")
-local timers = require("corona_utils.timers")
 
 -- Plugins --
 local memoryBitmap = require("plugin.memoryBitmap")
@@ -41,6 +40,7 @@ local memoryBitmap = require("plugin.memoryBitmap")
 -- Corona globals --
 local display = display
 local graphics = graphics
+local timer = timer
 
 -- Exports --
 local M = {}
@@ -217,7 +217,7 @@ function M.Run (backdrop, opts)
 	-- Run a timer until all units are explored.
 	local on_done = opts and opts.on_done
 
-	return timers.RepeatEx(function(event)
+	return timer.performWithDelay(15, function(event)
 		if nwork + nidle == 0 then
 			-- Remove any display object references and recache the flood fill state.
 			for i = #cells, 1, -1 do
@@ -234,7 +234,7 @@ function M.Run (backdrop, opts)
 				on_done(event.source)
 			end
 
-			return "cancel"
+			timer.cancel(event.source)
 		end
 
 		for _ = 1, niters do
@@ -292,7 +292,7 @@ function M.Run (backdrop, opts)
 		if display.isValid(backdrop) then
 			mtex:invalidate()
 		end
-	end, 15)
+	end, 0)
 end
 
 -- Export the module.
