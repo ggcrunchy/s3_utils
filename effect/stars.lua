@@ -27,20 +27,19 @@
 local cos = math.cos
 local deg = math.deg
 local ipairs = ipairs
-local max = math.max
 local min = math.min
 local pi = math.pi
 local random = math.random
 local sin = math.sin
 local type = type
 
--- Modules --
-local line_ex = require("corona_ui.utils.line_ex")
-
 -- Corona globals --
 local display = display
 local system = system
 local timer = timer
+
+-- Cached module references --
+local _Star_
 
 -- Exports --
 local M = {}
@@ -75,16 +74,16 @@ end
 function M.Star (group, x, y, radius, angle)
 	angle = -Angle / 4 + (angle or 0)
 
-	local star = line_ex.NewLine(group)
+	local x1, y1 = Point(x, y, angle, radius, 0)
+	local x2, y2 = Point(x, y, angle, radius, 1)
 
-	for i = 0, 5 do
+	local star = display.newLine(group, x1, y1, x2, y2)
+
+	for i = 2, 5 do
 		star:append(Point(x, y, angle, radius, i))
 	end
--- TODO: FIXME!
-	star.xReference = x - star.m_x0
-	star.yReference = y - star.m_y0
 
-	return star.m_object
+	return star
 end
 
 -- --
@@ -179,7 +178,7 @@ function M.RingOfStars (group, nstars, x, y, dx, dy, opts)
 
 			stars[i] = display.newImageRect(name, w, h)
 		else
-			stars[i] = M.Star(front, x, y, 10, 0)
+			stars[i] = _Star_(front, x, y, 10, 0)
 		end
 
 		Update(stars[i], (i - 1) * _2pi / nstars, i)
@@ -218,5 +217,7 @@ function M.RingOfStars (group, nstars, x, y, dx, dy, opts)
 
 	return front, back
 end
+
+_Star_ = M.Star
 
 return M

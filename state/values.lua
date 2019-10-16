@@ -142,7 +142,6 @@ function M.GetTypes ()
 	return types, Categories
 end
 
--- Install various types of values.
 ValueList, Categories = require_ex.DoList("config.Values")
 
 return M

@@ -677,7 +677,6 @@ function M.UseTileset (name, prefer_raw)
 	end
 end
 
--- Install the tilesets.
 TilesetList = require_ex.DoList("config.TileSets")
 
 --

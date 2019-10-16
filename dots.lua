@@ -336,7 +336,6 @@ for k, v in pairs{
 	Runtime:addEventListener(k, v)
 end
 
--- Install various types of dots.
 DotList = require_ex.DoList("config.Dots")
 
 _AddBody_ = M.AddBody

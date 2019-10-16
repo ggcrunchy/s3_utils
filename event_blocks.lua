@@ -752,7 +752,6 @@ for k, v in pairs{
 	Runtime:addEventListener(k, v)
 end
 
--- Install various types of events.
 EventBlockList = require_ex.DoList("config.EventBlocks")
 
 return M

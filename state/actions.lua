@@ -162,8 +162,6 @@ function M.GetTypes ()
 	return types, Categories
 end
 
--- Install various types of actions.
 ActionList, Categories = require_ex.DoList("config.Actions")
 
--- Export module.
 return M

@@ -668,7 +668,6 @@ for k, v in pairs(events) do
 	Runtime:addEventListener(k, v)
 end
 
--- Install various types of enemies.
 EnemyList = require_ex.DoList("config.Enemies")
 
 -- TODO: Bosses too?
