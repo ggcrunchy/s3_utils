@@ -55,6 +55,10 @@ local _DeductDot_
 -- Exports --
 local M = {}
 
+--
+--
+--
+
 -- Tile index -> dot map --
 local Dots = {}
 
@@ -244,7 +248,6 @@ local function BlockFunc (what, dot, arg1, arg2)
 	end
 end
 
--- Listen to events.
 for k, v in pairs{
 	-- Act On Dot --
 	act_on_dot = function(event)
@@ -336,9 +339,7 @@ end
 -- Install various types of dots.
 DotList = require_ex.DoList("config.Dots")
 
--- Cache module members.
 _AddBody_ = M.AddBody
 _DeductDot_ = M.DeductDot
 
--- Export the module.
 return M

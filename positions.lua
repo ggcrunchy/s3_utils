@@ -33,6 +33,10 @@ local tile_maps = require("s3_utils.tile_maps")
 -- Exports --
 local M = {}
 
+--
+--
+--
+
 -- Index -> position map --
 local Positions
 
@@ -74,7 +78,6 @@ function M.GetPosition (id)
 	return Positions[id]
 end
 
--- Listen to events.
 for k, v in pairs{
 	-- Enter Level --
 	enter_level = function()
@@ -96,5 +99,4 @@ for k, v in pairs{
 	Runtime:addEventListener(k, v)
 end
 
--- Export the module.
 return M

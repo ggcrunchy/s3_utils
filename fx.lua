@@ -46,6 +46,10 @@ local _DistortionBindCanvasEffect_
 -- Exports --
 local M = {}
 
+--
+--
+--
+
 do
 	--- DOCME
 	function M.DistortionBindCanvasEffect (object, fill, name)
@@ -334,7 +338,6 @@ local UpdateShimmers = ShimmerForEach(function(shimmer, dt)
 	shimmer.rotation = shimmer.rotation + shimmer.m_spin * dt
 end)
 
--- Listen to events.
 for k, v in pairs{
 	-- Enter Frame --
 	enterFrame = function(event)
@@ -383,8 +386,6 @@ for k, v in pairs{
 	Runtime:addEventListener(k, v)
 end
 
--- Cache module members.
 _DistortionBindCanvasEffect_ = M.DistortionBindCanvasEffect
 
--- Export the module.
 return M

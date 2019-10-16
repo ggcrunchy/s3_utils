@@ -44,6 +44,10 @@ local timer = timer
 -- Exports --
 local M = {}
 
+--
+--
+--
+
 -- --
 local Actions = {}
 
@@ -153,7 +157,6 @@ local function EnterFrame ()
 	GetEvent.enter_frame(EventNonce)
 end
 
--- Listen to events.
 for k, v in pairs{
 	-- Enter Level --
 	enter_level = function()
@@ -181,5 +184,4 @@ for k, v in pairs{
 	Runtime:addEventListener(k, v)
 end
 
--- Export the module.
 return M

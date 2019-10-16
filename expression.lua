@@ -737,5 +737,4 @@ function M.Splice (grammar1, grammar2)
 	return new
 end
 
--- Export the module.
 return M

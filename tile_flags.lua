@@ -50,6 +50,10 @@ local _ResolveFlags_
 -- Exports --
 local M = {}
 
+--
+--
+--
+
 -- Name of current flag group --
 local Current
 
@@ -374,7 +378,6 @@ function M.WipeFlags (col1, row1, col2, row2)
 	end
 end
 
--- Listen to events.
 for k, v in pairs{
 	-- Enter Level --
 	enter_level = function(level)
@@ -406,8 +409,6 @@ for k, v in pairs{
 	Runtime:addEventListener(k, v)
 end
 
--- Cache module members.
 _ResolveFlags_ = M.ResolveFlags
 
--- Export the module.
 return M

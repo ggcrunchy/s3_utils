@@ -46,6 +46,10 @@ local Runtime = Runtime
 local M = {}
 
 --
+--
+--
+
+--
 local Names = {
 	{ "UpperLeft", "TopT", "UpperRight", "TopNub", "LeftNub", "Horizontal", "RightNub" },
 	{ "LeftT", "FourWays", "RightT", "Vertical" },
@@ -685,7 +689,6 @@ local function Clear ()
 	Image, Sheet, TextureRects, TileShader, VertexDataNames = nil
 end
 
--- Listen to events.
 for k, v in pairs{
 	-- Leave Level --
 	leave_level = Clear,
@@ -700,5 +703,4 @@ for k, v in pairs{
 	Runtime:addEventListener(k, v)
 end
 
--- Export the module.
 return M

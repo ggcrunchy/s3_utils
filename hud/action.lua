@@ -43,6 +43,10 @@ local transition = transition
 -- Exports --
 local M = {}
 
+--
+--
+--
+
 -- Group for action button and related icons --
 local ActionGroup
 
@@ -310,7 +314,6 @@ function M.AddActionButton (group, do_actions)
 	Sequence = {}
 end
 
--- Listen to events.
 for k, v in pairs{
 	-- Leave Level --
 	leave_level = function()
@@ -348,5 +351,4 @@ for k, v in pairs{
 	Runtime:addEventListener(k, v)
 end
 
--- Export the module.
 return M

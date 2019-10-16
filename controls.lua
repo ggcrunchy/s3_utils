@@ -220,7 +220,6 @@ local function ResetLevel (how)
 	ChangeTo = nil
 end
 
--- Listen to events.
 for k, v in pairs{
 	-- Began Path --
 	began_path = ResetLevel,
@@ -294,5 +293,4 @@ for k, v in pairs{
 	Runtime:addEventListener(k, v)
 end
 
--- Export the module.
 return M

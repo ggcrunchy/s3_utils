@@ -33,6 +33,10 @@ local timer = timer
 -- Exports --
 local M = {}
 
+--
+--
+--
+
 -- Shadow methods --
 local Shadow = {}
 
@@ -134,7 +138,6 @@ function M.Shadow (func, arg, shadow)
 	return shadow
 end
 
--- Listen to events.
 for k, v in pairs{
 	-- Enter Level --
 	enter_level = function(level)
@@ -149,5 +152,4 @@ for k, v in pairs{
 	Runtime:addEventListener(k, v)
 end
 
--- Export the module.
 return M

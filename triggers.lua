@@ -40,6 +40,10 @@ local display = display
 -- Exports --
 local M = {}
 
+--
+--
+--
+
 -- --
 local Triggers
 
@@ -232,7 +236,6 @@ function M.EditorEvent (_, what, arg1, arg2)
 	end
 end
 
--- Listen to events.
 for k, v in pairs{
 	-- Enter Level --
 	enter_level = function()
@@ -256,5 +259,4 @@ for k, v in pairs{
 	Runtime:addEventListener(k, v)
 end
 
--- Export the module.
 return M

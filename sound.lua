@@ -35,6 +35,10 @@ local bind = require("corona_utils.bind")
 -- Exports --
 local M = {}
 
+--
+--
+--
+
 -- --
 local Sounds
 
@@ -195,7 +199,6 @@ end
 -- Any useful flags? (Ongoing vs. cut off? Singleton or instantiable? Looping, already playing...)
 -- Perhaps impose that sound is singleton (or give warning...) if certain actions are linked
 
--- Listen to events.
 for k, v in pairs{
 	-- Enter Level --
 	enter_level = function()
@@ -235,5 +238,4 @@ for k, v in pairs{
 	Runtime:addEventListener(k, v)
 end
 
--- Export the module.
 return M

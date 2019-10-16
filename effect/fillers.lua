@@ -49,6 +49,10 @@ local timer = timer
 -- Exports --
 local M = {}
 
+--
+--
+--
+
 -- Work-in-progress batch --
 local Batch
 
@@ -175,7 +179,6 @@ local function CancelRunning ()
 	end
 end
 
--- Listen to events.
 for k, v in pairs{
 	-- Enter Level --
 	enter_level = function(level)
@@ -201,5 +204,4 @@ for k, v in pairs{
 	Runtime:addEventListener(k, v)
 end
 
--- Export the module.
 return M

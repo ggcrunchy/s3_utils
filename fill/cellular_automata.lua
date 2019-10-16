@@ -33,6 +33,10 @@ local _New_
 -- Exports --
 local M = {}
 
+--
+--
+--
+
 --[[
 	!Name: Gosper glider gun
 	!Author: Bill Gosper
@@ -186,8 +190,6 @@ function M.New (w, h, func, rule)
 	end
 end
 
--- Cache module members.
 _New_ = M.New
 
--- Export the module.
 return M

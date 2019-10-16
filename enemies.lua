@@ -590,7 +590,6 @@ local function Broadcast (name)
 	_BroadcastEvent_(EventToBroadcast)
 end
 
--- Listen to events.
 local events = {
 	-- Enter Level --
 	enter_level = function()

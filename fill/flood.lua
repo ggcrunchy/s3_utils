@@ -45,6 +45,10 @@ local timer = timer
 -- Exports --
 local M = {}
 
+--
+--
+--
+
 -- --
 local CellW, CellH = 16, 16
 
@@ -295,5 +299,4 @@ function M.Run (backdrop, opts)
 	end, 0)
 end
 
--- Export the module.
 return M

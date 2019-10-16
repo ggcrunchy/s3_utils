@@ -46,6 +46,10 @@ local TimerClass = require("tektite_base_classes.Timer")
 -- Exports --
 local M = {}
 
+--
+--
+--
+
 -- --
 local Index
 
@@ -232,5 +236,4 @@ function M.Snowfall (group, images, max)
 	return snowfall
 end
 
--- Export the module.
 return M

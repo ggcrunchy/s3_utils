@@ -51,6 +51,10 @@ local _WallOfArrows_
 -- Exports --
 local M = {}
 
+--
+--
+--
+
 -- --
 local Near = {}
 
@@ -448,10 +452,8 @@ function M.WallOfArrows (group, dir, x1, y1, x2, y2, width, offset)
 	return MakeColumn(group, dir == "backward" and "down" or "up", x1, y1, x2, y2, width, offset)
 end
 
--- Cache module members.
 _LineOfArrows_ = M.LineOfArrows
 _StraightArrow_ = M.StraightArrow
 _WallOfArrows_ = M.WallOfArrows
 
--- Export the module.
 return M

@@ -48,6 +48,10 @@ local _NotZero_
 -- Exports --
 local M = {}
 
+--
+--
+--
+
 -- --
 local BestT, Nx, Ny
 
@@ -303,15 +307,12 @@ function M.WipePath (entity)
 	NoMove[entity] = nil
 end
 
--- Listen to events.
 Runtime:addEventListener("things_loaded", function(level)
 	MaxX = max(level.ncols * level.w, display.contentWidth)
 	MaxY = max(level.nrows * level.h, display.contentHeight)
 end)
 
--- Cache module members.
 _IsClose_ = M.IsClose
 _NotZero_ = M.NotZero
 
--- Export the module.
 return M

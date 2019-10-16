@@ -52,6 +52,10 @@ local _GetTilePos_
 -- Module --
 local M = {}
 
+--
+--
+--
+
 -- Loaded tiles --
 local Tiles
 
@@ -230,7 +234,6 @@ local NullMeta = {
 	end
 }
 
--- Listen to events.
 for k, v in pairs{
 	-- Enter Level --
 	enter_level = function(level)
@@ -249,10 +252,8 @@ for k, v in pairs{
 	Runtime:addEventListener(k, v)
 end
 
--- Cache module members.
 _GetCell_XY_ = M.GetCell_XY
 _GetTileIndex_ = M.GetTileIndex
 _GetTilePos_ = M.GetTilePos
 
--- Export the module.
 return M

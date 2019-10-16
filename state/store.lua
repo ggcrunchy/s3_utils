@@ -98,5 +98,4 @@ function M.Visit (family, func)
 	end
 end
 
--- Export the module.
 return M

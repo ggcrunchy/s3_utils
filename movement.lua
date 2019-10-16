@@ -44,6 +44,10 @@ local _NextDirection_
 -- Exports --
 local M = {}
 
+--
+--
+--
+
 -- Direction lookup --
 local Directions = {
 	left = { to_left = "down", to_right = "up", backward = "right" },
@@ -231,9 +235,7 @@ function M.WayToGo (index, dir1, dir2, dir3, facing)
 	return "backward"
 end
 
--- Cache module members.
 _CanGo_ = M.CanGo
 _NextDirection_ = M.NextDirection
 
--- Export the module.
 return M

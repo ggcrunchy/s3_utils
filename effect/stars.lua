@@ -45,6 +45,10 @@ local timer = timer
 -- Exports --
 local M = {}
 
+--
+--
+--
+
 -- Full circle --
 local _2pi = 2 * pi
 
@@ -215,5 +219,4 @@ function M.RingOfStars (group, nstars, x, y, dx, dy, opts)
 	return front, back
 end
 
--- Export the module.
 return M

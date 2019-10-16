@@ -117,5 +117,4 @@ function M.PrepLinkHelper (prep_link_base, command)
 	end, prep_link_ex
 end
 
--- Export the module.
 return M

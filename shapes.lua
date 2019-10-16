@@ -47,6 +47,10 @@ local IsFlagSet = tile_flags.IsFlagSet
 -- Exports --
 local M = {}
 
+--
+--
+--
+
 -- Lists of shapes to which given points belong --
 local Shapes
 
@@ -335,7 +339,6 @@ local function BakeShapes (event)
 	end
 end
 
--- Listen to events.
 for k, v in pairs{
 	-- Enter Level --
 	enter_level = function(level)
@@ -380,5 +383,4 @@ for k, v in pairs{
 	Runtime:addEventListener(k, v)
 end
 
--- Export the module.
 return M

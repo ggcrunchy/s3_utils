@@ -32,6 +32,10 @@ local _ChooseBranch_Facing_
 -- Exports --
 local M = {}
 
+--
+--
+--
+
 --- Advances the state of an in-progress path.
 -- @param cur Current regular node of path.
 --
@@ -104,8 +108,6 @@ function M.CurrentDir (cur)
 	return cur[cur.index + 1]
 end
 
--- Cache module members.
 _ChooseBranch_Facing_ = M.ChooseBranch_Facing
 
--- Export the module.
 return M

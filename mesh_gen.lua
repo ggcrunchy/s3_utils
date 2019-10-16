@@ -737,9 +737,7 @@ function M.NewTJunction (params)
 	return uvs, verts, indices
 end
 
--- Cache module members.
 _NewQuadrantArc_ = M.NewQuadrantArc
 _NewQuadrantRing_ = M.NewQuadrantRing
 
--- Export the module.
 return M

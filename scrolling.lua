@@ -42,6 +42,10 @@ local _Follow_
 -- Exports --
 local M = {}
 
+--
+--
+--
+
 -- World screen offset --
 local XOffset, YOffset = 0, 0
 
@@ -164,7 +168,6 @@ function M.SetYOffset (offset)
 	YOffset = offset or 0
 end
 
--- Listen to events.
 for k, v in pairs{
 	-- Enter Level --
 	enter_level = function(level)
@@ -180,8 +183,6 @@ for k, v in pairs{
 	Runtime:addEventListener(k, v)
 end
 
--- Cache module members.
 _Follow_ = M.Follow
 
--- Export the module.
 return M

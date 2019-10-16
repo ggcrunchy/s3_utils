@@ -138,5 +138,4 @@ function M.AddJoystick (group)
 	stick.m_base = base
 end
 
--- Export the module.
 return M

@@ -36,6 +36,10 @@ local tile_flags = require("s3_utils.tile_flags")
 -- Exports --
 local M = {}
 
+--
+--
+--
+
 -- Restructures the build information for exploration
 local function PatchUp (probe, visited, paths, start)
 	local tile, dir = probe[1], probe[2]
@@ -217,5 +221,4 @@ function M.FindPath (start, goal)
 	return paths
 end
 
--- Export the module.
 return M

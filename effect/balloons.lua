@@ -39,6 +39,10 @@ local transition = transition
 -- Exports --
 local M = {}
 
+--
+--
+--
+
 -- Adds part of a balloon to a list for updating
 local function AddPart (list, part, x, y)
 	list[#list + 1] = part
@@ -217,5 +221,4 @@ function M.Thought (group, x, y, text, ndots)
 	return tgroup
 end
 
--- Export the module.
 return M

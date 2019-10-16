@@ -172,7 +172,6 @@ function M.PushRect (what, rect, how)
 	Push(Rects, what, rect, how)
 end
 
--- Listen to events.
 for k, v in pairs{
 	-- Enter Level --
 	enter_level = function()

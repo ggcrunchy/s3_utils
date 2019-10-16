@@ -32,6 +32,10 @@ local circle = require("iterator_ops.grid.circle")
 -- Exports --
 local M = {}
 
+--
+--
+--
+
 --- Builds a circle-style, incremental region-filling routine.
 --
 -- No cells outside the rectangular target region are affected, and thus the final result
@@ -97,5 +101,4 @@ function M.SpreadOut (halfx, halfy, func)
 	end
 end
 
--- Export the module.
 return M

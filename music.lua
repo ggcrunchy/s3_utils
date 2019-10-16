@@ -40,6 +40,10 @@ local timer = timer
 -- Exports --
 local M = {}
 
+--
+--
+--
+
 --- DOCME
 function M.AddMenuMusic (info)
 	-- How much can actually be done here? (probably a config file thing...)
@@ -242,7 +246,6 @@ end
 
 -- Some default score (perhaps in LevelMap, if not here), if one not present?
 
--- Listen to events.
 for k, v in pairs{
 	-- Enter Level --
 	enter_level = function(level)
@@ -281,5 +284,4 @@ for k, v in pairs{
 	Runtime:addEventListener(k, v)
 end
 
--- Export the module.
 return M

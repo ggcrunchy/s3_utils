@@ -145,5 +145,4 @@ end
 -- Install various types of values.
 ValueList, Categories = require_ex.DoList("config.Values")
 
--- Export the module.
 return M

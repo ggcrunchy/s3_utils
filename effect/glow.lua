@@ -29,6 +29,10 @@ local transition = transition
 -- Exports --
 local M = {}
 
+--
+--
+--
+
 -- Ping-pong params used to make things glow --
 local GlowParams = { time = 1100, t = 1, transition = easing.inOutQuad, iterations = 0 }
 
@@ -60,7 +64,6 @@ function M.GetGlowTime ()
 	return Glow.t
 end
 
--- Listen to events.
 for k, v in pairs{
 	-- Enter Level --
 	enter_level = function()
@@ -77,5 +80,4 @@ for k, v in pairs{
 	Runtime:addEventListener(k, v)
 end
 
--- Export the module.
 return M
