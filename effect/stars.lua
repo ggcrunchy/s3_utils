@@ -35,7 +35,6 @@ local type = type
 
 -- Corona globals --
 local display = display
-local system = system
 local timer = timer
 
 -- Cached module references --
@@ -87,9 +86,6 @@ function M.Star (group, x, y, radius, angle)
 end
 
 -- --
-local RotateSpeed = .45 * _2pi
-
--- --
 local StarFuncs = {
 	-- Mild rocking --
 	mild_rocking = function(star, t, i)
@@ -113,6 +109,9 @@ for _, set in pairs(StarSets) do
 		set[k] = "s3_utils/assets/fx/Star-" .. v .. ".png"
 	end
 end
+
+-- --
+local RotateSpeed = 1.5 * _2pi
 
 --- DOCME
 -- @pgroup group
@@ -185,14 +184,14 @@ function M.RingOfStars (group, nstars, x, y, dx, dy, opts)
 	end
 
 	--
-	local start = system.getTimer()
+	local delay = 10
 
 	timer.performWithDelay(10, function(event)
 		local front_valid, back_valid = display.isValid(front), display.isValid(back)
 
 		--
 		if front_valid and back_valid then
-			local t = (event.time - start) * RotateSpeed / 1000
+			local t = (event.count * delay) * RotateSpeed / 1000
 			local dt = _2pi / #stars
 
 			for i, star in ipairs(stars) do
@@ -202,7 +201,7 @@ function M.RingOfStars (group, nstars, x, y, dx, dy, opts)
 			end
 
 		--
-		else -- TODO: Replace these with display.remove(), if possible (still seeking confirmation that it's just a synonym)
+		else
 			if front_valid then
 				front:removeSelf()
 			end

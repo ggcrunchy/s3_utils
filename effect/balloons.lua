@@ -32,7 +32,6 @@ local random = math.random
 -- Corona globals --
 local display = display
 local native = native
-local system = system
 local timer = timer
 local transition = transition
 
@@ -168,11 +167,11 @@ function M.Thought (group, x, y, text, ndots)
 	end
 
 	-- Update the balloon until it has been removed.
-	local start = system.getTimer()
+	local delay = 150
 
-	timer.performWithDelay(150, function(event)
+	timer.performWithDelay(delay, function(event)
 		if display.isValid(tgroup) then
-			local elapsed = event.time - start
+			local elapsed = event.count * delay
 			local nshown = ceil(elapsed / DotTime)
 
 			-- Fade in any dots for which time has elapsed.

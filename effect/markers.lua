@@ -40,7 +40,6 @@ local length = require("tektite_core.number.length")
 
 -- Corona globals --
 local display = display
-local system = system
 local timer = timer
 
 -- Cached module references --
@@ -285,12 +284,12 @@ local ArrowRGB = glow.ColorInterpolator(1, 0, 0, 0, 0, 1)
 -- @treturn DisplayGroup H
 function M.PointFromTo (group, from, to, width, alpha, dir)
 	--
-	local delay, aline
+	local sep, aline
 
 	if dir == "forward" or dir == "backward" then
-		delay, aline = 750, _WallOfArrows_(group, dir, from.x, from.y, to.x, to.y, width, 0)
+		sep, aline = 750, _WallOfArrows_(group, dir, from.x, from.y, to.x, to.y, width, 0)
 	else
-		delay, aline = 2500, _LineOfArrows_(group, from.x, from.y, to.x, to.y, width, 0)
+		sep, aline = 2500, _LineOfArrows_(group, from.x, from.y, to.x, to.y, width, 0)
 	end
 
 	--
@@ -298,14 +297,14 @@ function M.PointFromTo (group, from, to, width, alpha, dir)
 
 	aline.alpha = alpha
 
-	local start = system.getTimer()
+	local delay = 25
 
-	timer.performWithDelay(25, function(event)
+	timer.performWithDelay(delay, function(event)
 		if display.isValid(aline) then
-			local dt = (event.time - start) % delay
+			local dt = (event.count * delay) % sep
 
 			aline:SetColor(ArrowRGB())
-			aline:SetEndPoints(from.x, from.y, to.x, to.y, dt / delay)
+			aline:SetEndPoints(from.x, from.y, to.x, to.y, dt / sep)
 		else
 			timer.cancel(event.source)
 		end
