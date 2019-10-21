@@ -34,8 +34,9 @@ local type = type
 local unpack = unpack
 
 -- Modules --
+local includer = require("corona_utils.includer")
+local pi = require("s3_utils.snippets.constants.pi")
 local require_ex = require("tektite_core.require_ex")
-local loader = require("corona_shader.loader")
 
 -- Corona globals --
 local display = display
@@ -381,11 +382,15 @@ local NamePrefix
 -- --
 local VertexData = {}
 
+local FragParams = {}
+
 --
 local function AuxFragment (fcode, name, vdata)
 	Kernel.name = name
 	Kernel.vertexData = vdata
-	Kernel.fragment = loader.FragmentShader(fcode)
+	FragParams.fragment = fcode
+
+	includer.Augment(FragParams, Kernel)
 
 	graphics.defineEffect(Kernel)
 end
@@ -545,7 +550,11 @@ local function GetEffects (ts)
 		--
 		NameID, DatumPrefix, NamePrefix = 0, datum_prefix or "", category .. "." .. gname .. "."
 
-		Kernel.category, Kernel.group, effects = category, gname, {}
+		Kernel.category, Kernel.group, FragParams.requires, effects = category, gname, { pi.PI }, {}
+
+		for i = 1, #(ts.requires or "") do
+			FragParams.requires[#FragParams.requires + 1] = ts.requires[i]
+		end
 
 		effects.raw = LoadEffects(config, prelude)
 
@@ -558,16 +567,14 @@ local function GetEffects (ts)
 			Kernel.category = filter and "filter" or "composite"
 			Kernel.isTimeDependent = ts.isTimeDependent
 
-			local vertex = ts.vertex
-
-			if vertex then
-				Kernel.vertex = loader.VertexShader(vertex)
-			end
+			FragParams.varyings, FragParams.vertex = ts.varyings, ts.vertex
 
 			AuxFragment(EmitComponent .. shader, "tile_shader", ts.vdata)
 
-			effects.tile_shader, Kernel.isTimeDependent, Kernel.vertex = Kernel.category .. "." .. gname .. ".tile_shader"
+			effects.tile_shader, Kernel.isTimeDependent, FragParams.varyings, FragParams.vertex = Kernel.category .. "." .. gname .. ".tile_shader"
 		end
+
+		FragParams.requires = nil
 
 		--
 		Groups[gname] = effects

@@ -24,13 +24,13 @@
 --
 
 -- Standard library imports --
-local ipairs = ipairs
 local random = math.random
 local remove = table.remove
 local require = require
 
 -- Modules --
 local cbe = require("s3_utils.CBEffects.Library")
+local distort = require("s3_utils.snippets.operations.distort")
 local frames = require("corona_utils.frames")
 
 -- Corona globals --
@@ -40,44 +40,12 @@ local graphics = graphics
 local system = system
 local transition = transition
 
--- Cached module references --
-local _DistortionBindCanvasEffect_
-
 -- Exports --
 local M = {}
 
 --
 --
 --
-
-do
-	--- DOCME
-	function M.DistortionBindCanvasEffect (object, fill, name)
-		object.fill = fill
-		object.fill.effect = name
-		object.fill.effect.xdiv = 1 / display.contentWidth
-		object.fill.effect.ydiv = 1 / display.contentHeight
-	end
-
-	--- DOCME
-	function M.DistortionCanvasToPaintAttacher (paint)
-		return function(event)
-			if event.canvas then
-				paint.filename = event.canvas.filename
-				paint.baseDir = event.canvas.baseDir
-			end
-		end
-	end
-
-	--- DOCME
-	function M.DistortionKernelParams ()
-		return {
-			{ index = 0, name = "xdiv" },
-			{ index = 1, name = "ydiv" },
-			{ index = 2, name = "alpha", default = 1, min = 0, max = 1 }
-		}
-	end
-end
 
 do -- Flag effect
 end
@@ -201,7 +169,7 @@ do -- Shimmer effect
 	function M.Shimmer (group, x, y, radius, opts)
 		Loaded = Loaded or not not require("s3_utils.kernel.shimmer")
 
-		local shimmer, influence, spin, time = display.newCircle(group, x, y, radius)
+		local shimmer, influence, spin = display.newCircle(group, x, y, radius)
 
 		if opts then
 			influence, spin = opts.influence, opts.spin
@@ -209,7 +177,7 @@ do -- Shimmer effect
 
 		shimmer.m_spin = spin or 100
 
-		_DistortionBindCanvasEffect_(shimmer, ShimmerFill, "filter.screen.shimmer")
+		distort.BindCanvasEffect(shimmer, ShimmerFill, "filter.screen.shimmer")
 
 		if influence then
 			shimmer.fill.effect.influence = influence
@@ -376,7 +344,7 @@ for k, v in pairs{
 	end,
 
 	-- Set Canvas --
-	set_canvas = M.DistortionCanvasToPaintAttacher(ShimmerFill),
+	set_canvas = distort.CanvasToPaintAttacher(ShimmerFill),
 
 	-- Set Canvas Alpha --
 	set_canvas_alpha = function(event)
@@ -385,7 +353,5 @@ for k, v in pairs{
 } do
 	Runtime:addEventListener(k, v)
 end
-
-_DistortionBindCanvasEffect_ = M.DistortionBindCanvasEffect
 
 return M

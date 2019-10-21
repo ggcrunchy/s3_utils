@@ -1,4 +1,4 @@
---- A shader used to render a shimmering object.
+--- Utilities for certain qualifiers.
 
 --
 -- Permission is hereby granted, free of charge, to any person obtaining
@@ -23,43 +23,44 @@
 -- [ MIT license: http://www.opensource.org/licenses/mit-license.php ]
 --
 
--- Modules --
-local distort = require("s3_utils.snippets.operations.distort")
-local includer = require("corona_utils.includer")
-local iq = require("s3_utils.snippets.noise.iq")
+-- Globals --
+local system = system
+
+-- Exports --
+local M = {}
 
 --
 --
 --
 
-local kernel = { language = "glsl", category = "filter", group = "screen", name = "shimmer" }
+local SupportsHighPrecision = system.getInfo("gpuSupportsHighPrecisionFragmentShaders")
 
-local vertex_data = distort.KernelParams()
+--- DOCME
+function M.DefaultPrecisionOr (alt_precision)
+    return SupportsHighPrecision and "P_DEFAULT" or alt_precision
+end
 
-vertex_data[4] = { name = "influence", index = 3, min = .5, max = 1024., default = 15. }
+local AuxIterPrecision
 
-kernel.vertexData = vertex_data
-kernel.vertex = distort.GetPassThroughVertexKernelSource()
+if SupportsHighPrecision then
+    function AuxIterPrecision (_, prev)
+        if not prev then
+            return "P_DEFAULT", "any"
+        end
+    end
+else
+    function AuxIterPrecision (non_default, prev)
+        if not prev then
+            return "P_DEFAULT", "vertex"
+        elseif prev == "P_DEFAULT" then
+            return non_default, "fragment"
+        end
+    end
+end
 
-includer.Augment({
-	requires = { distort.GET_DISTORT_INFLUENCE, distort.GET_DISTORTED_RGB, iq.OCTAVES },
+--- DOCME
+function M.IterPrecision (non_default)
+    return AuxIterPrecision, non_default or "P_POSITION"
+end
 
-	fragment = [[
-
-	P_COLOR vec4 FragmentKernel (P_UV vec2 uv)
-	{
-		P_UV vec2 uvn = 2. * uv - 1.;
-		P_UV vec2 offset = IQ_Octaves(uv * 14.1, uv * 12.3) * GetDistortInfluence(uvn, .75, CoronaVertexUserData.w);
-		P_COLOR vec3 background = GetDistortedRGB(CoronaSampler0, offset, CoronaVertexUserData);
-
-		return CoronaColorScale(vec4(background, 1.));
-	}
-]]
-
-}, kernel)
-
-kernel.fragment = distort.GetPrelude() .. kernel.fragment
-
-graphics.defineEffect(kernel)
-
-return "filter.screen.shimmer"
+return M

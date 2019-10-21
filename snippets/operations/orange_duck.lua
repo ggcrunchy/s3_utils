@@ -1,4 +1,4 @@
---- A shader used to render a shimmering object.
+--- Useful synonyms for branch-free ops described in [Avoiding Shader Conditionals](http://theorangeduck.com/page/avoiding-shader-conditionals).
 
 --
 -- Permission is hereby granted, free of charge, to any person obtaining
@@ -24,42 +24,33 @@
 --
 
 -- Modules --
-local distort = require("s3_utils.snippets.operations.distort")
 local includer = require("corona_utils.includer")
-local iq = require("s3_utils.snippets.noise.iq")
+
+-- Exports --
+local M = {}
 
 --
 --
 --
 
-local kernel = { language = "glsl", category = "filter", group = "screen", name = "shimmer" }
+--- DOCME
+M.RELATIONAL = includer.AddSnippet[[
 
-local vertex_data = distort.KernelParams()
-
-vertex_data[4] = { name = "influence", index = 3, min = .5, max = 1024., default = 15. }
-
-kernel.vertexData = vertex_data
-kernel.vertex = distort.GetPassThroughVertexKernelSource()
-
-includer.Augment({
-	requires = { distort.GET_DISTORT_INFLUENCE, distort.GET_DISTORTED_RGB, iq.OCTAVES },
-
-	fragment = [[
-
-	P_COLOR vec4 FragmentKernel (P_UV vec2 uv)
-	{
-		P_UV vec2 uvn = 2. * uv - 1.;
-		P_UV vec2 offset = IQ_Octaves(uv * 14.1, uv * 12.3) * GetDistortInfluence(uvn, .75, CoronaVertexUserData.w);
-		P_COLOR vec3 background = GetDistortedRGB(CoronaSampler0, offset, CoronaVertexUserData);
-
-		return CoronaColorScale(vec4(background, 1.));
-	}
+    #define WHEN_EQ(x, y) (1. - abs(sign(x - y)))
+    #define WHEN_NE(x, y) abs(sign(x - y))
+    #define WHEN_GT(x, y) max(sign(x - y), 0.)
+    #define WHEN_LT(x, y) max(sign(y - x), 0.)
+    #define WHEN_GE(x, y) (1. - WHEN_LT(x, y))
+    #define WHEN_LE(x, y) (1. - WHEN_GT(x, y))
 ]]
 
-}, kernel)
+--- DOCME
+M.LOGICAL = includer.AddSnippet[[
 
-kernel.fragment = distort.GetPrelude() .. kernel.fragment
+    #define LOGICAL_AND (a, b) (a * b)
+    #define LOGICAL_NOT (a) (1. - a)
+    #define LOGICAL_OR (a, b) min(a + b, 1.)
+    #define LOGICAL_XOR (a, b) mod(a + b, 2.)
+]]
 
-graphics.defineEffect(kernel)
-
-return "filter.screen.shimmer"
+return M

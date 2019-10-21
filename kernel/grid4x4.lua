@@ -23,13 +23,6 @@
 -- [ MIT license: http://www.opensource.org/licenses/mit-license.php ]
 --
 
--- Modules --
-local loader = require("corona_shader.loader")
-
---
---
---
-
 -- Common vertex userdata components --
 local UberVertexData = {
 	-- These indicate which cells in the underlying 4x4 grid are active. The following
@@ -188,8 +181,8 @@ local Kernels = {}
 local function NewKernel (suffix, prelude)
 	local kernel = { category = "filter", group = "filler", name = "grid4x4_" .. suffix, vertexData = {} }
 
-	kernel.vertex = loader.VertexShader{ prelude = prelude, main = UberVertex }
-	kernel.fragment = loader.FragmentShader{ prelude = prelude, main = UberFragment }
+	kernel.vertex = prelude .. UberVertex
+	kernel.fragment = prelude .. UberFragment
 
 	AddDatum(kernel, "bits")
 

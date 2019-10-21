@@ -108,12 +108,13 @@ local function SetTile (enemy)
 	enemy.m_tile = tile_maps.GetTileIndex_XY(enemy.x, enemy.y)
 end
 
--- Behavior of an enemy after (re)spawning and while waiting to become alive
-local function PhaseIn (enemy, type_info, is_sleeping)
+local function PutInPlace (enemy)
 	SetPos(enemy)
 	SetTile(enemy)
+end
 
-	--
+-- Behavior of an enemy after (re)spawning and while waiting to become alive
+local function PhaseIn (enemy, type_info, is_sleeping)
 	if type_info.Start then
 		type_info.Start(enemy)
 	end
@@ -225,6 +226,8 @@ local function EnemyFunc (event, index, type_info, info)
 
 			WaitToRespawn(enemy, type_info)
 		end
+
+		PutInPlace(enemy)
 	end
 end
 
@@ -504,6 +507,8 @@ function M.SpawnEnemy (group, info, params)
 	collision.SetType(enemy, "enemy")
 
 	enemy.isVisible = false
+
+	PutInPlace(enemy) -- event blocks might need this before timer fires
 
 	local index = #Enemies -- avoid enemy being an upvalue
 

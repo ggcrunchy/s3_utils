@@ -24,7 +24,9 @@
 --
 
 -- Modules --
-local loader = require("corona_shader.loader")
+local includer = require("corona_utils.includer")
+local iq = require("s3_utils.snippets.noise.iq")
+local qualifiers = require("s3_utils.snippets.utils.qualifiers")
 
 --
 --
@@ -69,15 +71,10 @@ local Code = [[
 	}
 ]]
 
-if system.getInfo("gpuSupportsHighPrecisionFragmentShaders") then
-	Code = Code:gsub([[_UV_]], [[P_DEFAULT]])
-	Code = Code:gsub([[_POS_]], [[P_DEFAULT]])
-else
-	Code = Code:gsub([[_UV_]], [[P_UV]])
-	Code = Code:gsub([[_POS_]], [[P_POSITION]])
-end
+Code = Code:gsub("_POS_", qualifiers.DefaultPrecisionOr("P_POSITION"))
+Code = Code:gsub("_UV_", qualifiers.DefaultPrecisionOr("P_UV"))
 
-kernel.fragment = loader.FragmentShader(Code)
+includer.Augment({ requires = { iq.IQ1 }, fragment = Code }, kernel)
 
 graphics.defineEffect(kernel)
 
