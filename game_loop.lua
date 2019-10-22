@@ -31,10 +31,10 @@ local yield = coroutine.yield
 -- Modules --
 local require_ex = require("tektite_core.require_ex")
 local actions = require("s3_utils.state.actions")
+local blocks = require("s3_utils.blocks")
 local _ = require("s3_utils.controls")
 local dots = require("s3_utils.dots")
 local enemies = require("s3_utils.enemies")
-local event_blocks = require("s3_utils.event_blocks")
 local global_events = require("s3_utils.global_events")
 local loop = require_ex.Lazy("corona_boilerplate.game.loop")
 local music = require("s3_utils.music")
@@ -81,9 +81,9 @@ function M.AddThings (current_level, level, params)
 
 	tile_maps.AddTiles(tgroup, level)
 
-	-- ...and the event blocks...
-	for _, block in Ipairs(level.event_blocks) do
-		event_blocks.AddBlock(block, params)
+	-- ...and the blocks...
+	for _, block in Ipairs(level.blocks) do
+		blocks.AddBlock(block, params)
 	end
 
 	-- ...and the dots...

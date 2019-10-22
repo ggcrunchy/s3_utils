@@ -360,7 +360,7 @@ function M.EditorEvent (type, what, arg1, arg2, arg3)
 			arg1:AddSeparator()
 			arg1:AddCheckbox{ text = "Asleep By Default?", value_name = "asleep" }
 			arg1:AddCheckbox{ text = "Fall Asleep If Killed?", value_name = "sleep_on_death" }
-			arg1:AddCheckbox{ text = "Can Attach To Event Block?", value_name = "can_attach" }
+			arg1:AddCheckbox{ text = "Can Attach To Block?", value_name = "can_attach" }
 			arg1:AddSeparator()
 
 		-- Get Link Grouping --
@@ -494,7 +494,7 @@ function M.SpawnEnemy (group, info, params)
 	object_vars.PublishProperties(psl, info.props, Properties, info.uid, enemy)
 
 	-- Find the start tile to (re)spawn the enemy there, and kick off its behavior. Unless
-	-- fixed, this starting position may attach to an event block and be moved around.
+	-- fixed, this starting position may attach to a block and be moved around.
 	enemy.m_start = display.newCircle(group, 0, 0, 5)
 
 	enemy.m_start.isVisible = false
@@ -508,7 +508,7 @@ function M.SpawnEnemy (group, info, params)
 
 	enemy.isVisible = false
 
-	PutInPlace(enemy) -- event blocks might need this before timer fires
+	PutInPlace(enemy) -- blocks might need this before timer fires
 
 	local index = #Enemies -- avoid enemy being an upvalue
 
@@ -596,16 +596,11 @@ local function Broadcast (name)
 end
 
 local events = {
-	-- Enter Level --
-	enter_level = function()
-		EventToBroadcast, Enemies = {}, {}
-	end,
+	-- Block --
+	block = _BroadcastEvent_,
 
-	-- Event Block --
-	event_block = _BroadcastEvent_,
-
-	-- Event Block Setup --
-	event_block_setup = function(event)
+	-- Block Setup --
+	block_setup = function(event)
 		local block = event.block
 		local cmin, cmax = block:GetColumns()
 		local rmin, rmax = block:GetRows()
@@ -621,6 +616,11 @@ local events = {
 				end
 			end
 		end
+	end,
+
+	-- Enter Level --
+	enter_level = function()
+		EventToBroadcast, Enemies = {}, {}
 	end,
 
 	-- Leave Level --

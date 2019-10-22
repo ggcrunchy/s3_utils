@@ -82,7 +82,7 @@ local function GetExtents (col1, row1, col2, row2)
 	return col1, row1, col2, row2
 end
 
-local function Block (col1, row1, col2, row2)
+local function BlockIter (col1, row1, col2, row2)
 	return AuxBlock(GetExtents(col1, row1, col2, row2))
 end
 
@@ -93,10 +93,10 @@ local function BlockSelf (block)
 	return AuxBlock(col1, row1, col2, row2)
 end
 
--- List of loaded event blocks --
+-- List of loaded blocks --
 local Blocks
 
--- Tile -> ID map indicating which event block, if any, occupies a given tile --
+-- Tile -> ID map indicating which block, if any, occupies a given tile --
 local BlockIDs
 
 -- Creation-time values of flags within the block region, for restoration --
@@ -108,19 +108,19 @@ local MarkersLayer
 -- Layers into which block groups are added --
 local TilesLayer
 
--- Wipes event block state at a given tile index
+-- Wipes block state at a given tile index
 local function Wipe (index)
 	BlockIDs[index] = nil
 
 	SetFlags(index, 0)
 end
 
--- Event block methods --
-local EventBlock = {}
+-- Block methods --
+local Block = {}
 
 --- Adds a new group to the block's main group.
 -- @treturn DisplayGroup Added group.
-function EventBlock:AddGroup ()
+function Block:AddGroup ()
 	local new = display.newGroup()
 
 	self.m_bgroup:insert(new)
@@ -137,10 +137,10 @@ end
 
 --- Adds an item to the block's list.
 -- @param item Item to add.
--- @callable func Commands to use on _item_, according to the type of event block.
+-- @callable func Commands to use on _item_, according to the type of block.
 -- @param[opt] arg1 Argument #1 to _func_ (default **false**)...
 -- @param[opt] arg2 ...and #2 (ditto).
-function EventBlock:AddToList (item, func, arg1, arg2)
+function Block:AddToList (item, func, arg1, arg2)
 	local list = self.m_list or { top = 0 }
 
 	list.top = AuxAddToList(list, list.top, item, func, arg1, arg2)
@@ -153,9 +153,9 @@ local Dynamic
 
 --- Adds an item to the block's list.
 -- @param item Item to add.
--- @callable func Commands to use on _item_, according to the type of event block.
+-- @callable func Commands to use on _item_, according to the type of block.
 -- @treturn function X
-function EventBlock:AddToList_Dynamic (item, func, arg1, arg2)
+function Block:AddToList_Dynamic (item, func, arg1, arg2)
 	local list = self.m_dynamic_list or {}
 
 	Dynamic = Dynamic or {}
@@ -200,10 +200,10 @@ end
 -- or already occupied by this block?
 -- @treturn uint If the first return value is **false**, the number of conflicting tiles.
 -- Otherwise, 0.
-function EventBlock:CanOccupy (col1, row1, col2, row2)
+function Block:CanOccupy (col1, row1, col2, row2)
 	local count, id = 0, self.m_id
 
-	for index in Block(col1, row1, col2, row2) do
+	for index in BlockIter(col1, row1, col2, row2) do
 		local bid = BlockIDs[index]
 
 		if bid and bid ~= id then
@@ -219,7 +219,7 @@ end
 -- @uint nmax ...and maximum.
 -- @treturn uint Total time elapsed, in milliseconds, by effect.
 -- @see s3_utils.fx.Poof
-function EventBlock:Dust (nmin, nmax)
+function Block:Dust (nmin, nmax)
 	local total = 0
 
 	for _ = 1, random(nmin, nmax) do
@@ -239,17 +239,17 @@ end
 -- @int row1 ... and row.
 -- @int col2 Another column...
 -- @int row2 ...and row.
-function EventBlock:FillRect (col1, row1, col2, row2)
+function Block:FillRect (col1, row1, col2, row2)
 	local id = self.m_id
 
-	for index in Block(col1, row1, col2, row2) do
+	for index in BlockIter(col1, row1, col2, row2) do
 		BlockIDs[index] = id
 	end
 end
 
---- Variant of @{EventBlock:FillRect} that fills the current rect.
--- @see EventBlock:SetRect
-function EventBlock:FillSelf ()
+--- Variant of @{Block:FillRect} that fills the current rect.
+-- @see Block:SetRect
+function Block:FillSelf ()
 	local id = self.m_id
 
 	for index in BlockSelf(self) do
@@ -260,19 +260,19 @@ end
 --- Getter.
 -- @treturn int Minimum column...
 -- @treturn int ...and maximum.
-function EventBlock:GetColumns ()
+function Block:GetColumns ()
 	return self.m_cmin, self.m_cmax
 end
 
 --- Getter.
 -- @treturn DisplayGroup The block's main group.
-function EventBlock:GetGroup ()
+function Block:GetGroup ()
 	return self.m_bgroup
 end
 
 --- Getter.
 -- @treturn DisplayGroup The block's image group.
-function EventBlock:GetImageGroup ()
+function Block:GetImageGroup ()
 	return self.m_igroup
 end
 
@@ -282,7 +282,7 @@ end
 -- @treturn int ...and row.
 -- @treturn int Maximum column...
 -- @treturn int ...and row.
-function EventBlock:GetInitialRect (flagged)
+function Block:GetInitialRect (flagged)
 	if flagged then
 		local cmin, rmin = self.m_cmax_save, self.m_rmax_save
 		local cmax, rmax = self.m_cmin_save, self.m_rmin_save
@@ -304,20 +304,20 @@ end
 -- @int index Tile index.
 -- @treturn uint Tile flags at block creation time.
 -- @see s3_utils.tile_flags.GetFlags
-function EventBlock:GetOldFlags (index)
+function Block:GetOldFlags (index)
 	return OldFlags[index] or 0
 end
 
 --- Getter.
 -- @treturn int Minimum row...
 -- @treturn int ...and maximum.
-function EventBlock:GetRows ()
+function Block:GetRows ()
 	return self.m_rmin, self.m_rmax
 end
 
 --- Getters.
 -- @treturn boolean List has items?
-function EventBlock:HasItems ()
+function Block:HasItems ()
 	return self.m_list ~= nil
 end
 
@@ -326,7 +326,7 @@ end
 --
 -- By default, the image group belongs to the main group.
 -- @treturn DisplayGroup The injected group.
-function EventBlock:InjectGroup ()
+function Block:InjectGroup ()
 	local new, parent = display.newGroup(), self.m_igroup.parent
 
 	new:insert(self.m_igroup)
@@ -341,8 +341,8 @@ end
 -- @int col2 Another column...
 -- @int row2 ...and row.
 -- @treturn iterator Supplies tile index, column, row.
-function EventBlock:Iter (col1, row1, col2, row2)
-	return Block(col1, row1, col2, row2)
+function Block:Iter (col1, row1, col2, row2)
+	return BlockIter(col1, row1, col2, row2)
 end
 
 -- Helper to iterate list
@@ -374,9 +374,9 @@ end
 
 --- Performs some operation on each item in the list.
 -- @callable visit Visitor function, called as `visit(item, func, arg1, arg2)`, with inputs
--- as assigned by @{EventBlock:AddToList}.
+-- as assigned by @{Block:AddToList}.
 -- @treturn iterator Supplies tile index, item, commands function, argument #1, argument #2.
-function EventBlock:IterList (visit)
+function Block:IterList (visit)
 	local list, dlist = self.m_list, self.m_dynamic_list
 
 	if dlist then
@@ -388,10 +388,10 @@ function EventBlock:IterList (visit)
 	return AuxIterList, list, -3
 end
 
---- Variant of @{EventBlock:Iter} that iterates over the current rect.
+--- Variant of @{Block:Iter} that iterates over the current rect.
 -- @treturn iterator Supplies tile index, column, row.
--- @see EventBlock:SetRect
-function EventBlock:IterSelf ()
+-- @see Block:SetRect
+function Block:IterSelf ()
 	return BlockSelf(self)
 end
 
@@ -401,7 +401,7 @@ local FlagsTemp
 --- Populates the flags in another group with the block's old flags, zeroing out a one-cell
 -- rect around them for safety.
 -- @param[opt=self] name Name of flag group, cf. @{tile_flags.UseFlags}.
-function EventBlock:MakeIsland (name)
+function Block:MakeIsland (name)
 	for index in self:IterSelf() do
 		FlagsTemp[index] = GetFlags(index)
 	end
@@ -422,7 +422,7 @@ end
 
 --- Sets the block's current rect, as used by the ***Self** methods.
 --
--- Until this call, the current rect will be equivalent to @{EventBlock:GetInitialRect}'s
+-- Until this call, the current rect will be equivalent to @{Block:GetInitialRect}'s
 -- result (with _flagged_ false).
 --
 -- If the rect is null, those methods will be no-ops.
@@ -430,33 +430,33 @@ end
 -- @int row1 ...and row.
 -- @int col2 Another column...
 -- @int row2 ...and row.
-function EventBlock:SetRect (col1, row1, col2, row2)
+function Block:SetRect (col1, row1, col2, row2)
 	col1, row1, col2, row2 = GetExtents(col1, row1, col2, row2)
 
 	self.m_cmin, self.m_cmax = col1, col2
 	self.m_rmin, self.m_rmax = row1, row2
 end
 
---- Wipes event block state (flags, occupancy) in a given region.
+--- Wipes block state (flags, occupancy) in a given region.
 -- @int col1 A column...
 -- @int row1 ... and row.
 -- @int col2 Another column...
 -- @int row2 ...and row.
-function EventBlock:WipeRect (col1, row1, col2, row2)
-	for index in Block(col1, row1, col2, row2) do
+function Block:WipeRect (col1, row1, col2, row2)
+	for index in BlockIter(col1, row1, col2, row2) do
 		Wipe(index)
 	end
 end
 
---- Variant of @{EventBlock:WipeRect} that wipes the current rect.
--- @see EventBlock:SetRect
-function EventBlock:WipeSelf ()
+--- Variant of @{Block:WipeRect} that wipes the current rect.
+-- @see Block:SetRect
+function Block:WipeSelf ()
 	for index in BlockSelf(self) do
 		Wipe(index)
 	end
 end
 
--- Prepares a new event block
+-- Prepares a new block
 local function NewBlock (col1, row1, col2, row2)
 	col1, row1, col2, row2 = GetExtents(col1, row1, col2, row2)
 
@@ -499,31 +499,31 @@ local function NewBlock (col1, row1, col2, row2)
 
 	Blocks[block.m_id] = block
 
-	meta.Augment(block, EventBlock)
+	meta.Augment(block, Block)
 
 	return block
 end
 
+-- Block type lookup table --
+local BlockList
+
 -- Block events --
 local Events
-
--- Event block type lookup table --
-local EventBlockList
 
 --- Adds a block to the level and registers an event for it.
 -- @ptable info Block info, with at least the following properties:
 --
 -- * **name**: **string** The event is registered under this name, which should be unique
--- among event blocks.
+-- among blocks.
 -- * **type**: **string** One of the choices reported by @{GetTypes}.
 -- * **col1**, **row1**, **col2**, **row2**: **int** Columns and rows defining the block.
 -- These will be sorted and clamped, as with block operations.
 --
--- @todo Detect null blocks? Mention construction, EventBlock:Reset
+-- @todo Detect null blocks? Mention construction, Block:Reset
 -- @ptable params
 function M.AddBlock (info, params)
 	local block = NewBlock(info.col1, info.row1, info.col2, info.row2)
-	local event = assert(EventBlockList[info.type], "Invalid event block").make(info, block)
+	local event = assert(BlockList[info.type], "Invalid block").make(info, block)
 
 	params:GetPubSubList():--[[bind.]]Publish(--[[params.pub_sub_list, ]]event, info.uid, "fire")
 
@@ -537,18 +537,18 @@ end
 -- Keys referenced in editor event --
 local BlockKeys = { "type", "col1", "row1", "col2", "row2" }
 
---- Handler for event block-related events sent by the editor.
+--- Handler for block-related events sent by the editor.
 --
 -- If an editor event function is available for _type_, if will be called afterward as
 -- `func(what, arg1, arg2, arg3)`.
--- @string type Event block type, as listed by @{GetTypes}.
+-- @string type Block type, as listed by @{GetTypes}.
 -- @string what Name of event.
 -- @param arg1 Argument #1.
 -- @param arg2 Argument #2.
 -- @param arg3 Argument #3.
 -- @return Result(s) of the event, if any.
 function M.EditorEvent (type, what, arg1, arg2, arg3)
-	local cons = EventBlockList[type].editor
+	local cons = BlockList[type].editor
 
 	if cons then
 		local event = cons--("editor_event")
@@ -588,7 +588,7 @@ function M.EditorEvent (type, what, arg1, arg2, arg3)
 
 		-- Get Tag --
 		elseif what == "get_tag" then
-			return "event_block"
+			return "block"
 
 		-- New Tag --
 		elseif what == "new_tag" then
@@ -648,11 +648,11 @@ function M.GetEvent (name)
 end
 
 --- Getter.
--- @treturn {string,...} Unordered list of event block type names.
+-- @treturn {string,...} Unordered list of block type names.
 function M.GetTypes ()
 	local types = {}
 
-	for k in pairs(EventBlockList) do
+	for k in pairs(BlockList) do
 		types[#types + 1] = k
 	end
 
@@ -730,7 +730,7 @@ for k, v in pairs{
 
 	-- Things Loaded --
 	things_loaded = function()
-		local event = { name = "event_block_setup" }
+		local event = { name = "block_setup" }
 
 		for _, block in ipairs(Blocks) do
 			event.block = block
@@ -742,6 +742,6 @@ for k, v in pairs{
 	Runtime:addEventListener(k, v)
 end
 
-EventBlockList = require_ex.DoList("config.EventBlocks")
+BlockList = require_ex.DoList("config.Blocks")
 
 return M

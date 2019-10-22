@@ -181,7 +181,7 @@ function M.EditorEvent (type, what, arg1, arg2, arg3)
 			arg1:StockElements(event and event("get_thumb_filename"))
 			arg1:AddSeparator()
 --			arg1:AddCheckbox{ text = "On By Default?", value_name = "starts_on" }
-			arg1:AddCheckbox{ text = "Can Attach To Event Block?", value_name = "can_attach" }
+			arg1:AddCheckbox{ text = "Can Attach To Block?", value_name = "can_attach" }
 			arg1:AddSeparator()
 
 		-- Verify --
@@ -267,15 +267,8 @@ for k, v in pairs{
 		end
 	end,
 
-	-- Enter Level --
-	enter_level = function()
-		Remaining = 0
-
-		Runtime:addEventListener("enterFrame", OnEnterFrame)
-	end,
-
-	-- Event Block Setup --
-	event_block_setup = function(event)
+	-- Block Setup --
+	block_setup = function(event)
 		-- Sort the dots so that they may be incrementally traversed as we iterate the block.
 		if not Dots.sorted then
 			sort(Dots, DotLess)
@@ -283,7 +276,7 @@ for k, v in pairs{
 			Dots.sorted = true
 		end
 
-		-- Accumulate any non-omitted dot inside the event block region into its list.
+		-- Accumulate any non-omitted dot inside the eblock region into its list.
 		local block = event.block
 		local slot, n = 1, #Dots
 
@@ -294,10 +287,17 @@ for k, v in pairs{
 
 			local dot = Dots[slot]
 
-			if dot and dot.m_index == index and not dot.omit_from_event_blocks_P then
+			if dot and dot.m_index == index and not dot.omit_from_blocks_P then
 				block:AddToList(dot, BlockFunc, dot.x, dot.y)
 			end
 		end
+	end,
+
+	-- Enter Level --
+	enter_level = function()
+		Remaining = 0
+
+		Runtime:addEventListener("enterFrame", OnEnterFrame)
 	end,
 
 	-- Leave Level --
