@@ -44,7 +44,7 @@ local remove = table.remove
 
 -- Modules --
 local require_ex = require("tektite_core.require_ex")
-local bind = require("corona_utils.bind")
+local call = require("corona_utils.call")
 local fx = require("s3_utils.fx")
 local meta = require("tektite_core.table.meta")
 local range = require("tektite_core.number.range")
@@ -55,6 +55,7 @@ local tile_maps = require("s3_utils.tile_maps")
 -- Corona globals --
 local display = display
 local Runtime = Runtime
+local system = system
 
 -- Imports --
 local GetFlags = tile_flags.GetFlags
@@ -334,12 +335,6 @@ function EventBlock:InjectGroup ()
 	return new
 end
 
---- DOCME
-function EventBlock:IsDone ()
-	-- TODO: send message back to event itself
-	return self.m_cmds("is_done")
-end
-
 --- Iterates over a given region.
 -- @int col1 A column...
 -- @int row1 ... and row.
@@ -466,7 +461,7 @@ local function NewBlock (col1, row1, col2, row2)
 	col1, row1, col2, row2 = GetExtents(col1, row1, col2, row2)
 
 	-- Validate the block region, saving indices as we go to avoid repeating some work.
-	local block = {}
+	local block = system.newEventDispatcher()
 
 	for index in AuxBlock(col1, row1, col2, row2) do
 		assert(not OldFlags[index], "Tile used by another block")
@@ -528,12 +523,11 @@ local EventBlockList
 -- @ptable params
 function M.AddBlock (info, params)
 	local block = NewBlock(info.col1, info.row1, info.col2, info.row2)
-	local event, cmds = assert(EventBlockList[info.type], "Invalid event block").make(info, block)
+	local event = assert(EventBlockList[info.type], "Invalid event block").make(info, block)
 
 	params:GetPubSubList():--[[bind.]]Publish(--[[params.pub_sub_list, ]]event, info.uid, "fire")
-	bind.SetActionCommands(event, cmds)
 
-	block.m_cmds = cmds
+	call.Redirect(event, block)
 
 	if Events then -- TODO: only set up for debugging
 		Events[#Events + 1] = event
@@ -621,16 +615,13 @@ end
 
 --- Fires all events.
 -- @bool forward Forward boolean, argument to event's **"fire"** handler.
-function M.FireAll (forward) -- to do, add "setup" that actually ensures Events exists...
+function M.FireAll (forward)
 	forward = not not forward
 
-	for _, v in ipairs(Events) do -- TODO: for i = #(Events or "") do / local v = Events[i]
-									-- and so on
-		local commands = bind.GetActionCommands(v)
+	for i = 1, #(Events or "") do
+		local v = Events[i]
 
-		if commands then
-			commands("set_direction", forward)
-		end
+		call.DispatchOrHandleNamedEvent_NamedArg("set_direction", v, "dir", forward)
 
 		v()
 	end
@@ -653,9 +644,8 @@ end
 -- the only one we care about so far)... or maybe JUST the forward boolean, since the
 -- hint might as well be compatible with fire?
 function M.GetEvent (name)
-	return Events[name] or function() end -- TODO: Remove this function?
+	return Events and Events[name]
 end
--- TODO: used anywhere but for debug?
 
 --- Getter.
 -- @treturn {string,...} Unordered list of event block type names.

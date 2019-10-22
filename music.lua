@@ -26,16 +26,15 @@
 -- Standard library imports --
 local ipairs = ipairs
 local pairs = pairs
-local rawequal = rawequal
 
 -- Modules --
 local adaptive = require("tektite_core.table.adaptive")
 local audio = require("corona_utils.audio")
 local bind = require("corona_utils.bind")
-local entity = require("corona_utils.entity")
+local call = require("corona_utils.call")
 
 -- Corona globals --
-local timer = timer
+local system = system
 
 -- Exports --
 local M = {}
@@ -61,27 +60,15 @@ local function PlayNewTrack (group)
 	group:PlaySound("track")
 end
 
-local GetMusic, Nonce = entity.SelfRedirecter()
-
 -- --
 local Actions = {
 	-- Play --
 	do_play = function(music)
 		local function play (arg)
-			if rawequal(arg, Nonce) then
-				return music
-			else
-				return PlayNewTrack(music.group)
-			end
+			return PlayNewTrack(music.group)
 		end
 
-		bind.SetActionCommands(play, function(what)
-			if what == "is_done" then
-				return not music.group:IsActive()
-			end
-		end)
-	--	entity.Redirect(play, GetMusic)
-	--		and add "is_done" property to music
+		call.Redirect(play, music)
 
 		return play
 	end,
@@ -92,13 +79,7 @@ local Actions = {
 			return music.group:PlaySound("track")
 		end
 
-		bind.SetActionCommands(play, function(what)
-			if what == "is_done" then
-				return not music.group:IsActive()
-			end
-		end)
-
-		-- TODO: as with do_play
+		call.Redirect(play, music)
 
 		return play
 	end,
@@ -135,10 +116,14 @@ end
 -- --
 local PlayOnEnter, PlayOnReset
 
+local function IsDone (music)
+	return not music.group:IsActive()
+end
+
 --- DOCME
 function M.AddMusic (info, params)
 	--
-	local music, track = {}, { file = info.filename, is_streaming = true, loops = info.looping and "forever" or info.loop_count }
+	local music, track = system.newEventDispatcher(), { file = info.filename, is_streaming = true, loops = info.looping and "forever" or info.loop_count }
 
 	if info.on_done or info.on_stop then
 		function track.on_complete (done)
@@ -170,6 +155,10 @@ function M.AddMusic (info, params)
 	for k in adaptive.IterSet(info.actions) do
 		bind.Publish(psl, Actions[k](music), info.uid, k)
 	end
+
+	music.is_done = IsDone
+
+	music:addEventListener("is_done")
 
 	--
 	Music[#Music + 1] = music

@@ -47,7 +47,7 @@ local ActionList, Categories
 local Next = bind.BroadcastBuilder_Helper(nil)
 
 -- --
-local NamedSources = meta.Weak("v") 
+local NamedSources = meta.WeakKeyed()
 
 --- DOCME
 function M.AddAction (info, params)

@@ -31,6 +31,10 @@ local pairs = pairs
 local adaptive = require("tektite_core.table.adaptive")
 local audio = require("corona_utils.audio")
 local bind = require("corona_utils.bind")
+local call = require("corona_utils.call")
+
+-- Corona globals --
+local system = system
 
 -- Exports --
 local M = {}
@@ -50,11 +54,7 @@ local Actions = {
 			return sound.group:PlaySound("sample")
 		end
 
-		bind.SetActionCommands(play, function(what)
-			if what == "is_done" then
-				return not sound.group:IsActive()
-			end
-		end)
+		call.Redirect(play, sound)
 
 		return play
 	end,
@@ -88,6 +88,10 @@ for _, v in ipairs{ "on_done", "on_stop" } do
 	Events[v] = bind.BroadcastBuilder_Helper()
 end
 
+local function IsDone (sound)
+	return not sound.group:IsActive()
+end
+
 --- DOCME
 function M.AddSound (info, params)
 	--
@@ -95,7 +99,9 @@ function M.AddSound (info, params)
 		file = info.filename,
 		is_streaming = info.streaming,
 		loops = info.looping and "forever" or info.loop_count
-	}, { stop_on_reset = not info.persist_on_reset }
+	}, system.newEventDispatcher()
+
+	sound.stop_on_reset = not info.persist_on_reset
 
 	if info.on_done or info.on_stop then
 		function sample.on_complete (done)
@@ -118,6 +124,10 @@ function M.AddSound (info, params)
 	for k in adaptive.IterSet(info.actions) do
 		bind.Publish(psl, Actions[k](sound), info.uid, k)
 	end
+
+	sound.is_done = IsDone
+
+	sound:addEventListener("is_done")
 
 	--
 	Sounds[#Sounds + 1] = sound
