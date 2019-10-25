@@ -95,28 +95,6 @@ function M.GetExpansions ()
 	return expansions
 end
 
--- --
-local TextureRects = {}
-
---
-local function GetRect (name_or_index)
-	return assert(TextureRects[NameToIndex[name_or_index] or name_or_index], "Invalid index or name")
-end
-
---- DOCME
-function M.GetFrameBounds (index)
-	local rect = GetRect(index)
-
-	return rect.u1, rect.v1, rect.u2, rect.v2
-end
-
---- DOCME
-function M.GetFrameCenter (index)
-	local rect = GetRect(index)
-
-	return (rect.u1 + rect.u2) / 2, (rect.v1 + rect.v2) / 2
-end
-
 --- DOCME
 function M.GetFrameFromName (name)
 	return NameToIndex[name]
@@ -583,6 +561,8 @@ local function GetEffects (ts)
 	return effects
 end
 
+local TextureRects = {}
+
 --
 function M.UseTileset (name, prefer_raw)
 	local ts = assert(TilesetList[name], "Invalid tileset")
@@ -671,7 +651,7 @@ function M.UseTileset (name, prefer_raw)
 			local index = 1
 
 			for _, row in ipairs(Names) do -- can leave empty TileShader rect alone
-				for ci, name in ipairs(row) do
+				for _, name in ipairs(row) do
 					index, cache[index].fill.effect = index + 1, list[name]
 				end
 			end
