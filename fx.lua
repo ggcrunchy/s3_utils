@@ -94,27 +94,6 @@ local function Vent (params, group, x, y, time)
 	return vent
 end
 
-do -- POOF! effect
-	local ParticleParams = {
-		preset = "smoke", physics = { xDamping = 2, yDamping = 3 },
-		emitDelay = 100, fadeInTime = 400, perEmit = 3, scale = .3
-	}
-
-	--- A small poof! cloud.
-	-- @pgroup group Display group that will hold display objects produced by effect.
-	-- @number x Approximate x-coordinate of effect.
-	-- @number y Approximate y-coordinate of effect.
-	-- @treturn uint Death time of poof.
-	function M.Poof (group, x, y)
-		local time = random(400, 1100)
-		local vent = Vent(ParticleParams, group, x, y, time)
-
-		vent:start()
-
-		return time
-	end
-end
-
 do -- POW! effect
 	-- Fade-out part of effect --
 	local Done = { time = 100, delay = 50, alpha = .25, transition = easing.outExpo, onComplete = display.remove }

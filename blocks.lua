@@ -38,14 +38,12 @@ local ipairs = ipairs
 local max = math.max
 local min = math.min
 local pairs = pairs
-local random = math.random
 local rawequal = rawequal
 local remove = table.remove
 
 -- Modules --
 local require_ex = require("tektite_core.require_ex")
 local call = require("corona_utils.call")
-local fx = require("s3_utils.fx")
 local meta = require("tektite_core.table.meta")
 local range = require("tektite_core.number.range")
 local rect_iters = require("iterator_ops.grid.rect")
@@ -214,26 +212,6 @@ function Block:CanOccupy (col1, row1, col2, row2)
 	return count == 0, count
 end
 
---- Triggers a dust effect over the block's region.
--- @uint nmin Minimum number of clouds to randomly throw up...
--- @uint nmax ...and maximum.
--- @treturn uint Total time elapsed, in milliseconds, by effect.
--- @see s3_utils.fx.Poof
-function Block:Dust (nmin, nmax)
-	local total = 0
-
-	for _ = 1, random(nmin, nmax) do
-		local col, row = random(self.m_cmin, self.m_cmax), random(self.m_rmin, self.m_rmax)
-		local index = tile_maps.GetTileIndex(col, row)
-		local x, y = tile_maps.GetTilePos(index)
-
-		total = max(total, fx.Poof(MarkersLayer, x, y))
-	end
-
-	return total
-end
--- TODO: ^^^ too hard-coded, remove
-
 --- Fills a region with occupancy information matching this block.
 -- @int col1 A column...
 -- @int row1 ... and row.
@@ -372,11 +350,9 @@ local function AddDynamicItems (block, dlist, list)
 	return list
 end
 
---- Performs some operation on each item in the list.
--- @callable visit Visitor function, called as `visit(item, func, arg1, arg2)`, with inputs
--- as assigned by @{Block:AddToList}.
+--- Iterate over each item in the list.
 -- @treturn iterator Supplies tile index, item, commands function, argument #1, argument #2.
-function Block:IterList (visit)
+function Block:IterList ()
 	local list, dlist = self.m_list, self.m_dynamic_list
 
 	if dlist then
