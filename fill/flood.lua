@@ -31,11 +31,9 @@ local random = math.random
 local remove = table.remove
 
 -- Modules --
+local bitmap = require("s3_utils.bitmap")
 local grid = require("tektite_core.array.grid")
 local match_slot_id = require("tektite_core.array.match_slot_id")
-
--- Plugins --
-local memoryBitmap = require("plugin.memoryBitmap")
 
 -- Corona globals --
 local display = display
@@ -154,15 +152,6 @@ end
 -- Cache of grid use wrappers --
 local Used = {}
 
--- Adjust dimensions to mask-appropriate amounts
-local function RoundUpMask (x)
-	local xx = x + 13 -- 3 black pixels per side, for mask, plus 7 to round
-					  -- all but multiples of 8 past the next such multiple
-	local dim = xx - xx % 8 -- Remove the overshot to land on a multiple
-
-	return dim, (dim - x) / 2
-end
-
 --- Runs the effect.
 -- @ptable[opt] opts Fill options. Fields:
 --
@@ -206,9 +195,8 @@ function M.Run (backdrop, opts)
 	end
 
 	-- Add the backdrop.
-	local w2, xx = RoundUpMask(xmax)
-	local h2, yy = RoundUpMask(ymax)
-	local mtex = memoryBitmap.newTexture{ width = w2, height = h2, format = "mask" }
+	local mtex = bitmap.newTexture{ width = xmax, height = ymax, format = "mask" }
+	local xx, yy = (mtex.width - xmax) / 2, (mtex.height - ymax) / 2
 	local mask = graphics.newMask(mtex.filename, mtex.baseDir)
 
 	backdrop:addEventListener("finalize", function()

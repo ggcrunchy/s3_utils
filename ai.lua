@@ -38,7 +38,7 @@ local tile_flags = require("s3_utils.tile_flags")
 local tile_maps = require("s3_utils.tile_maps")
 
 -- Plugins --
-local mwc = require("plugins.mwc")
+local mwc = require("plugin.mwc")
 
 -- Corona globals --
 local display = display
