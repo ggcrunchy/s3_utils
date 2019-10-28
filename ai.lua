@@ -33,10 +33,12 @@ local type = type
 -- Modules --
 local flow = require("coroutine_ops.flow")
 local movement = require("s3_utils.movement")
-local mwc_rng = require("number_sequences.mwc_rng")
 local range = require("tektite_core.number.range")
 local tile_flags = require("s3_utils.tile_flags")
 local tile_maps = require("s3_utils.tile_maps")
+
+-- Plugins --
+local mwc = require("plugins.mwc")
 
 -- Corona globals --
 local display = display
@@ -221,7 +223,7 @@ function M.StartWithGenerator (enemy)
 	local life = enemy.m_life
 
 	enemy.m_life = (life or 0) + 1
-	enemy.m_gen = mwc_rng.MakeGenerator{ z = enemy.m_tile or 0, w = enemy.m_life }
+	enemy.m_gen = mwc.MakeGenerator{ z = enemy.m_tile or 0, w = enemy.m_life }
 
 	return life == nil
 end
