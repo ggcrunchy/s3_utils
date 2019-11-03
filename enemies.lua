@@ -37,6 +37,7 @@ local adaptive = require("tektite_core.table.adaptive")
 local bind = require("corona_utils.bind")
 local call = require("corona_utils.call")
 local collision = require("corona_utils.collision")
+local component = require("tektite_core.component")
 local enemy_events = require("annex.EnemyEvents")
 local flow_ops = require("coroutine_ops.flow")
 local object_vars = require("config.ObjectVariables")
@@ -430,6 +431,8 @@ for _, v in ipairs{ "on_die", "on_wake" } do
 	Events[v] = call.NewDispatcher()--bind.BroadcastBuilder_Helper()
 end
 
+local EnemyComponent = component.RegisterType{ name = "enemy", interfaces = { "harmable", "harmful", "damage" } }
+
 --- Add a new enemy of type _name_ to the level.
 --
 -- An enemy follows the life cycle: **wait for (re)spawn &rArr; phase-in &rArr; alive
@@ -505,6 +508,7 @@ function M.SpawnEnemy (group, info, params)
 
 	collision.MakeSensor(enemy, "dynamic", type_info.body)
 	collision.SetType(enemy, "enemy")
+	component.AddToObject(enemy, EnemyComponent)
 
 	enemy.isVisible = false
 
@@ -570,9 +574,6 @@ collision.AddHandler("enemy", function(phase, enemy, other, other_type)
 end)
 
 -- ^^ Make these configable (with all args, DieOrReact)
-
--- Define enemy properties.
-collision.AddInterfaces("enemy", "harmable")
 
 -- Logic for start positions in blocks
 local function BlockFunc (what, start, arg1, arg2)
