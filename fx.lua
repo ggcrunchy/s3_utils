@@ -24,12 +24,9 @@
 --
 
 -- Standard library imports --
-local random = math.random
-local remove = table.remove
 local require = require
 
 -- Modules --
-local cbe = require("s3_utils.CBEffects.Library")
 local distort = require("s3_utils.snippets.operations.distort")
 local frames = require("corona_utils.frames")
 
@@ -37,7 +34,6 @@ local frames = require("corona_utils.frames")
 local display = display
 local easing = easing
 local graphics = graphics
-local system = system
 local transition = transition
 
 -- Exports --
@@ -47,9 +43,7 @@ local M = {}
 --
 --
 
-do -- Flag effect
-end
-
+--[=[
 -- Cached vents --
 local Cache = {}
 
@@ -93,7 +87,7 @@ local function Vent (params, group, x, y, time)
 
 	return vent
 end
-
+--]=]
 do -- POW! effect
 	-- Fade-out part of effect --
 	local Done = { time = 100, delay = 50, alpha = .25, transition = easing.outExpo, onComplete = display.remove }
@@ -167,7 +161,7 @@ do -- Shimmer effect
 		return shimmer
 	end
 end
-
+--[=[
 do -- Sparkles effect
 	local ParticleParams = {
 		preset = "sparks", positionType = "atPoint", x = 0, y = 0,
@@ -196,7 +190,7 @@ do -- Sparkles effect
 		vent:start()
 	end
 end
-
+]=]
 do -- Warp effects
 	-- Mask clearing onComplete
 	local function ClearMask (object)
@@ -287,8 +281,8 @@ end)
 
 for k, v in pairs{
 	-- Enter Frame --
-	enterFrame = function(event)
-		--
+	enterFrame = function()--event)
+		--[=[
 		local time, n = event.time, #Vents
 
 		for i = n, 1, -1 do
@@ -310,7 +304,7 @@ for k, v in pairs{
 				Cache[vent.m_type] = cache
 			end
 		end
-
+]=]
 		--
 		UpdateShimmers(frames.DiffTime())
 	end,

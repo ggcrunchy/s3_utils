@@ -26,6 +26,9 @@
 -- Standard library imports --
 local pairs = pairs
 
+-- Modules --
+local meta = require("tektite_core.table.meta")
+
 -- Corona globals --
 local display = display
 local timer = timer
@@ -37,7 +40,6 @@ local M = {}
 --
 --
 
--- Shadow methods --
 local Shadow = {}
 
 --- Fits a shadow property to a curve.
@@ -108,9 +110,7 @@ function M.Shadow (func, arg, shadow)
 		shadow = display.newCircle(DecalsLayer, 0, 0, 1)
 	end
 
-	for k, v in pairs(Shadow) do
-		shadow[k] = v
-	end
+	meta.Augment(shadow, Shadow)
 
 	shadow:setFillColor(0)
 

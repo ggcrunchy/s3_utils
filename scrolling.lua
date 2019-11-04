@@ -58,18 +58,57 @@ local Width, Height
 -- Object to follow; groups to be scrolled --
 local Object, Groups
 
--- Fixes scroll amount to prevent tile seams
-local function Fix (scale, n)
-	n = n / scale
-
+local function Clamp (n)
 	return n - n % 2
 end
 
+-- Fixes scroll amount to prevent tile seams
+local function Fix (scale, n)
+	return Clamp(n / scale)
+end
+ZOOM = { zoom = 1.5 }
+local now
+timer.performWithDelay(25, function(event)
+	now = now or event.time
+
+	local dt = (event.time - now) / 1000
+	local sa = math.cos(dt / 3.5)
+
+	ZOOM.zoom = 1 + sa * .4
+end, 0)
+
 -- Updates scrolling to match followed object
 local function FollowObject ()
-	local x, y = Object:localToContent(0, 0)
-
+	local x, y = Object.x, Object.y
+	local min_scale = min(max(contentWidth / Width, contentHeight / Height), 1) -- argh! (seems okay now, check)
+-- ^^ only scale down until one dimension full
 	for _, group in ipairs(Groups) do
+		local gx, gy, scale = group.x, group.y, max(ZOOM.zoom, min_scale)
+		local px, py = gx + x * scale, gy + y * scale
+
+		if px < Left then
+			gx = min(gx + Fix(scale, Left - px), 0)
+		elseif px > Right then
+			gx = gx - Fix(scale, px - Right)
+		end
+
+		group.x = max(gx, min(0, contentWidth - Width * scale)) -- aside from the object, zooming might also require a clamp
+
+		if py < Top then
+			gy = min(gy + Fix(scale, Top - py), 0)
+		elseif py > Bottom then
+			gy = gy - Fix(scale, py - Bottom)
+		end
+
+		group.y = max(gy, min(0, contentHeight - Height * scale)) -- as with x
+
+		group.xScale, group.yScale = scale, scale
+	end
+--[=[
+local xx=min(contentWidth/Width,contentHeight/Height)
+	for _, group in ipairs(Groups) do
+group.xScale,group.yScale=max(ZOOM.zoom,xx),max(ZOOM.zoom,xx)
+local x,y=group.x+Object.x,group.y+Object.y
 		-- Scroll horizontally and apply clamping.
 		local xscale = group.xScale
 		local dx1 = Fix(xscale, Left + XOffset - x)
@@ -91,7 +130,9 @@ local function FollowObject ()
 		elseif dy2 > 0 then
 			group.y = max(group.y - dy2, min(contentHeight, Height * yscale) - Height * yscale)
 		end
+
 	end
+]=]
 end
 
 --- Follows an object, whose motion will cause parts of the scene to be scrolled.

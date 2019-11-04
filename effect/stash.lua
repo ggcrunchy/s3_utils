@@ -27,9 +27,6 @@
 local max = math.max
 local remove = table.remove
 
--- Modules --
-local lazy = require("tektite_core.table.lazy")
-
 -- Corona globals --
 local display = display
 local timer = timer
@@ -52,7 +49,7 @@ local Stash
 
 -- Type-agnostic pull logic
 local function Pull (cache, into)
-	local object = remove(cache)
+	local object = cache and remove(cache)
 
 	if object then
 		into:insert(object) 
@@ -123,7 +120,7 @@ end
 
 -- Type-agnostic pull logic
 local function Push (list, what, object, how)
-	local cache = list and list[what]
+	local cache = list[what] or {}
 
 	if how == "is_group" or how == "is_dead_group" then
 		if how == "is_dead_group" then
@@ -148,6 +145,8 @@ local function Push (list, what, object, how)
 	else
 		AddToCache(cache, object)
 	end
+
+	list[what] = cache
 end
 
 --- Stashes one or more circles for later retrieval by @{PullCircle}.
@@ -175,8 +174,7 @@ end
 for k, v in pairs{
 	-- Enter Level --
 	enter_level = function()
-		Circles = lazy.SubTablesOnDemand()
-		Rects = lazy.SubTablesOnDemand()
+		Circles, Rects = {}, {}
 		Stash = display.newGroup()
 
 		Stash.isVisible = false
