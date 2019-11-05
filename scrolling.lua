@@ -52,9 +52,6 @@ local XOffset, YOffset = 0, 0
 -- Logical scroll rect --
 local Left, Right, Top, Bottom
 
--- Level dimensions --
-local Width, Height
-
 -- Object to follow; groups to be scrolled --
 local Object, Groups
 
@@ -66,73 +63,61 @@ end
 local function Fix (scale, n)
 	return Clamp(n / scale)
 end
-ZOOM = { zoom = 1.5 }
+--[[
 local now
 timer.performWithDelay(25, function(event)
 	now = now or event.time
 
 	local dt = (event.time - now) / 1000
-	local sa = math.cos(dt / 3.5)
+	local k = .5 * math.cos(dt / 3.5) + .5
 
-	ZOOM.zoom = 1 + sa * .4
+	M.SetScale(M.GetMinScale() + k * .8)
 end, 0)
+]]
+local Scale = 1
 
--- Updates scrolling to match followed object
+local function GetMinScale (w, h)
+	if w and h then
+		return max(contentWidth / w, contentHeight / h)
+	else
+		return Scale
+	end
+end
+
+local function AuxFollowObject (group, x, y, w, h)
+	local gx, gy, scale = group.x, group.y, max(Scale, GetMinScale(w, h))
+	local px, py = gx + x * scale, gy + y * scale
+
+	if px < Left then
+		gx = min(gx + Fix(scale, Left + XOffset - px), XOffset) -- TODO the XOffset logic predates scaling...
+	elseif px > Right then
+		gx = gx - Fix(scale, px - Right)
+	end
+
+	gx = max(gx, min(0, contentWidth - w * scale)) -- zooming might also require a clamp, so outside the px > Right check
+
+	if py < Top then
+		gy = min(gy + Fix(scale, Top + YOffset - py), YOffset) -- TODO: ditto
+	elseif py > Bottom then
+		gy = gy - Fix(scale, py - Bottom)
+	end
+
+	gy = max(gy, min(0, contentHeight - h * scale)) -- as with x
+
+	return gx, gy, scale
+end
+
+local Width, Height
+
 local function FollowObject ()
 	local x, y = Object.x, Object.y
-	local min_scale = min(max(contentWidth / Width, contentHeight / Height), 1) -- argh! (seems okay now, check)
--- ^^ only scale down until one dimension full
+
 	for _, group in ipairs(Groups) do
-		local gx, gy, scale = group.x, group.y, max(ZOOM.zoom, min_scale)
-		local px, py = gx + x * scale, gy + y * scale
+		local gx, gy, scale = AuxFollowObject(group, x, y, Width, Height)
 
-		if px < Left then
-			gx = min(gx + Fix(scale, Left - px), 0)
-		elseif px > Right then
-			gx = gx - Fix(scale, px - Right)
-		end
-
-		group.x = max(gx, min(0, contentWidth - Width * scale)) -- aside from the object, zooming might also require a clamp
-
-		if py < Top then
-			gy = min(gy + Fix(scale, Top - py), 0)
-		elseif py > Bottom then
-			gy = gy - Fix(scale, py - Bottom)
-		end
-
-		group.y = max(gy, min(0, contentHeight - Height * scale)) -- as with x
-
-		group.xScale, group.yScale = scale, scale
+		group.x, group.xScale = gx, scale
+		group.y, group.yScale = gy, scale
 	end
---[=[
-local xx=min(contentWidth/Width,contentHeight/Height)
-	for _, group in ipairs(Groups) do
-group.xScale,group.yScale=max(ZOOM.zoom,xx),max(ZOOM.zoom,xx)
-local x,y=group.x+Object.x,group.y+Object.y
-		-- Scroll horizontally and apply clamping.
-		local xscale = group.xScale
-		local dx1 = Fix(xscale, Left + XOffset - x)
-		local dx2 = Fix(xscale, x - Right)
-
-		if dx1 > 0 then
-			group.x = min(group.x + dx1, XOffset)
-		elseif dx2 > 0 then
-			group.x = max(group.x - dx2, min(contentWidth, Width * xscale) - Width * xscale)
-		end
-
-		-- Scroll vertically and apply clamping.
-		local yscale = group.yScale
-		local dy1 = Fix(yscale, Top + YOffset - y)
-		local dy2 = Fix(yscale, y - Bottom)
-
-		if dy1 > 0 then
-			group.y = min(group.y + dy1, YOffset)
-		elseif dy2 > 0 then
-			group.y = max(group.y - dy2, min(contentHeight, Height * yscale) - Height * yscale)
-		end
-
-	end
-]=]
 end
 
 --- Follows an object, whose motion will cause parts of the scene to be scrolled.
@@ -167,6 +152,12 @@ function M.Follow (object, group, ...)
 	return old_object
 end
 
+--- DOCME
+-- when does one smaller scaled dimension fill the view?
+function M.GetMinScale ()
+	return GetMinScale(Width, Height)
+end
+
 --- Defines the left and right screen extents; while the followed object is between these,
 -- no horizontal scrolling will occur. If the object moves outside of them, the associated
 -- group will be scrolled in an attempt to put it back inside.
@@ -196,6 +187,11 @@ end
 -- Set some decent defaults.
 M.SetRangeX(.3, .7)
 M.SetRangeY(.3, .7)
+
+--- DOCME
+function M.SetScale (scale)
+	Scale = scale
+end
 
 --- Setter.
 -- @number offset Horizontal screen offset of the world; if **nil**, 0.

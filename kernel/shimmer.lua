@@ -34,12 +34,10 @@ local iq = require("s3_utils.snippets.noise.iq")
 
 local kernel = { language = "glsl", category = "filter", group = "screen", name = "shimmer" }
 
-local vertex_data = distort.KernelParams()
-
-vertex_data[4] = { name = "influence", index = 3, min = .5, max = 1024., default = 15. }
-
-kernel.vertexData = vertex_data
-kernel.vertex = distort.GetPassThroughVertexKernelSource()
+kernel.vertexData = {
+	{ name = "influence", index = 0, min = .5, max = 1024., default = 15. },
+	{ name = "alpha", index = 1, default = 1, min = 0, max = 1 }
+}
 
 includer.Augment({
 	requires = { distort.GET_DISTORT_INFLUENCE, distort.GET_DISTORTED_RGB, iq.OCTAVES },
@@ -49,16 +47,14 @@ includer.Augment({
 	P_COLOR vec4 FragmentKernel (P_UV vec2 uv)
 	{
 		P_UV vec2 uvn = 2. * uv - 1.;
-		P_UV vec2 offset = IQ_Octaves(uv * 14.1, uv * 12.3) * GetDistortInfluence(uvn, .75, CoronaVertexUserData.w);
-		P_COLOR vec3 background = GetDistortedRGB(CoronaSampler0, offset, CoronaVertexUserData);
+		P_UV vec2 offset = IQ_Octaves(uv * 14.1, uv * 12.3) * GetDistortInfluence(uvn, .75, CoronaVertexUserData.x);
+		P_COLOR vec3 background = GetDistortedRGB(CoronaSampler0, offset) * CoronaVertexUserData.y;
 
 		return CoronaColorScale(vec4(background, 1.));
 	}
 ]]
 
 }, kernel)
-
-kernel.fragment = distort.GetPrelude() .. kernel.fragment
 
 graphics.defineEffect(kernel)
 

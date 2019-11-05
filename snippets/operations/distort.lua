@@ -26,6 +26,9 @@
 -- Modules --
 local includer = require("corona_utils.includer")
 
+-- Corona globals --
+local display = display
+
 -- Exports --
 local M = {}
 
@@ -41,34 +44,26 @@ M.GET_DISTORT_INFLUENCE = includer.AddSnippet[[
 	}
 ]]
 
-local PosVarying, PosVaryingType = "v_Pos", "P_POSITION vec2"
-
 --- DOCME
 M.GET_DISTORTED_RGB = includer.AddSnippet{
     fragment = ([[
 
-	P_COLOR vec3 GetDistortedRGB (sampler2D s, P_UV vec2 offset, P_UV vec3 divs_alpha)
+	P_COLOR vec3 GetDistortedRGB (sampler2D s, P_UV vec2 offset)
 	{
-		P_UV vec2 uv = (%s + offset) * divs_alpha.xy;
+		P_UV vec2 uv = (gl_FragCoord.xy + vec2(%.4f, %.4f) + offset) * CoronaTexelSize.zw;
 
-		return texture2D(s, uv).rgb * divs_alpha.z;
-	}
+		uv.y = 1. - uv.y;
 
-	P_COLOR vec3 GetDistortedRGB (sampler2D s, P_UV vec2 offset, P_UV vec4 divs_alpha)
-	{
-		return GetDistortedRGB(s, offset, divs_alpha.xyz);
+		return texture2D(s, uv).rgb;
 	}
-]]):format(PosVarying)
+]]):format(display.screenOriginX, display.screenOriginY)
 
 }
--- ^^ TODO: vertex textures...
 
 --- DOCME
 function M.BindCanvasEffect (object, fill, name)
     object.fill = fill
     object.fill.effect = name
-    object.fill.effect.xdiv = 1 / display.contentWidth -- TODO...
-    object.fill.effect.ydiv = 1 / display.contentHeight
 end
 
 --- DOCME
@@ -79,53 +74,6 @@ function M.CanvasToPaintAttacher (paint)
             paint.baseDir = event.canvas.baseDir
         end
     end
-end
-
-local PosVaryingDecl = ("%s %s"):format(PosVaryingType, PosVarying)
-
-local PassThroughVertexKernel = ([[
-	varying %s;
-
-	P_POSITION vec2 VertexKernel (P_POSITION vec2 pos)
-	{
-		v_Pos = pos;
-
-		return pos;
-	}
-]]):format(PosVaryingDecl)
-
---- DOCME
-function M.GetPassThroughVertexKernelSource ()
-	return PassThroughVertexKernel
-end
-
---- DOCME
-function M.GetPosVaryingName ()
-	return PosVarying
-end
-
---- DOCME
-function M.GetPosVaryingType ()
-	return PosVaryingType
-end
-
-local Prelude = ([[
-	varying %s;
-
-]]):format(PosVaryingDecl)
-
---- DOCME
-function M.GetPrelude ()
-	return Prelude
-end
-
---- DOCME
-function M.KernelParams ()
-    return {
-        { index = 0, name = "xdiv" },
-        { index = 1, name = "ydiv" },
-        { index = 2, name = "alpha", default = 1, min = 0, max = 1 }
-    }
 end
 
 return M
