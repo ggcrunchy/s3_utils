@@ -32,12 +32,10 @@ local min = math.min
 local display = display
 local Runtime = Runtime
 
--- Imports --
-local contentHeight = display.contentHeight
-local contentWidth = display.contentWidth
-
 -- Cached module references --
 local _Follow_
+local _GetMinScale_
+local _GetState_
 
 -- Exports --
 local M = {}
@@ -46,23 +44,6 @@ local M = {}
 --
 --
 
--- World screen offset --
-local XOffset, YOffset = 0, 0
-
--- Logical scroll rect --
-local Left, Right, Top, Bottom
-
--- Object to follow; groups to be scrolled --
-local Object, Groups
-
-local function Clamp (n)
-	return n - n % 2
-end
-
--- Fixes scroll amount to prevent tile seams
-local function Fix (scale, n)
-	return Clamp(n / scale)
-end
 --[[
 local now
 timer.performWithDelay(25, function(event)
@@ -74,38 +55,8 @@ timer.performWithDelay(25, function(event)
 	M.SetScale(M.GetMinScale() + k * .8)
 end, 0)
 --]]
-local Scale = 1.5
 
-local function GetMinScale (w, h)
-	if w and h then
-		return min(max(contentWidth / w, contentHeight / h), 1)
-	else
-		return 1
-	end
-end
-
-local function AuxFollowObject (group, x, y, w, h)
-	local gx, gy, scale = group.x, group.y, max(Scale, GetMinScale(w, h))
-	local px, py = gx + x * scale, gy + y * scale
-
-	if px < Left then
-		gx = min(gx + Fix(scale, Left + XOffset - px), XOffset) -- TODO the XOffset logic predates scaling...
-	elseif px > Right then
-		gx = gx - Fix(scale, px - Right)
-	end
-
-	gx = max(gx, min(0, contentWidth - w * scale)) -- zooming might also require a clamp, so outside the px > Right check
-
-	if py < Top then
-		gy = min(gy + Fix(scale, Top + YOffset - py), YOffset) -- TODO: ditto
-	elseif py > Bottom then
-		gy = gy - Fix(scale, py - Bottom)
-	end
-
-	gy = max(gy, min(0, contentHeight - h * scale)) -- as with x
-
-	return gx, gy, scale
-end
+local Object, Groups
 
 local Width, Height
 
@@ -113,14 +64,14 @@ local function FollowObject ()
 	local x, y = Object.x, Object.y
 
 	for _, group in ipairs(Groups) do
-		local gx, gy, scale = AuxFollowObject(group, x, y, Width, Height)
+		local gx, gy, scale = _GetState_(group, x, y, Width, Height)
 
 		group.x, group.xScale = gx, scale
 		group.y, group.yScale = gy, scale
 	end
 end
 
---- Follows an object, whose motion will cause parts of the scene to be scrolled.
+--- Follow an object, whose motion will cause parts of the scene to be scrolled.
 -- @pobject object Object to follow, or **nil** to disable scrolling (in which case,
 -- _group_ is ignored).
 -- @param group Given a value of **"keep"**, no change is made. Otherwise, display
@@ -152,18 +103,77 @@ function M.Follow (object, group, ...)
 	return old_object
 end
 
+local CW, CH = display.contentWidth, display.contentHeight
+
+local function GetMinScale (w, h)
+	if w and h then
+		return min(max(CW / w, CH / h), 1)
+	else
+		return 1
+	end
+end
+
 --- DOCME
 -- when does one smaller scaled dimension fill the view?
-function M.GetMinScale ()
-	return GetMinScale(Width, Height)
+function M.GetMinScale (w, h)
+	return GetMinScale(w or Width, h or Height)
 end
+
+local Scale = 1
 
 --- DOCME
 function M.GetScale ()
 	return Scale
 end
 
---- Defines the left and right screen extents; while the followed object is between these,
+local function AuxGetScale (w, h)
+	return max(Scale, GetMinScale(w, h))
+end
+
+--- DOCME
+function M.GetScreenPosition (group, x, y, w, h)
+	local scale = AuxGetScale(w or Width, h or Height)
+
+	return (x - group.x) / scale, (y - group.y) / scale
+end
+
+local function Clamp (n)
+	return n - n % 2 -- fix to prevent tile seams
+end
+
+local function Fix (scale, n)
+	return Clamp(n / scale)
+end
+
+local Left, Right, Top, Bottom
+
+local XOffset, YOffset = 0, 0
+
+--- DOCME
+function M.GetState (group, x, y, w, h)
+	local gx, gy, scale = group.x, group.y, AuxGetScale(w, h)
+	local px, py = gx + x * scale, gy + y * scale
+
+	if px < Left then
+		gx = min(gx + Fix(scale, Left + XOffset - px), XOffset) -- TODO the XOffset logic predates scaling...
+	elseif px > Right then
+		gx = gx - Fix(scale, px - Right)
+	end
+
+	gx = max(gx, min(0, CW - w * scale)) -- zooming might also require a clamp, so outside the px > Right check
+
+	if py < Top then
+		gy = min(gy + Fix(scale, Top + YOffset - py), YOffset) -- TODO: ditto
+	elseif py > Bottom then
+		gy = gy - Fix(scale, py - Bottom)
+	end
+
+	gy = max(gy, min(0, CH - h * scale)) -- as with x
+
+	return gx, gy, scale
+end
+
+--- Define the left and right screen extents; while the followed object is between these,
 -- no horizontal scrolling will occur. If the object moves outside of them, the associated
 -- group will be scrolled in an attempt to put it back inside.
 --
@@ -172,11 +182,10 @@ end
 -- @number right Right extent = _right_ * Screen Width.
 -- @see Follow
 function M.SetRangeX (left, right)
-	Left = contentWidth * left
-	Right = contentWidth * right
+	Left, Right = CW * left, CW * right
 end
 
---- Defines the top and bottom screen extents; while the followed object is between these,
+--- Define the top and bottom screen extents; while the followed object is between these,
 -- no vertical scrolling will occur. If the object moves outside of them, the associated
 -- group will be scrolled in an attempt to put it back inside.
 --
@@ -185,8 +194,7 @@ end
 -- @number bottom Bottom extent = _bottom_ * Screen Height.
 -- @see Follow
 function M.SetRangeY (top, bottom)
-	Top = contentHeight * top
-	Bottom = contentHeight * bottom
+	Top, Bottom = CH * top, CH * bottom
 end
 
 -- Set some decent defaults.
@@ -198,13 +206,13 @@ function M.SetScale (scale)
 	Scale = scale
 end
 
---- Setter.
+---
 -- @number offset Horizontal screen offset of the world; if **nil**, 0.
 function M.SetXOffset (offset)
 	XOffset = offset or 0
 end
 
---- Setter.
+---
 -- @number offset Vertical screen offset of the world; if **nil**, 0.
 function M.SetYOffset (offset)
 	YOffset = offset or 0
@@ -226,5 +234,7 @@ for k, v in pairs{
 end
 
 _Follow_ = M.Follow
+_GetMinScale_ = M.GetMinScale
+_GetState_ = M.GetState
 
 return M
