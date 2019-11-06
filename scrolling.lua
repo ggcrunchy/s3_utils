@@ -73,14 +73,14 @@ timer.performWithDelay(25, function(event)
 
 	M.SetScale(M.GetMinScale() + k * .8)
 end, 0)
-]]
-local Scale = 1
+--]]
+local Scale = 1.5
 
 local function GetMinScale (w, h)
 	if w and h then
-		return max(contentWidth / w, contentHeight / h)
+		return min(max(contentWidth / w, contentHeight / h), 1)
 	else
-		return Scale
+		return 1
 	end
 end
 
@@ -156,6 +156,11 @@ end
 -- when does one smaller scaled dimension fill the view?
 function M.GetMinScale ()
 	return GetMinScale(Width, Height)
+end
+
+--- DOCME
+function M.GetScale ()
+	return Scale
 end
 
 --- Defines the left and right screen extents; while the followed object is between these,
