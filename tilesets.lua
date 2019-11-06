@@ -35,6 +35,7 @@ local unpack = unpack
 
 -- Modules --
 local includer = require("corona_utils.includer")
+local orange_duck = require("s3_utils.snippets.operations.orange_duck")
 local pi = require("s3_utils.snippets.constants.pi")
 local require_ex = require("tektite_core.require_ex")
 
@@ -244,21 +245,21 @@ local TileCore = [[
 
 	P_UV vec4 Average (P_UV vec4 a, P_UV vec4 b)
 	{
-		P_UV vec2 alpha = vec2(a.a, b.a), found = alpha * step(alpha, vec2(1.5));
+		P_UV vec2 alpha = vec2(a.a, b.a), found = alpha * WHEN_LT(alpha, vec2(1.5));
 
 		return AuxAverage(a * found.x + b * found.y, dot(found, vec2(1.)));
 	}
 
 	P_UV vec4 Average (P_UV vec4 a, P_UV vec4 b, P_UV vec4 c)
 	{
-		P_UV vec3 alpha = vec3(a.a, b.a, c.a), found = alpha * step(alpha, vec3(1.5));
+		P_UV vec3 alpha = vec3(a.a, b.a, c.a), found = alpha * WHEN_LT(alpha, vec3(1.5));
 
 		return AuxAverage(a * found.x + b * found.y + c * found.z, dot(found, vec3(1.)));
 	}
 
 	P_UV vec4 Average (P_UV vec4 a, P_UV vec4 b, P_UV vec4 c, P_UV vec4 d)
 	{
-		P_UV vec4 alpha = vec4(a.a, b.a, c.a, d.a), found = alpha * step(alpha, vec4(1.5));
+		P_UV vec4 alpha = vec4(a.a, b.a, c.a, d.a), found = alpha * WHEN_LT(alpha, vec4(1.5));
 
 		return AuxAverage(mat4(a, b, c, d) * found, dot(found, vec4(1.)));
 	}
@@ -284,14 +285,14 @@ local TileCore = [[
 	#ifndef V_OK
 		P_UV vec2 quarter = floor(uv * 4.), frac = uv * 4. - quarter;
 		P_UV vec2 uv0 = mod(quarter, 2.), mixed = mix(uv0, 1. - uv0, frac);
-		P_UV float on_edge = floor(abs(1.5 - quarter.y)), on_left = step(quarter.y, 2.);
+		P_UV float on_edge = floor(abs(1.5 - quarter.y)), on_left = WHEN_LE(quarter.y, 2.);
 
 		uv.x = mix(uv.x, mixed.x, mix(frac.y, 1. - frac.y, on_left) * on_edge);
 	
 		offset *= mixed.y;
 	#endif
 	
-		P_UV float outside = step(HALF_RADIUS, abs(radius_t.x - MID_RADIUS));
+		P_UV float outside = WHEN_LE(HALF_RADIUS, abs(radius_t.x - MID_RADIUS));
 
 		radius_t.xy = uv;
 
@@ -316,11 +317,11 @@ local TileCore = [[
 	P_UV CTYPE NubCoords (P_UV vec3 uv)
 	{
 		P_UV float radius = uv.y, t = uv.x;
-		P_UV float tnub = t - .5, in_x = step(abs(tnub), HALF_RADIUS);
+		P_UV float tnub = t - .5, in_x = WHEN_LE(abs(tnub), HALF_RADIUS);
 		P_UV float r2 = HALF_RADIUS * HALF_RADIUS - tnub * tnub, nradius = sqrt(r2 * in_x);
 		P_UV float rmin = MID_RADIUS - nradius;
 
-		radius = mix(radius, mix(-1., INNER_RADIUS + (radius - rmin) / max(nradius, 1e-3) * HALF_RADIUS, in_x), step(0., tnub));
+		radius = mix(radius, mix(-1., INNER_RADIUS + (radius - rmin) / max(nradius, 1e-3) * HALF_RADIUS, in_x), WHEN_LE(0., tnub));
 
 		return COORD(vec2(radius, t), uv.z);
 	}
@@ -329,11 +330,11 @@ local TileCore = [[
 	P_COLOR vec4 FinalColor (P_COLOR vec4 color)
 	{
 	#ifdef EMIT_COMPONENT
-		color.a = step(color.a, 1.5);
+		color.a = WHEN_LT(color.a, 1.5);
 
 		return color;
 	#else
-		return color * step(color.a, 1.5);
+		return color * WHEN_LT(color.a, 1.5);
 	#endif
 	}
 
@@ -528,7 +529,7 @@ local function GetEffects (ts)
 		--
 		NameID, DatumPrefix, NamePrefix = 0, datum_prefix or "", category .. "." .. gname .. "."
 
-		Kernel.category, Kernel.group, FragParams.requires, effects = category, gname, { pi.PI }, {}
+		Kernel.category, Kernel.group, FragParams.requires, effects = category, gname, { orange_duck.RELATIONAL, pi.PI }, {}
 
 		for i = 1, #(ts.requires or "") do
 			FragParams.requires[#FragParams.requires + 1] = ts.requires[i]

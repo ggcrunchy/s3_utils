@@ -46,18 +46,25 @@ M.GET_DISTORT_INFLUENCE = includer.AddSnippet[[
 
 --- DOCME
 M.GET_DISTORTED_RGB = includer.AddSnippet{
+	vertex = [[
+
+	void InitDistortion (P_POSITION vec2 pos)
+	{
+		v_DistortPos = pos;
+	}
+]],
+
     fragment = ([[
 
 	P_COLOR vec3 GetDistortedRGB (sampler2D s, P_UV vec2 offset)
 	{
-		P_UV vec2 uv = (gl_FragCoord.xy + vec2(%.4f, %.4f) + offset) * CoronaTexelSize.zw;
-
-		uv.y = 1. - uv.y;
+		P_UV vec2 uv = (v_DistortPos + offset) / vec2(%f, %f);
 
 		return texture2D(s, uv).rgb;
 	}
-]]):format(display.screenOriginX, display.screenOriginY)
+]]):format(display.contentWidth, display.contentHeight),
 
+	varyings = { v_DistortPos = "vec2" }
 }
 
 --- DOCME

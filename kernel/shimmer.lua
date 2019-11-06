@@ -42,6 +42,16 @@ kernel.vertexData = {
 includer.Augment({
 	requires = { distort.GET_DISTORT_INFLUENCE, distort.GET_DISTORTED_RGB, iq.OCTAVES },
 
+	vertex = [[
+
+	P_POSITION vec2 VertexKernel (P_POSITION vec2 pos)
+	{
+		InitDistortion(pos);
+
+		return pos;
+	}
+]],
+
 	fragment = [[
 
 	P_COLOR vec4 FragmentKernel (P_UV vec2 uv)
