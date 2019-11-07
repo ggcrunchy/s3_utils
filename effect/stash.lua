@@ -102,7 +102,9 @@ end
 local function AddToCache (cache, object)
 	if display.isValid(object) then
 		if display.isValid(Stash) then
-			cache[#cache + 1] = object
+			if object.parent ~= Stash then
+				cache[#cache + 1] = object
+			end
 
 			Stash:insert(object)
 		else
