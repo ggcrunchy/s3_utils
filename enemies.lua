@@ -44,6 +44,7 @@ local object_vars = require("config.ObjectVariables")
 local store = require("s3_utils.state.store")
 local tile_maps = require("s3_utils.tile_maps")
 local timers = require("corona_utils.timers")
+local visibility = require("corona_utils.visibility")
 
 -- Corona globals --
 local display = display
@@ -124,9 +125,7 @@ local function PhaseIn (enemy, type_info, is_sleeping)
 	enemy.m_ready = not is_sleeping
 
 	flow_ops.WaitForSignal(enemy, "m_ready")
-
-	--
-	collision.SetVisibility(enemy, false)
+	visibility.Enable(enemy, false)
 
 	--
 	enemy.isVisible = true
@@ -152,7 +151,7 @@ local function Kill (enemy, other)
 
 		enemy.m_alive = false
 
-		collision.SetVisibility(enemy, false)
+		visibility.Enable(enemy, false)
 
 		enemy_events.on_kill(enemy, other)
 	end
@@ -172,7 +171,7 @@ local function Alive (enemy, type_info)
 
 	--
 	if enemy.m_alive then
-		collision.SetVisibility(enemy, true)
+		visibility.Enable(enemy, true)
 	end
 
 	-- Have it follow its type-specific behavior, until it gets killed.
@@ -559,17 +558,16 @@ local OnCollision = TryConfigFunc("on_collision")
 
 local TouchedEnemyEvent = { name = "touched_enemy" }
 
--- Add enemy-OBJECT collision handler.
-collision.AddHandler("enemy", function(phase, enemy, other, other_type)
+collision.AddHandler("enemy", function(phase, enemy, other)
 	-- Enemy touched enemy: delegate reaction to enemy.
-	if other_type == "enemy" then
+	if collision.GetType(other) == "enemy" then
 		TouchedEnemyEvent.phase, TouchedEnemyEvent.enemy = phase, other
 
 		enemy:dispatchEvent(TouchedEnemyEvent)
 	
 		TouchedEnemyEvent.target = nil
 	elseif OnCollision then
-		OnCollision(phase, enemy, other, other_type)
+		OnCollision(phase, enemy, other)
 	end
 end)
 
