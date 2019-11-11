@@ -74,7 +74,7 @@ local Code = [[
 Code = Code:gsub("_POS_", qualifiers.DefaultPrecisionOr("P_POSITION"))
 Code = Code:gsub("_UV_", qualifiers.DefaultPrecisionOr("P_UV"))
 
-includer.Augment({ requires = { iq.IQ1 }, fragment = Code }, kernel)
+includer.AugmentKernels({ requires = { iq.IQ1 }, fragment = Code }, kernel)
 
 graphics.defineEffect(kernel)
 

@@ -369,7 +369,7 @@ local function AuxFragment (fcode, name, vdata)
 	Kernel.vertexData = vdata
 	FragParams.fragment = fcode
 
-	includer.Augment(FragParams, Kernel)
+	includer.AugmentKernels(FragParams, Kernel)
 
 	graphics.defineEffect(Kernel)
 end
