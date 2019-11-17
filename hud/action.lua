@@ -38,6 +38,7 @@ local touch = require("corona_ui.utils.touch")
 -- Corona globals --
 local display = display
 local easing = easing
+local native = native
 local transition = transition
 
 -- Exports --
@@ -47,19 +48,6 @@ local M = {}
 --
 --
 
--- Group for action button and related icons --
-local ActionGroup
-
--- Action icon images --
-local Images
-
--- Sequence of actions, in touch order --
-local Sequence
-
--- Fading icon transition --
-local FadeIconParams = { tag = "action_fading" }
-
--- Helper to cancel a (possible) transition
 local function Cancel (trans)
 	if trans then
 		transition.cancel(trans)
@@ -68,7 +56,8 @@ local function Cancel (trans)
 	end
 end
 
--- Helper to extract action from the sequence
+local Sequence
+
 local function IndexOf (name)
 	for i, v in ipairs(Sequence) do
 		if v.name == name then
@@ -77,10 +66,10 @@ local function IndexOf (name)
 	end
 end
 
--- Current opaque icon --
 local Current
 
--- Helper to fade icon in or out
+local FadeIconParams = { tag = "action_fading" }
+
 local function FadeIcon (icon, alpha, delay)
 	Current = icon
 
@@ -99,7 +88,6 @@ local function FadeIcon (icon, alpha, delay)
 	icon.is_fading = true
 end
 
--- On complete, try to advance the sequence
 function FadeIconParams.onComplete (icon)
 	local n = #Sequence
 
@@ -127,6 +115,8 @@ function FadeIconParams.onComplete (icon)
 	icon.is_fading, icon.prev = nil
 end
 
+local ActionGroup
+
 -- Lazily add images to the action sequence --
 local ImagesMT = {
 	__index = function(t, name)
@@ -150,14 +140,19 @@ local ImagesMT = {
 	end
 }
 
--- Adds an icon reference to the sequence
-local function AddIcon (item, name)
+local Images
+
+local function AddIconToSequence (item, name, is_text)
 	--  Do any instances of the icon exist?
 	if not item then
 		-- Append a fresh shared icon state.
-		local n = #Sequence
+		local n, key = #Sequence, name
 
-		item = { count = 0, icon = Images[name], name = name }
+		if is_text then
+			key = display.newText(name, 0, 0, native.systemFontBold, 16) -- TODO: font, size
+		end
+
+		item = { count = 0, icon = Images[key], name = name }
 
 		Sequence[n + 1] = item
 
@@ -171,8 +166,7 @@ local function AddIcon (item, name)
 	item.count = item.count + 1
 end
 
--- Removes an icon reference from the sequence
-local function RemoveIcon (index, item)
+local function RemoveIconFromSequence (index, item)
 	assert(item, "No icon for dot being untouched")
 
 	item.count = item.count - 1
@@ -204,22 +198,25 @@ local function RemoveIcon (index, item)
 	end
 end
 
--- Helper to enqueue a dot image
 local function MergeDotIntoSequence (dot, touch)
-	local name = dot.touch_image_P or "s3_utils/assets/hud/Kick.png"
+	local name = dot.touch_image_P
+	local is_text = not name
+
+	if is_text then
+		name = dot.touch_text_P or "Use"
+	end
+
 	local index, item = IndexOf(name)
 
 	if touch then
-		AddIcon(item, name)
+		AddIconToSequence(item, name, is_text)
 	else
-		RemoveIcon(index, item)
+		RemoveIconFromSequence(index, item)
 	end
 end
 
--- Pulsing button transition; button scaling in or out --
 local ScaleInOut, Scaling = { time = 250, transition = easing.outQuad }
 
--- Kick off a scale (either in or out) in the button pulse
 local function ScaleActionButton (button, delta)
 	Cancel(Scaling)
 
@@ -231,7 +228,6 @@ local function ScaleActionButton (button, delta)
 	Scaling = transition.to(button, ScaleInOut)
 end
 
--- De-pulsing transition --
 local ScaleToNormal = {
 	time = 250, xScale = 1, yScale = 1,
 
@@ -242,14 +238,12 @@ local ScaleToNormal = {
 	end
 } 
 
--- Completes the pulse sequence: normal -> out -> normal -> in -> normal -> out...
 function ScaleInOut.onComplete (object)
 	if display.isValid(object) then
 		Scaling = transition.to(object, ScaleToNormal)
 	end
 end
 
--- Fading button transition --
 local FadeParams = {
 	tag = "action_fading", time = 200,
 
@@ -262,7 +256,6 @@ local FadeParams = {
 	end
 }
 
--- Show or hide the action button
 local function ShowAction (show)
 	local from, to = .2, 1
 
@@ -327,18 +320,13 @@ for k, v in pairs{
 		local action = ActionGroup[1]
 		local ntouch = action.m_touches
 
-		-- If this is the first dot being touched (the player might be overlapping several),
-		-- bring the action button into view.
-		if event.is_touching and ntouch == 0 then
+		if event.is_touching and ntouch == 0 then -- no others also being touched?
 			ScaleActionButton(action, .1)
 			ShowAction(true)
 		end
 
-		-- Add or remove the dot from the action sequence.
 		MergeDotIntoSequence(event.dot, event.is_touching)
 
-		-- Update the touched dot tally. If this was the last one being touched, hide the
-		-- action button.
 		ntouch = ntouch + (event.is_touching and 1 or -1)
 
 		if ntouch == 0 then
