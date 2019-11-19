@@ -38,16 +38,6 @@ local M = {}
 --
 --
 
--- List of circle caches --
-local Circles
-
--- List of rect caches --
-local Rects
-
--- Stash group --
-local Stash
-
--- Type-agnostic pull logic
 local function Pull (cache, into)
 	local object = cache and remove(cache)
 
@@ -58,10 +48,11 @@ local function Pull (cache, into)
 	return object
 end
 
--- Stock circle constructor
 local function NewCircle (into)
 	return display.newCircle(into, 0, 0, 1)
 end
+
+local Circles
 
 --- If a circle has been stashed in a certain cache, it will be pulled out and recycled.
 -- Otherwise, a fresh circle is created with default properties.
@@ -78,10 +69,11 @@ function M.PullCircle (what, into, new)
 	return Pull(cache, into) or (new or NewCircle)(into)
 end
 
--- Stock rect constructor
 local function NewRect (into)
 	return display.newRect(into, 0, 0, 1, 1)
 end
+
+local Rects
 
 --- If a rect has been stashed in a certain cache, it will be pulled out and recycled.
 -- Otherwise, a fresh rect is created with default properties.
@@ -98,7 +90,8 @@ function M.PullRect (what, into, new)
 	return Pull(cache, into) or (new or NewRect)(into)
 end
 
--- Adds a display object to a cache (and in the stash as a dummy hierarchy)
+local Stash
+
 local function AddToCache (cache, object)
 	if display.isValid(object) then
 		if display.isValid(Stash) then
@@ -113,42 +106,44 @@ local function AddToCache (cache, object)
 	end
 end
 
--- Moves some display objects from one group into a cache
 local function AddFromGroup (into, from, last)
 	for i = from.numChildren, max(last, 1), -1 do
 		AddToCache(into, from[i])
 	end
 end
 
--- Type-agnostic pull logic
 local function Push (list, what, object, how)
-	local cache = list[what] or {}
+	if list then
+		local cache = list[what] or {}
 
-	if how == "is_group" or how == "is_dead_group" then
-		if how == "is_dead_group" then
-			object.isVisible = false
+		if how == "is_group" or how == "is_dead_group" then
+			if how == "is_dead_group" then
+				object.isVisible = false
 
-			timer.performWithDelay(100, function(event)
-				if display.isValid(object) then
-					AddFromGroup(cache, object, object.numChildren - 10)
+				timer.performWithDelay(100, function(event)
+					if display.isValid(object) then
+						AddFromGroup(cache, object, object.numChildren - 10)
 
-					if object.numChildren > 0 then
-						return
-					else
-						object:removeSelf()
+						if object.numChildren > 0 then
+							return
+						else
+							object:removeSelf()
+						end
 					end
-				end
 
-				timer.cancel(event.source)
-			end, 0)
+					timer.cancel(event.source)
+				end, 0)
+			else
+				AddFromGroup(cache, object, 1)
+			end
 		else
-			AddFromGroup(cache, object, 1)
+			AddToCache(cache, object)
 		end
-	else
-		AddToCache(cache, object)
-	end
 
-	list[what] = cache
+		list[what] = cache
+	elseif display.isValid(object) then
+		object:removeSelf()
+	end
 end
 
 --- Stashes one or more circles for later retrieval by @{PullCircle}.

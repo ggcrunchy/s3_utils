@@ -49,7 +49,6 @@ local Runtime = Runtime
 local timer = timer
 
 -- Cached module references --
-local _AddBody_
 local _DeductDot_
 
 -- Exports --
@@ -62,8 +61,7 @@ local M = {}
 -- Tile index -> dot map --
 local Dots = {}
 
--- Try to add a body and report success
-local function AddBody (dot) 
+local function TryToAddBody (dot) 
 	local body_prop = dot.body_P
 
 	if body_prop ~= false then
@@ -76,7 +74,6 @@ end
 -- How many dots are left to pick up? --
 local Remaining
 
--- Dot type lookup table --
 local DotList
 
 --- Adds a new _name_-type sensor dot to the level.
@@ -117,7 +114,7 @@ function M.AddDot (group, info, params)
 
 	tile_maps.PutObjectAt(index, dot)
 
-	if AddBody(dot) then
+	if TryToAddBody(dot) then
 		collision.SetType(dot, info.type)
 	end
 
@@ -199,7 +196,7 @@ function M.EditorEvent (type, what, arg1, arg2, arg3)
 	end
 end
 
---- Getter.
+---
 -- @treturn {string,...} Unordered list of dot type names.
 function M.GetTypes ()
 	local types = {}
@@ -211,7 +208,6 @@ function M.GetTypes ()
 	return types
 end
 
--- Per-frame setup / update
 local function OnEnterFrame ()
 	for _, dot in ipairs(Dots) do
 		if dot.Update then
@@ -220,12 +216,10 @@ local function OnEnterFrame ()
 	end
 end
 
--- Dot-ordering predicate
 local function DotLess (a, b)
 	return a.m_index < b.m_index
 end
 
--- Default logic for dot in block's list
 local function BlockFunc (what, dot, arg1, arg2)
 	local prep = dot.block_func_prep_P
 
@@ -269,14 +263,14 @@ for k, v in pairs{
 
 	-- Block Setup --
 	block_setup = function(event)
-		-- Sort the dots so that they may be incrementally traversed as we iterate the block.
+		-- Sort the dots for incremental traversal as we iterate the block.
 		if not Dots.sorted then
 			sort(Dots, DotLess)
 
 			Dots.sorted = true
 		end
 
-		-- Accumulate any non-omitted dot inside the eblock region into its list.
+		-- Accumulate any non-omitted dot inside the block region into its list.
 		local block = event.block
 		local slot, n = 1, #Dots
 
@@ -327,7 +321,7 @@ for k, v in pairs{
 		timer.performWithDelay(0, function()
 			for _, dot in ipairs(Dots) do
 				if collision.RemoveBody(dot) then
-					AddBody(dot)
+					TryToAddBody(dot)
 				end
 			end
 		end)
@@ -338,7 +332,6 @@ end
 
 DotList = require_ex.DoList("config.Dots")
 
-_AddBody_ = M.AddBody
 _DeductDot_ = M.DeductDot
 
 return M
