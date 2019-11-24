@@ -59,14 +59,7 @@ local Decode = [[
 -- i.e. 2^(bin - 16), and can be used to extract s.
 [[
 		P_DEFAULT _VAR_TYPE_ bin = floor(log2(axy));
-]] ..
-
--- N.B. Floating point and real numbers are not the same thing; this is especially
--- important when working closely with the representation. Some care must be taken
--- regarding which of several "equivalent" formulae is chosen to find s, in order to
--- avoid corner cases that show up on certain architectures.
-[[
-		P_DEFAULT _VAR_TYPE_ num = exp2(16. - bin) * axy - 65536.;
+		P_DEFAULT _VAR_TYPE_ num = exp2(16. - bin) * axy; // this is (axy - 2^16) / 2^(bin - 16) plus 65536...
 ]] ..
 
 -- The lower 10 bits of the offset make up the y-value. The upper 6 bits, along with
@@ -76,8 +69,8 @@ local Decode = [[
 -- to mean "y = 1024". Rather than conditionally setting it directly, though, 1023 is
 -- found in the standard way and then incremented.
 [[
-		P_DEFAULT _VAR_TYPE_ rest = floor(num / 1024.);
-		P_DEFAULT _VAR_TYPE_ y = num - rest * 1024.;
+		P_DEFAULT _VAR_TYPE_ rest = floor(num / 1024.); // ...so this is 64 more than expected...
+		P_DEFAULT _VAR_TYPE_ y = num - rest * 1024.; // ...here those extras cancel out (65536 - 64 * 1024)...
 		P_DEFAULT _VAR_TYPE_ y_bias = step(0., -xy);
 ]]
 
@@ -92,7 +85,7 @@ local TenBitsPairCode, TenBitsPairParams = [[
 	{
 		]] .. Decode:gsub("_VAR_TYPE_", "float") .. [[
 
-		return vec2(bin * 64. + rest, y + y_bias);
+		return vec2((bin - 1.) * 64. + rest, y + y_bias); // ...remove the extra 64 from rest
 	}
 ]], {}
 
@@ -113,7 +106,7 @@ local TenBitsPair4Code, TenBitsPair4Params = [[
 	{
 		]] .. Decode:gsub("_VAR_TYPE_", "vec4") .. [[
 
-		xo = bin * 64. + rest;
+		xo = (bin - 1.) * 64. + rest; // ...as with TenBitsPair
 		yo = y + y_bias;
 	}
 
@@ -181,28 +174,20 @@ M.UNIT_PAIR4 = includer.AddSnippet{
 
 local Max -- maximum unsigned value
 
-local function DecodeTenBitsPair (xy)
+local Log2 = log(2)
+
+local function DecodeTenBitsPair (xy) -- cf. Decode snippet, above
 	local axy = abs(xy)
 
 	assert(axy > 0 and axy <= Max, "Invalid code")
 
-	-- Select the 2^16-wide floating point range. The first element in this range is 1 *
-	-- 2^bin, while the ulp will be 2^bin / 2^16 or, equivalently, 2^(bin - 16). Then the
-	-- index of axy is found by dividing its offset into the range by the ulp.
-	local bin = floor(log(axy) / log(2))
-	local num = (axy - 2^bin) * 2^(16 - bin)
-
-	-- The lower 10 bits of the offset make up the y-value. The upper 6 bits, along with
-	-- the bin index, are used to compute the x-value. The bin index can exceed 15, so x
-	-- can assume the value 1024 without incident. It seems at first that y cannot, since
-	-- 10 bits fall just short. If the original input was signed, however, this is taken
-	-- to mean "y = 1024". Rather than conditionally setting it directly, though, 1023 is
-	-- found in the standard way and then incremented.
+	local bin = floor(log(axy) / Log2)
+	local num = axy * 2^(16 - bin)
 	local rest = floor(num / 1024)
 	local y = num - rest * 1024
 	local y_bias = xy < 0 and 1 or 0
 
-	return bin * 64 + rest, y + y_bias
+	return (bin - 1) * 64 + rest, y + y_bias
 end
 
 --- Decodes a **highp**-range float, assumed to be encoded as per @{Encode}.
