@@ -32,7 +32,7 @@ local sort = table.sort
 -- Modules --
 local array_funcs = require("tektite_core.array.funcs")
 local array_preds = require("tektite_core.array.predicates")
-local fillers = require("s3_utils.effect.fillers")
+local fillers = require("s3_utils.object.fillers")
 local movement = require("s3_utils.movement")
 local tile_flags = require("s3_utils.tile_flags")
 local tile_maps = require("s3_utils.tile_maps")

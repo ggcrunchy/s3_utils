@@ -35,7 +35,7 @@ local sin = math.sin
 local sqrt = math.sqrt
 
 -- Modules --
-local glow = require("s3_utils.effect.glow")
+local glow = require("s3_utils.object.glow")
 local length = require("tektite_core.number.length")
 
 -- Corona globals --

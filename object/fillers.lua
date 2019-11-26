@@ -39,8 +39,8 @@ local directories = require("config.Directories")
 local flood = require("s3_utils.fill.flood")
 local tile_maps = require("s3_utils.tile_maps")
 
--- Kernels --
-local caustics_kernel = require("s3_utils.kernel.caustics")
+-- Effects --
+local caustics_effect = require("s3_utils.effect.caustics")
 
 -- Corona globals --
 local display = display
@@ -150,7 +150,7 @@ function M.End (how)
 		back.x, back.y = x, y
 	end
 
-	back.fill.effect = caustics_kernel
+	back.fill.effect = caustics_effect
 
 	back.fill.effect.seed = random(1024)
 
