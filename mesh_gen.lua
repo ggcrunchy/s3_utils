@@ -35,7 +35,7 @@ local sin = math.sin
 local sqrt = math.sqrt
 
 -- Modules --
-local mesh = require("corona_utils.mesh")
+local soup = require("corona_utils.soup")
 
 -- Cached module references --
 local _NewQuadrantArc_
@@ -132,7 +132,7 @@ local function DefBeginRow () end
 local DummyMap = M -- has no numerical keys
 
 local function LatticeUVsAndVertices (ncols, nrows, w, h, opts)
-	local add, begin_row, index_map, uvs, vertices = _AddVertex_, DefBeginRow, DummyMap
+	local add, begin_row, index_map, uvs, vertices = soup.AddVertex, DefBeginRow, DummyMap
 	local x, y, dw, dh = -w / 2, -h / 2, w / ncols, h / nrows
 	local ri, stride, context = 1, ncols + 1
 
@@ -164,7 +164,7 @@ local function LatticeUVsAndVertices (ncols, nrows, w, h, opts)
 end
 
 local function AddCell (indices, index, stride)
-	_AddQuadIndices_(indices, index, index + 1, index + stride, index + stride + 1)
+	soup.AddQuadIndices(indices, index, index + 1, index + stride, index + stride + 1)
 
 	return index + 1
 end
@@ -439,7 +439,7 @@ local function NubRing (params, k1, k2, fx, fy, v2)
 	final = NubMap[final] or final
 
 	for i = 1, NubParams.ncurve do
-		_AddTriangleIndices_(indices, CurRow[i], CurRow[i + 1], final)
+		soup.AddTriangleIndices(indices, CurRow[i], CurRow[i + 1], final)
 	end
 
 	NubParams.u1a, NubParams.u1b, NubParams.u2a, NubParams.u2b = umid, u2, umid, umid + du
@@ -449,7 +449,7 @@ local function NubRing (params, k1, k2, fx, fy, v2)
 	_NewQuadrantRing_(NubParams)
 
 	for i = 1, NubParams.ncurve do
-		_AddTriangleIndices_(indices, CurRow[i], CurRow[i + 1], final)
+		soup.AddTriangleIndices(indices, CurRow[i], CurRow[i + 1], final)
 	end
 
 	if CheckIndex(NubMap, 1) then
@@ -614,7 +614,7 @@ end
 
 local function JoinRows (indices, ncurve)
 	for i = 1, ncurve do
-		_AddQuadIndices_(indices, PrevRow[i], PrevRow[i + 1], CurRow[i], CurRow[i + 1])
+		soup.AddQuadIndices(indices, PrevRow[i], PrevRow[i + 1], CurRow[i], CurRow[i + 1])
 	end
 end
 
