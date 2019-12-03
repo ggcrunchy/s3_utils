@@ -32,13 +32,13 @@ local qualifiers = require("s3_utils.snippets.utils.qualifiers")
 --
 --
 
-local kernel = { language = "glsl", category = "filter", group = "filler", name = "caustics" }
+local effect = { language = "glsl", category = "filter", group = "filler", name = "caustics" }
 
-kernel.vertexData = {
+effect.vertexData = {
 	{ name = "seed", index = 0, default = 0, min = 0, max = 1023 }
 }
 
-kernel.isTimeDependent = true
+effect.isTimeDependent = true
 
 local Code = [[
 	_POS_ vec2 GetPosition (_UV_ float epoch)
@@ -74,8 +74,8 @@ local Code = [[
 Code = Code:gsub("_POS_", qualifiers.DefaultPrecisionOr("P_POSITION"))
 Code = Code:gsub("_UV_", qualifiers.DefaultPrecisionOr("P_UV"))
 
-includer.AugmentKernels({ requires = { iq.IQ1 }, fragment = Code }, kernel)
+includer.AugmentKernels({ requires = { iq.IQ1 }, fragment = Code }, effect)
 
-graphics.defineEffect(kernel)
+graphics.defineEffect(effect)
 
 return "filter.filler.caustics"

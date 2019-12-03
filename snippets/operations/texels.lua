@@ -23,6 +23,9 @@
 -- [ MIT license: http://www.opensource.org/licenses/mit-license.php ]
 --
 
+-- Standard library imports --
+local assert = assert
+
 -- Modules --
 local includer = require("corona_utils.includer")
 
@@ -66,6 +69,20 @@ M.LAPLACIAN = includer.AddSnippet[[
 ]]
 
 --- DOCME
+M.NORMALIZED_CORNER = includer.AddSnippet[[
+
+	P_UV vec2 NormalizedCorner (P_UV float v)
+	{
+		P_UV vec2 corner;
+
+		corner.y = step(.5, v);
+		corner.x = step(.25, v - corner.y * .5);
+
+		return corner;
+	}
+]]
+
+--- DOCME
 M.SEAMLESS_COMBINE = includer.AddSnippet[[
 
     P_UV vec4 PrepareSeamlessCombine (P_UV vec2 uv1)
@@ -81,6 +98,14 @@ M.SEAMLESS_COMBINE = includer.AddSnippet[[
     #define SEAMLESS_COMBINE_RESULTS(res1, res2, coords) ((res1) * coords.z + (res2) * coords.w) / max(coords.z + coords.w, .0125)
     #define SEAMLESS_EVALUATE_AND_COMBINE(op, uv, coords) SEAMLESS_COMBINE_RESULTS(SEAMLESS_EVALUATE_COORDS(op, uv), SEAMLESS_COMBINE_RESULTS(op, coords), coords)
 ]]
+
+--- DOCME
+M.SET_TEXCOORD = includer.AddSnippet{
+	vertex = [[
+
+	#define SET_TEXCOORD(coord) v_TexCoord = coord
+]]
+}
 
 --- DOCME
 M.SOFT_MIN2 = includer.AddSnippet[[
@@ -165,5 +190,15 @@ M.SOFT_MAX4 = includer.AddSnippet{
 }
 
 -- TODO: barycentric / FEM stuff
+
+local Corners = { upper_left = 0, upper_right = .25, lower_left = .5, lower_right = .75 }
+
+--- DOCME
+function M.NormalizedCornerValue (what)
+	return assert(Corners[what], "Invalid corner name")
+end
+
+--- DOCME
+
 
 return M

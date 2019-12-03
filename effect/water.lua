@@ -27,9 +27,9 @@
 -- [ MIT license: http://www.opensource.org/licenses/mit-license.php ]
 --
 
-local kernel = { category = "filter", group = "icyspark",  name = "water" }
+local effect = { category = "filter", group = "icyspark",  name = "water" }
 
-kernel.fragment = [[
+effect.fragment = [[
 	P_COLOR vec4 FragmentKernel (P_UV vec2 uv)
 	{
 		uv.y += (cos((uv.y + (CoronaTotalTime * 0.04)) * 45.0) * 0.0019) + (cos((uv.y + (CoronaTotalTime * 0.1)) * 10.0) * 0.002);
@@ -39,6 +39,6 @@ kernel.fragment = [[
 	}
 ]]
 
-graphics.defineEffect(kernel)
+graphics.defineEffect(effect)
 
 return "filter.icyspark.water"

@@ -1,4 +1,5 @@
 --- Shaders used to render parts of a 4x4 grid according to bit flags.
+-- TODO: decompose into mixins and Lua-side operations
 
 --
 -- Permission is hereby granted, free of charge, to any person obtaining
@@ -23,7 +24,6 @@
 -- [ MIT license: http://www.opensource.org/licenses/mit-license.php ]
 --
 
--- Common vertex userdata components --
 local UberVertexData = {
 	-- These indicate which cells in the underlying 4x4 grid are active. The following
 	-- diagram shows the correspondence between cell and bit index:
@@ -62,15 +62,13 @@ local UberVertexData = {
 	y = { default = 0, min = -65536, max = 65536 }
 }
 
--- Helper to add a new vertex userdatum
-local function AddDatum (kernel, name)
-	local ud = kernel.vertexData
+local function AddDatum (effect, name)
+	local ud = effect.vertexData
 	local index, from = #ud, UberVertexData[name]
 
 	ud[index + 1] = { name = name, index = index, default = from.default, min = from.min, max = from.max }
 end
 
--- Common vertex body --
 local UberVertex = [[
 #ifdef USE_NEIGHBORS
 	varying P_UV float v_Top, v_Left, v_Right, v_Bottom;
@@ -108,7 +106,6 @@ local UberVertex = [[
 	}
 ]]
 
--- Common fragment body --
 local UberFragment = [[
 #ifdef USE_NEIGHBORS
 	varying P_UV float v_Top, v_Left, v_Right, v_Bottom;
@@ -153,8 +150,8 @@ local UberFragment = [[
 		// Since medium precision only promises integers up to 2^10, the vertex kernel
 		// will have broken the bit pattern apart as two 8-bit numbers. Choose the
 		// appropriate half and power-of-2. This path is also used in the presence of
-		// neighbors, since the vertex kernel is then necessary anyhow and AddFactor()
-		// can be implemented without much hassle if `value` is known to be mediump.
+		// neighbors, since that needs a vertex kernel anyhow and AddFactor() can be
+		// implemented without much hassle if `value` is known to be mediump.
 		P_UV float high = step(8., cell);
 		P_UV float power = exp2(cell - high * 8.), value = mix(v_Low, v_High, high);
 	#endif
@@ -175,64 +172,63 @@ local UberFragment = [[
 	}
 ]]
 
-local Kernels = {}
+local Effects = {}
 
--- Common kernel setup
-local function NewKernel (suffix, prelude)
-	local kernel = { category = "filter", group = "filler", name = "grid4x4_" .. suffix, vertexData = {} }
+local function NewEffect (suffix, prelude)
+	local effect = { category = "filter", group = "filler", name = "grid4x4_" .. suffix, vertexData = {} }
 
-	kernel.vertex = prelude .. UberVertex
-	kernel.fragment = prelude .. UberFragment
+	effect.vertex = prelude .. UberVertex
+	effect.fragment = prelude .. UberFragment
 
-	AddDatum(kernel, "bits")
+	AddDatum(effect, "bits")
 
-	Kernels[suffix] = kernel.category .. "." .. kernel.group .. "." .. kernel.name
+	Effects[suffix] = effect.category .. "." .. effect.group .. "." .. effect.name
 
-	return kernel
+	return effect
 end
 
 -- Basic grid effect --
 do
-	local kernel = NewKernel("basic", "")
+	local effect = NewEffect("basic", "")
 
-	graphics.defineEffect(kernel)
+	graphics.defineEffect(effect)
 end
 
 -- Image sheet-based variant --
 do
-	local kernel = NewKernel("frame", [[
+	local effect = NewEffect("frame", [[
 		#define IMAGE_SHEET
 	]])
 
-	AddDatum(kernel, "x")
-	AddDatum(kernel, "y")
+	AddDatum(effect, "x")
+	AddDatum(effect, "y")
 
-	graphics.defineEffect(kernel)
+	graphics.defineEffect(effect)
 end
 
 -- Neighbor-based variant --
 do
-	local kernel = NewKernel("neighbors", [[
+	local effect = NewEffect("neighbors", [[
 		#define USE_NEIGHBORS
 	]])
 
-	AddDatum(kernel, "neighbors")
+	AddDatum(effect, "neighbors")
 
-	graphics.defineEffect(kernel)
+	graphics.defineEffect(effect)
 end
 
 -- Image sheet- and neighbor-based variant --
 do
-	local kernel = NewKernel("neighbors_frame", [[
+	local effect = NewEffect("neighbors_frame", [[
 		#define IMAGE_SHEET
 		#define USE_NEIGHBORS
 	]])
 
-	AddDatum(kernel, "neighbors")
-	AddDatum(kernel, "x")
-	AddDatum(kernel, "y")
+	AddDatum(effect, "neighbors")
+	AddDatum(effect, "x")
+	AddDatum(effect, "y")
 
-	graphics.defineEffect(kernel)
+	graphics.defineEffect(effect)
 end
 
-return Kernels
+return Effects

@@ -306,14 +306,14 @@ end
 
 Max = EncodeTenBitsPair(1024, 1023)
 
---- Prepares a unit pair-style parameter for addition to a kernel.
+--- Prepares a unit pair-style vertex datum.
 --
 -- This parameter should be assigned values encoded as per @{Encode}.
--- @string name Friendly name of shader parameter.
--- @uint index Vertex userdata component index.
+-- @string name Friendly name of custom effect parameter.
+-- @uint index `CoronaVertexData` index, &isin; [0, 3].
 -- @number defx Default number #1, cf. @{Encode}...
 -- @number defy ...and number #2.
--- @treturn table Vertex userdata component.
+-- @treturn table Datum.
 function M.VertexDatum (name, index, defx, defy)
 	return { name = name, index = index, default = _Encode_(defx, defy), min = -Max, max = Max }
 end
