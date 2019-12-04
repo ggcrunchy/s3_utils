@@ -96,7 +96,7 @@ M.SEAMLESS_COMBINE = includer.AddSnippet[[
 
     #define SEAMLESS_EVALUATE_COORDS(op, coords) op(coords.xy)
     #define SEAMLESS_COMBINE_RESULTS(res1, res2, coords) ((res1) * coords.z + (res2) * coords.w) / max(coords.z + coords.w, .0125)
-    #define SEAMLESS_EVALUATE_AND_COMBINE(op, uv, coords) SEAMLESS_COMBINE_RESULTS(SEAMLESS_EVALUATE_COORDS(op, uv), SEAMLESS_COMBINE_RESULTS(op, coords), coords)
+    #define SEAMLESS_EVALUATE_AND_COMBINE(op, uv, coords) SEAMLESS_COMBINE_RESULTS(SEAMLESS_EVALUATE_COORDS(op, uv), SEAMLESS_EVALUATE_COORDS(op, coords), coords)
 ]]
 
 --- DOCME
