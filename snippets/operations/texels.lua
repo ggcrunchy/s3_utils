@@ -73,18 +73,16 @@ M.NORMALIZED_CORNER = includer.AddSnippet[[
 
 	P_UV vec2 NormalizedCorner (P_UV float v)
 	{
-		P_UV vec2 corner;
+		P_UV float y = step(.5, v);
 
-		corner.y = step(.5, v);
-		corner.x = step(.25, v - corner.y * .5);
-
-		return corner;
+		return vec2(step(.25, v - y * .5), y);
 	}
 ]]
 
 --- DOCME
 M.SEAMLESS_COMBINE = includer.AddSnippet[[
 
+	// swapped image and circular masks per http://paulbourke.net/geometry/tiling/
     P_UV vec4 PrepareSeamlessCombine (P_UV vec2 uv1)
     {
         P_UV vec2 t1 = uv1 - .5, uv2 = uv1 + .5; // defer the fract() that would introduce sampling discontinuities, e.g. with noise
