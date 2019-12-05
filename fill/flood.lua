@@ -32,8 +32,8 @@ local remove = table.remove
 
 -- Modules --
 local bitmap = require("s3_utils.bitmap")
+local embedded_predicate = require("tektite_core.array.embedded_predicate")
 local grid = require("tektite_core.array.grid")
-local match_slot_id = require("tektite_core.array.match_slot_id")
 
 -- Corona globals --
 local display = display
@@ -167,7 +167,7 @@ local Used = {}
 -- @see Add, Prepare
 function M.Run (backdrop, opts)
 	-- Reset the grid-in-use state.
-	local used = remove(Used) or match_slot_id.Wrap{}
+	local used = remove(Used) or embedded_predicate.Wrap{}
 
 	used("begin_generation")
 
