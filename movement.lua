@@ -56,8 +56,8 @@ local Directions = {
 	down = { to_left = "right", to_right = "left", backward = "up" }
 }
 
---- Predicate.
--- @uint index Tile index.
+---
+-- @uint index
 -- @string dir Direction to query.
 -- @string facing If provided, direction is interpreted as `NextDirection(facing, dir)`.
 -- @treturn boolean Can we move to the next tile, going this way?
@@ -78,21 +78,19 @@ function M.CanGo (index, dir, facing)
 	return IsFlagSet(index, dir)
 end
 
--- Additive increment
 local function Add (v, dist, comp)
 	v = v + dist
 
 	return comp and min(comp, v) or v
 end
 
--- Subtractive increment
 local function Sub (v, dist, comp)
 	v = v - dist
 
 	return comp and max(comp, v) or v
 end
 
---- Moves by a given amount, from a given position, in a given direction. This relaxes
+--- Move by a given amount, from a given position, in a given direction. This relaxes
 -- cornering, and does the heavy lifting of keeping the result "on the rails".
 -- @number x Current x-coordinate.
 -- @number y Current y-coordinate.
@@ -146,11 +144,10 @@ function M.MoveFrom (x, y, dist, dir)
 	end
 end
 
--- Quick unit delta LUTs --
 local Horz = { left = -1, right = 1 }
 local Vert = { up = -1, down = 1 }
 
---- Determines next direction, given the direction you're facing and which way you're headed.
+--- Determine next direction, given the direction you're facing and which way you're headed.
 -- @string facing One of **"left"**, **"right"**, **"up"**, **"down"**.
 -- @string headed One of **"to_left"**, **"to_right"**, **"backward"**, **"forward"**.
 -- @string extra Optional extra information requested, as additional return value(s):
@@ -196,7 +193,6 @@ function M.Turns (swap)
 	end
 end
 
--- Helper to iterate tile directions
 local function AuxWays (index, dir)
 	for k in next, Directions, dir do
 		if IsFlagSet(index, k) then
@@ -205,14 +201,14 @@ local function AuxWays (index, dir)
 	end
 end
 
---- Iterator over the ways to go on a given tile.
--- @int index Tile index.
+--- Iterate over the ways to go on a given tile.
+-- @int index
 -- @treturn iterator Supplies direction.
 function M.Ways (index)
 	return AuxWays, index
 end
 
---- Chooses which direction to follow at a tile, given some preferences.
+--- Choose which direction to follow at a tile, given some preferences.
 -- @int index Tile index.
 -- @string dir1 Preferred direction.
 -- @string dir2 First runner-up.

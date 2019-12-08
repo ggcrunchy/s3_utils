@@ -57,6 +57,7 @@ local system = system
 
 -- Imports --
 local GetFlags = tile_flags.GetFlags
+local GetFlags_FromGroup = tile_flags.GetFlags_FromGroup
 local GetImage = tile_maps.GetImage
 local SetFlags = tile_flags.SetFlags
 
@@ -113,7 +114,6 @@ local function Wipe (index)
 	SetFlags(index, 0)
 end
 
--- Block methods --
 local Block = {}
 
 --- Adds a new group to the block's main group.
@@ -126,14 +126,13 @@ function Block:AddGroup ()
 	return new
 end
 
---
 local function AuxAddToList (list, top, item, func, arg1, arg2)
 	list[top + 1], list[top + 2], list[top + 3], list[top + 4] = item, func, arg1 or false, arg2 or false
 
 	return top + 4
 end
 
---- Adds an item to the block's list.
+--- Add an item to the block's list.
 -- @param item Item to add.
 -- @callable func Commands to use on _item_, according to the type of block.
 -- @param[opt] arg1 Argument #1 to _func_ (default **false**)...
@@ -146,10 +145,9 @@ function Block:AddToList (item, func, arg1, arg2)
 	self.m_list = list
 end
 
--- --
 local Dynamic
 
---- Adds an item to the block's list.
+--- Add an item to the block's list.
 -- @param item Item to add.
 -- @callable func Commands to use on _item_, according to the type of block.
 -- @treturn function X
@@ -185,7 +183,7 @@ function Block:AddToList_Dynamic (item, func, arg1, arg2)
 	return dfunc
 end
 
---- Indicates whether a block can occupy a region without overlapping a different block.
+--- Check whether a block can occupy a region without overlapping a different block.
 -- The block will ignore itself, since this test will often be used to determine if a
 -- block could be changed.
 --
@@ -212,7 +210,7 @@ function Block:CanOccupy (col1, row1, col2, row2)
 	return count == 0, count
 end
 
---- Fills a region with occupancy information matching this block.
+--- Fill a region with occupancy information matching this block.
 -- @int col1 A column...
 -- @int row1 ... and row.
 -- @int col2 Another column...
@@ -235,26 +233,26 @@ function Block:FillSelf ()
 	end
 end
 
---- Getter.
+---
 -- @treturn int Minimum column...
 -- @treturn int ...and maximum.
 function Block:GetColumns ()
 	return self.m_cmin, self.m_cmax
 end
 
---- Getter.
+---
 -- @treturn DisplayGroup The block's main group.
 function Block:GetGroup ()
 	return self.m_bgroup
 end
 
---- Getter.
+---
 -- @treturn DisplayGroup The block's image group.
 function Block:GetImageGroup ()
 	return self.m_igroup
 end
 
---- Gets the rect that was current at block initialization.
+--- Get the rect that was current at block initialization.
 -- @bool flagged If true, cull any unflagged outer rows and columns.
 -- @treturn int Minimum column...
 -- @treturn int ...and row.
@@ -278,7 +276,7 @@ function Block:GetInitialRect (flagged)
 	return self.m_cmin_save, self.m_rmin_save, self.m_cmax_save, self.m_rmax_save
 end
 
---- Getter.
+---
 -- @int index Tile index.
 -- @treturn uint Tile flags at block creation time.
 -- @see s3_utils.tile_flags.GetFlags
@@ -286,20 +284,20 @@ function Block:GetOldFlags (index)
 	return OldFlags[index] or 0
 end
 
---- Getter.
+---
 -- @treturn int Minimum row...
 -- @treturn int ...and maximum.
 function Block:GetRows ()
 	return self.m_rmin, self.m_rmax
 end
 
---- Getters.
+---
 -- @treturn boolean List has items?
 function Block:HasItems ()
 	return self.m_list ~= nil
 end
 
---- Injects a new group above the image group's parent: i.e. the new group becomes
+--- Inject a new group above the image group's parent: i.e. the new group becomes
 -- the image group's parent, and is added as a child of the old parent.
 --
 -- By default, the image group belongs to the main group.
@@ -313,7 +311,7 @@ function Block:InjectGroup ()
 	return new
 end
 
---- Iterates over a given region.
+--- Iterate over a given region.
 -- @int col1 A column...
 -- @int row1 ... and row.
 -- @int col2 Another column...
@@ -323,7 +321,6 @@ function Block:Iter (col1, row1, col2, row2)
 	return BlockIter(col1, row1, col2, row2)
 end
 
--- Helper to iterate list
 local function AuxIterList (list, index)
 	index = index + 4
 
@@ -334,7 +331,6 @@ local function AuxIterList (list, index)
 	end
 end
 
---
 local function AddDynamicItems (block, dlist, list)
 	local n = list and list.top or 0 -- N.B. dynamic items added after top
 
@@ -371,32 +367,46 @@ function Block:IterSelf ()
 	return BlockSelf(self)
 end
 
--- Temporary holding area for flags to use in another group --
-local FlagsTemp
+local function ZeroSpan (block, col1, row1, col2, row2)
+	for index in block:Iter(col1, row1, col2, row2) do
+		SetFlags(index, 0)
+	end
+end
 
---- Populates the flags in another group with the block's old flags, zeroing out a one-cell
+--- Populate the flags in a group with the block's old flags, zeroing out a one-cell
 -- rect around them for safety.
 -- @param[opt=self] name Name of flag group, cf. @{tile_flags.UseFlags}.
-function Block:MakeIsland (name)
-	for index in self:IterSelf() do
-		FlagsTemp[index] = GetFlags(index)
-	end
-
+-- @param[opt] from Name of source flag group. If absent, uses the default.
+function Block:MakeIsland (name, from)
 	local cur = tile_flags.UseFlags(name or self)
 	local cmin, cmax = self:GetColumns()
 	local rmin, rmax = self:GetRows()
 
-	for index in self:Iter(cmin - 1, rmin - 1, cmax + 1, rmax + 1) do
-		SetFlags(index, FlagsTemp[index] or 0)
+	if cmin > 1 then
+		ZeroSpan(self, cmin - 1, rmin, cmin - 1, rmax)
+	end
 
-		FlagsTemp[index] = nil -- ensure boundary of zeroes
+	if rmin > 1 then
+		ZeroSpan(self, cmin - 1, rmin - 1, cmax + 1, rmin - 1) -- also do corners
+	end
+
+	if cmax < NCols then
+		ZeroSpan(self, cmax + 1, rmin, cmax + 1, rmax)
+	end
+
+	if rmax < NRows then
+		ZeroSpan(self, cmin - 1, rmax + 1, cmax + 1, rmax + 1) -- also do corners
+	end
+
+	for index in self:IterSelf() do
+		SetFlags(index, GetFlags_FromGroup(from, index))
 	end
 
 	tile_flags.ResolveFlags()
 	tile_flags.UseFlags(cur)
 end
 
---- Sets the block's current rect, as used by the ***Self** methods.
+--- Set the block's current rect, as used by the ***Self** methods.
 --
 -- Until this call, the current rect will be equivalent to @{Block:GetInitialRect}'s
 -- result (with _flagged_ false).
@@ -413,7 +423,7 @@ function Block:SetRect (col1, row1, col2, row2)
 	self.m_rmin, self.m_rmax = row1, row2
 end
 
---- Wipes block state (flags, occupancy) in a given region.
+--- Wipe block state (flags, occupancy) in a given region.
 -- @int col1 A column...
 -- @int row1 ... and row.
 -- @int col2 Another column...
@@ -432,7 +442,6 @@ function Block:WipeSelf ()
 	end
 end
 
--- Prepares a new block
 local function NewBlock (col1, row1, col2, row2)
 	col1, row1, col2, row2 = GetExtents(col1, row1, col2, row2)
 
@@ -480,13 +489,12 @@ local function NewBlock (col1, row1, col2, row2)
 	return block
 end
 
--- Block type lookup table --
 local BlockList
 
 -- Block events --
 local Events
 
---- Adds a block to the level and registers an event for it.
+--- Add a block to the level and register an event for it.
 -- @ptable info Block info, with at least the following properties:
 --
 -- * **name**: **string** The event is registered under this name, which should be unique
@@ -510,7 +518,6 @@ function M.AddBlock (info, params)
 	end
 end
 
--- Keys referenced in editor event --
 local BlockKeys = { "type", "col1", "row1", "col2", "row2" }
 
 --- Handler for block-related events sent by the editor.
@@ -589,7 +596,7 @@ function M.EditorEvent (type, what, arg1, arg2, arg3)
 	end
 end
 
---- Fires all events.
+--- Fire all events.
 -- @bool forward Forward boolean, argument to event's **"fire"** handler.
 function M.FireAll (forward)
 	forward = not not forward
@@ -603,7 +610,7 @@ function M.FireAll (forward)
 	end
 end
 
---- Getter.
+---
 -- @param name Name used to register event in @{AddBlock}.
 -- @treturn callable If missing, a no-op. Otherwise, this is a function called as
 --   result = event(what, arg1, arg2)
@@ -623,7 +630,7 @@ function M.GetEvent (name)
 	return Events and Events[name]
 end
 
---- Getter.
+---
 -- @treturn {string,...} Unordered list of block type names.
 function M.GetTypes ()
 	local types = {}
@@ -662,7 +669,7 @@ end
 for k, v in pairs{
 	-- Enter Level --
 	enter_level = function(level)
-		Blocks, BlockIDs, Events, FlagsTemp, OldFlags = {}, {}, {}, {}, {}
+		Blocks, BlockIDs, Events, OldFlags = {}, {}, {}, {}
 		MarkersLayer = level.markers_layer
 		TilesLayer = level.tiles_layer
 		NCols, NRows = tile_maps.GetCounts()
@@ -671,7 +678,7 @@ for k, v in pairs{
 
 	-- Leave Level --
 	leave_level = function()
-		Blocks, BlockIDs, Dynamic, Events, FlagsTemp, MarkersLayer, OldFlags, TilesLayer = nil
+		Blocks, BlockIDs, Dynamic, Events, MarkersLayer, OldFlags, TilesLayer = nil
 	end,
 
 	-- Pre-Reset --

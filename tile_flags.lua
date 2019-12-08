@@ -31,7 +31,6 @@ local pairs = pairs
 local rawequal = rawequal
 
 -- Modules --
-local array_index = require("tektite_core.array.index")
 local grid_funcs = require("tektite_core.array.grid")
 local powers_of_2 = require("bitwise_ops.powers_of_2")
 local range = require("tektite_core.number.range")
@@ -54,24 +53,20 @@ local M = {}
 --
 --
 
--- Name of current flag group --
 local Current
 
---- Getter.
+---
 -- @return Name of current flag group.
 function M.GetCurrentGroup ()
 	return Current
 end
 
--- Flags for each cardinal direction --
 local DirFlags = { left = 0x1, right = 0x2, up = 0x4, down = 0x8 }
 
--- Helper to build up tile flags as combination of cardinal directions
 local function OrFlags (name1, name2, name3, name4)
 	return DirFlags[name1] + DirFlags[name2] + (DirFlags[name3] or 0) + (DirFlags[name4] or 0)
 end
 
--- Flag unions describing which directions leave tiles --
 local TileFlags = {
 	FourWays = OrFlags("left", "right", "up", "down"),
 	UpperLeft = OrFlags("right", "down"),
@@ -93,7 +88,7 @@ local TileFlags = {
 -- Working set of per-tile flags --
 local Flags
 
---- Getter.
+---
 -- @int index Tile index.
 -- @treturn uint Working flags, as assigned by @{SetFlags}; 0 if no value has been assigned,
 -- or _index_ is outside the level.
@@ -103,7 +98,24 @@ function M.GetFlags (index)
 	return Flags[index] or 0
 end
 
---- Getter.
+local function MaybeNil (name)
+	if name == nil then
+		return DirFlags -- arbitrary nonce
+	else
+		return name
+	end
+end
+
+local FlagGroups
+
+--- DOCME
+function M.GetFlags_FromGroup (name, index)
+	local fgroup = FlagGroups and FlagGroups[MaybeNil(name)]
+
+	return fgroup and fgroup.working[index] or 0 -- n.b. fallthrough when working[index] nil
+end
+
+---
 -- @string name One of **"left"**, **"right"**, **"up"**, **"down"**, **"FourWays"**,
 -- **"UpperLeft"**, **"UpperRight"**, **"LowerLeft"**, **"LowerRight"**, **"TopT"**,
 -- **"LeftT"**, **"RightT"**, **"BottomT"**, **"Horizontal"**, **"Vertical"**, **"LeftNub"**,
@@ -119,7 +131,7 @@ local NamesByValueDir = table_funcs.Invert(DirFlags)
 -- The names of each flag combination, indexed by its union of flags --
 local NamesByValueTile = table_funcs.Invert(TileFlags)
 
---- Getter.
+---
 -- @uint flags Union of flags.
 -- @treturn ?|string|nil One of the values of _name_ in @{GetFlagsByName}, or **nil** if no
 -- match was found.
@@ -130,7 +142,7 @@ end
 -- The "true" value of flags, as used outside the module --
 local ResolvedFlags
 
---- Getter.
+---
 -- @int index Tile index.
 -- @treturn uint Resolved flags, as of the last @{ResolveFlags} call; 0 if no resolution
 -- has been performed or _index_ is invalid.
@@ -140,7 +152,14 @@ function M.GetResolvedFlags (index)
 	return ResolvedFlags[index] or 0
 end
 
---- Predicate.
+--- DOCME
+function M.GetResolvedFlags_FromGroup (name, index)
+	local fgroup = FlagGroups and FlagGroups[MaybeNil(name)]
+
+	return fgroup and fgroup.resolved[index] or 0 -- n.b. fallthrough when resolved[index] nil
+end
+
+---
 -- @int index Tile index.
 -- @string name One of **"left"**, **"right"**, **"up"**, or **"down"**.
 -- @treturn boolean _index_ is valid and the resolved flag is set for the tile?
@@ -158,8 +177,8 @@ function M.IsFlagSet_Working (index, name)
 	return IsSet(Flags[index] or 0, DirFlags[name])
 end
 
---- Predicate.
--- @int index Tile index.
+---
+-- @int index
 -- @treturn boolean Is _index_ valid, and did it resolve to neighboring more than two tiles?
 -- @treturn uint Number of outbound directions, &isin; [0, 4].
 -- @see ResolveFlags
@@ -173,8 +192,8 @@ function M.IsJunction (index)
 	return n > 2, n
 end
 
---- Predicate.
--- @int index Tile index.
+---
+-- @int index
 -- @treturn boolean Is _index_ valid, and would its flags resolve to some combination?
 -- @see GetFlagsByName, ResolveFlags
 function M.IsOnPath (index)
@@ -183,8 +202,8 @@ function M.IsOnPath (index)
 	return flags > 0
 end
 
---- Predicate.
--- @int index Tile index.
+---
+-- @int index
 -- @treturn boolean Is _index_ valid, and did it resolve to either the **"Horizontal"** or
 -- the **"Vertical"** combination?
 -- @see GetFlagsByName, ResolveFlags
@@ -194,26 +213,21 @@ function M.IsStraight (index)
 	return flags == TileFlags.Horizontal or flags == TileFlags.Vertical
 end
 
--- Flags for the reverse of each cardinal direction --
 local Reverse = { left = "right", right = "left", up = "down", down = "up" }
 
 for k, v in pairs(Reverse) do
 	Reverse[k] = DirFlags[v]
 end
 
--- Tile index deltas in each direction --
-local Deltas = { left = -1, right = 1 }
-
--- How many columns wide is each row and how many rows tall is each column? --
-local NCols, NRows
-
--- Number of cells in level --
 local Area
 
--- Event dispatched on update --
+local Deltas = { left = -1, right = 1 }
+
+local NCols, NRows
+
 local FlagsUpdatedEvent = { name = "flags_updated" }
 
---- Resolves the current working flags, as set by @{SetFlags}, into the current active
+--- Resolve the current working flags, as set by @{SetFlags}, into the current active
 -- flag set. The working flags will remain intact.
 --
 -- The operation begins with the working set of flags, and looks for these cases:
@@ -227,19 +241,23 @@ function M.ResolveFlags (update)
 	local col = 0
 
 	for i = 1, Area do
-		local flags, ignore = Flags[i]
+		col = col + 1
 
-		col = array_index.RotateIndex(col, NCols)
-
-		if col == 1 then
-			ignore = "left"
-		elseif col == NCols then
-			ignore = "right"
+		if col > 1 then
+			Deltas.left = -1
+		else
+			Deltas.left, Deltas.right = 1 / 0, 1
 		end
+			
+		if col == NCols then
+			col, Deltas.right = 0, 1 / 0
+		end
+
+		local flags = Flags[i]
 
 		for _, power in PowersOf2(flags or 0) do
 			local what = NamesByValueDir[power]
-			local all = what ~= ignore and Flags[i + Deltas[what]]
+			local all = Flags[i + Deltas[what]]
 
 			if not (all and IsSet(all, Reverse[what])) then
 				flags = flags - power
@@ -254,13 +272,11 @@ function M.ResolveFlags (update)
 	end
 end
 
--- Clockwise flag rotations --
 local RotateCW = { left = "up", right = "down", down = "left", up = "right" }
 
--- Counter-clockwise flag rotations --
 local RotateCCW = table_funcs.Invert(RotateCW)
 
---- Reports the state of a set of flags, after a rotation of some multiple of 90 degrees.
+--- Report the state of a set of flags, after a rotation of some multiple of 90 degrees.
 -- @uint flags Union of flags to rotate.
 -- @string how If this is **"ccw"** or **"180"**, the flags are rotated through -90 or 180
 -- degrees, respectively. Otherwise, the rotation is by 90 degrees.
@@ -280,7 +296,7 @@ function M.Rotate (flags, how)
 end
 
 
---- Sets a tile's working flags.
+--- Set a tile's working flags.
 --
 -- @{ResolveFlags} can later be called to establish inter-tile connections.
 -- @int index Tile index; if outside the level, this is a no-op.
@@ -299,24 +315,13 @@ function M.SetFlags (index, flags)
 end
 
 local function AuxBindGroup (fgroup)
-	Flags, ResolvedFlags = fgroup.flags, fgroup.resolved
+	Flags, ResolvedFlags = fgroup.working, fgroup.resolved
 end
-
-local function MaybeNil (name)
-	if name == nil then
-		return DirFlags -- arbitrary nonce
-	else
-		return name
-	end
-end
-
--- Various groups of flags, working and resolved --
-local FlagGroups
 
 local function AuxUseFlags (name)
 	Current, name = name, MaybeNil(name)
 
-	local fgroup = FlagGroups[name] or { flags = {}, resolved = {} }
+	local fgroup = FlagGroups[name] or { resolved = {}, working = {} }
 
 	FlagGroups[name] = fgroup
 
@@ -327,7 +332,7 @@ end
 --
 -- This is a no-op if _name_ is already the current group.
 -- @param name Name of set, or **nil** for the default.
--- @treturn Name of group in use before call.
+-- @return Name of group in use before call.
 function M.UseFlags (name)
 	local current = Current
 
@@ -338,7 +343,7 @@ function M.UseFlags (name)
 	return current
 end
 
---- Visits all flag groups, namely the default one and anything instantiated by @{UseFlags}.
+--- Visit all flag groups, namely the default one and anything instantiated by @{UseFlags}.
 -- For each one, _func_ is called with the group name after making the given flags current.
 --
 -- The group current before this call is restored afterward.
@@ -356,7 +361,7 @@ function M.VisitGroups (func)
 	func(current)
 end
 
---- Clears all tile flags, in both the working and resolved sets, in a given region.
+--- Clear all tile flags, in both the working and resolved sets, in a given region.
 --
 -- Neighboring tiles' flags remain unaffected. Flag resolution is not performed.
 -- @int col1 Column of one corner...
