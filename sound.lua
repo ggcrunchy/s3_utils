@@ -210,12 +210,10 @@ end
 -- Perhaps impose that sound is singleton (or give warning...) if certain actions are linked
 
 for k, v in pairs{
-	-- Enter Level --
 	enter_level = function()
 		Sounds = {}
 	end,
 
-	-- Leave Level --
 	leave_level = function()
 		local sounds = Sounds
 
@@ -226,7 +224,6 @@ for k, v in pairs{
 		end
 	end,
 
-	-- Reset Level --
 	reset_level = function()
 		for _, sound in ipairs(Sounds) do
 			if sound.stop_on_reset then
@@ -235,7 +232,6 @@ for k, v in pairs{
 		end
 	end,
 
-	-- Things Loaded --
 	things_loaded = function()
 		for _, sound in ipairs(Sounds) do
 			sound.group:Load()

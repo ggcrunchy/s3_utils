@@ -308,14 +308,12 @@ function M.AddActionButton (group, do_actions)
 end
 
 for k, v in pairs{
-	-- Leave Level --
 	leave_level = function()
 		transition.cancel("action_fading")
 
 		ActionGroup, Current, Images, Sequence = nil
 	end,
 
-	-- Touching Dot --
 	touching_dot = function(event)
 		local action = ActionGroup[1]
 		local ntouch = action.m_touches

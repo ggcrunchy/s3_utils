@@ -42,7 +42,6 @@ local rawequal = rawequal
 local remove = table.remove
 
 -- Modules --
-local require_ex = require("tektite_core.require_ex")
 local call = require("corona_utils.call")
 local meta = require("tektite_core.table.meta")
 local range = require("tektite_core.number.range")
@@ -442,8 +441,20 @@ function Block:WipeSelf ()
 	end
 end
 
-local function NewBlock (col1, row1, col2, row2)
-	col1, row1, col2, row2 = GetExtents(col1, row1, col2, row2)
+--- Add a block to the level and register an event for it.
+-- @ptable info Block info, with at least the following properties:
+--
+-- * **name**: **string** The event is registered under this name, which should be unique
+-- among blocks.
+-- * **type**: **string** One of the choices reported by @{GetTypes}.
+-- * **col1**, **row1**, **col2**, **row2**: **int** Columns and rows defining the block.
+-- These will be sorted and clamped, as with block operations.
+--
+-- @todo Detect null blocks? Mention construction, Block:Reset
+-- @todo this is now out of date!
+-- @ptable params
+function M.New (info)
+	local col1, row1, col2, row2 = GetExtents(info.col1, info.row1, info.col2, info.row2)
 
 	-- Validate the block region, saving indices as we go to avoid repeating some work.
 	local block = system.newEventDispatcher()
@@ -489,29 +500,13 @@ local function NewBlock (col1, row1, col2, row2)
 	return block
 end
 
-local BlockList
-
--- Block events --
 local Events
 
---- Add a block to the level and register an event for it.
--- @ptable info Block info, with at least the following properties:
---
--- * **name**: **string** The event is registered under this name, which should be unique
--- among blocks.
--- * **type**: **string** One of the choices reported by @{GetTypes}.
--- * **col1**, **row1**, **col2**, **row2**: **int** Columns and rows defining the block.
--- These will be sorted and clamped, as with block operations.
---
--- @todo Detect null blocks? Mention construction, Block:Reset
--- @ptable params
-function M.AddBlock (info, params)
-	local block = NewBlock(info.col1, info.row1, info.col2, info.row2)
-	local event = assert(BlockList[info.type], "Invalid block").make(info, block)
-
+--- DOCME
+function Block:AttachEvent (event, info, params)
 	params:GetPubSubList():--[[bind.]]Publish(--[[params.pub_sub_list, ]]event, info.uid, "fire")
 
-	call.Redirect(event, block)
+	call.Redirect(event, self)
 
 	if Events then -- TODO: only set up for debugging
 		Events[#Events + 1] = event
@@ -531,7 +526,7 @@ local BlockKeys = { "type", "col1", "row1", "col2", "row2" }
 -- @param arg3 Argument #3.
 -- @return Result(s) of the event, if any.
 function M.EditorEvent (type, what, arg1, arg2, arg3)
-	local cons = BlockList[type].editor
+	local cons = nil--BlockList[type].editor
 
 	if cons then
 		local event = cons--("editor_event")
@@ -632,6 +627,7 @@ end
 
 ---
 -- @treturn {string,...} Unordered list of block type names.
+--[=[
 function M.GetTypes ()
 	local types = {}
 
@@ -641,6 +637,7 @@ function M.GetTypes ()
 
 	return types
 end
+--]=]
 
 --- DOCME
 function M.GlobalToLocal (x, y, lcs)
@@ -667,7 +664,6 @@ function M.LocalToGlobal (x, y, lcs)
 end
 
 for k, v in pairs{
-	-- Enter Level --
 	enter_level = function(level)
 		Blocks, BlockIDs, Events, OldFlags = {}, {}, {}, {}
 		MarkersLayer = level.markers_layer
@@ -676,12 +672,10 @@ for k, v in pairs{
 		-- TODO: leave Events nil
 	end,
 
-	-- Leave Level --
 	leave_level = function()
 		Blocks, BlockIDs, Dynamic, Events, MarkersLayer, OldFlags, TilesLayer = nil
 	end,
 
-	-- Pre-Reset --
 	pre_reset = function()
 		if #Blocks > 0 then
 			BlockIDs = {}
@@ -711,7 +705,6 @@ for k, v in pairs{
 		end
 	end,
 
-	-- Things Loaded --
 	things_loaded = function()
 		local event = { name = "block_setup" }
 
@@ -724,7 +717,5 @@ for k, v in pairs{
 } do
 	Runtime:addEventListener(k, v)
 end
-
-BlockList = require_ex.DoList("config.Blocks")
 
 return M

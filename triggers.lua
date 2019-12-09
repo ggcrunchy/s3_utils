@@ -237,17 +237,14 @@ function M.EditorEvent (_, what, arg1, arg2)
 end
 
 for k, v in pairs{
-	-- Enter Level --
 	enter_level = function()
 		Triggers = {}
 	end,
 
-	--
 	leave_level = function()
 		Triggers = nil
 	end,
 
-	-- Reset Level --
 	reset_level = function()
 		for _, trigger in ipairs(Triggers) do
 			if trigger.restore then

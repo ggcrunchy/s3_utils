@@ -158,12 +158,10 @@ local function EnterFrame ()
 end
 
 for k, v in pairs{
-	-- Enter Level --
 	enter_level = function()
 		EventNonce = {}
 	end,
 
-	-- Leave Level --
 	leave_level = function()
 		Runtime:removeEventListener("enterFrame", EnterFrame)
 
@@ -172,7 +170,6 @@ for k, v in pairs{
 		end)
 	end,
 
-	-- Ready To Go --
 	ready_to_go = function()
 		for _ in GetEvent.enter_frame:IterateFunctionsForObject--[[.Iter]](EventNonce) do
 			Runtime:addEventListener("enterFrame", EnterFrame)

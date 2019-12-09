@@ -219,13 +219,11 @@ function M.SetYOffset (offset)
 end
 
 for k, v in pairs{
-	-- Enter Level --
 	enter_level = function(level)
 		Width = level.ncols * level.w
 		Height = level.nrows * level.h
 	end,
 
-	-- Leave Level --
 	leave_level = function()
 		_Follow_(nil)
 	end

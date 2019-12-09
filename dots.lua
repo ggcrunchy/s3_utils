@@ -243,7 +243,6 @@ local function BlockFunc (what, dot, arg1, arg2)
 end
 
 for k, v in pairs{
-	-- Act On Dot --
 	act_on_dot = function(event)
 		local dot = event.dot
 
@@ -261,7 +260,6 @@ for k, v in pairs{
 		end
 	end,
 
-	-- Block Setup --
 	block_setup = function(event)
 		-- Sort the dots for incremental traversal as we iterate the block.
 		if not Dots.sorted then
@@ -287,21 +285,18 @@ for k, v in pairs{
 		end
 	end,
 
-	-- Enter Level --
 	enter_level = function()
 		Remaining = 0
 
 		Runtime:addEventListener("enterFrame", OnEnterFrame)
 	end,
 
-	-- Leave Level --
 	leave_level = function()
 		Dots = {}
 
 		Runtime:removeEventListener("enterFrame", OnEnterFrame)
 	end,
 
-	-- Reset Level --
 	reset_level = function()
 		Remaining = 0
 

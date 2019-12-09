@@ -180,21 +180,18 @@ local function CancelRunning ()
 end
 
 for k, v in pairs{
-	-- Enter Level --
 	enter_level = function(level)
 		Batch, Running = {}, {}
 		TileW = level.w
 		TileH = level.h
 	end,
 
-	-- Leave Level --
 	leave_level = function()
 		CancelRunning()
 
 		Batch, Running = nil
 	end,
 
-	-- Reset Level --
 	reset_level = function()
 		CancelRunning()
 

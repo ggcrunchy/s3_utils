@@ -340,7 +340,6 @@ local function BakeShapes (event)
 end
 
 for k, v in pairs{
-	-- Enter Level --
 	enter_level = function(level)
 		BG = level.bg_layer
 		Rows = array_funcs.ArrayOfTables(level.nrows)
@@ -349,15 +348,12 @@ for k, v in pairs{
 		AddFillLayer()
 	end,
 
-	-- Leave Level --
 	leave_level = function()
 		BG, FillLayer, Rows, Shapes = nil
 	end,
 
-	-- Post-Reset --
 	post_reset = BakeShapes,
 
-	-- Reset Level --
 	reset_level = function()
 		for i in pairs(Shapes) do
 			Shapes[i] = {}
@@ -368,7 +364,6 @@ for k, v in pairs{
 		AddFillLayer()
 	end,
 
-	-- Tiles Changed --
 	tiles_changed = function(event)
 		for i in pairs(Shapes) do
 			Shapes[i] = {}

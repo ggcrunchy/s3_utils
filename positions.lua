@@ -79,17 +79,14 @@ function M.GetPosition (id)
 end
 
 for k, v in pairs{
-	-- Enter Level --
 	enter_level = function()
 		Positions = {}
 	end,
 
-	-- Leave Level --
 	leave_level = function()
 		Positions = nil
 	end,
 
-	-- Reset Level --
 	reset_level = function()
 		for id, pos in pairs(Positions) do
 			tile_maps.PutObjectAt(pos.m_index, pos)

@@ -235,7 +235,6 @@ local NullMeta = {
 }
 
 for k, v in pairs{
-	-- Enter Level --
 	enter_level = function(level)
 		Tiles = setmetatable({}, NullMeta)
 		NCols = level.ncols
@@ -244,7 +243,6 @@ for k, v in pairs{
 		TileH = level.h
 	end,
 
-	-- Leave Level --
 	leave_level = function()
 		ImageSheet, Tiles = nil
 	end

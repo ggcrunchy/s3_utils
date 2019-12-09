@@ -384,7 +384,6 @@ function M.WipeFlags (col1, row1, col2, row2)
 end
 
 for k, v in pairs{
-	-- Enter Level --
 	enter_level = function(level)
 		Deltas.up = -level.ncols
 		Deltas.down = level.ncols
@@ -396,17 +395,14 @@ for k, v in pairs{
 		AuxUseFlags(nil)
 	end,
 
-	-- Leave Level --
 	leave_level = function()
 		FlagGroups, Flags, ResolvedFlags = nil
 	end,
 
-	-- Reset Level --
 	reset_level = function()
 		_ResolveFlags_()
 	end,
 
-	-- Tiles Changed --
 	tiles_changed = function()
 		_ResolveFlags_(true)
 	end

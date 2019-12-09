@@ -221,10 +221,8 @@ local function ResetLevel (how)
 end
 
 for k, v in pairs{
-	-- Began Path --
 	began_path = ResetLevel,
 
-	-- Enter Level --
 	enter_level = function(level)
 		local hg = level.hud_group
 
@@ -258,7 +256,6 @@ for k, v in pairs{
 		handle_key:Push(KeyEvent)
 	end,
 
-	-- Level Done --
 	level_done = function()
 		ResetLevel("stop")
 
@@ -269,25 +266,18 @@ for k, v in pairs{
 		composer.getVariable("handle_key"):Pop()
 	end,
 
-	-- Move Done --
 	move_done = ResetLevel,
 
-	-- Move Prepare --
 	move_prepare = PlayerKilled,
 
-	-- Player Killed --
 	player_killed = PlayerKilled,
 
-	-- Player Stunned --
 	player_stunned = PlayerKilled,
 
-	-- Player Unstunned --
 	player_unstunned = ResetLevel,
 
-	-- Ready To Go --
 	ready_to_go = ResetLevel,
 
-	-- Reset Level --
 	reset_level = ResetLevel
 } do
 	Runtime:addEventListener(k, v)

@@ -677,10 +677,8 @@ local function Clear ()
 end
 
 for k, v in pairs{
-	-- Leave Level --
 	leave_level = Clear,
 
-	-- System --
 	system = function(event)
 		if event.type == "applicationResume" and Image then
 			Image:invalidate("cache")

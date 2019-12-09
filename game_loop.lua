@@ -24,15 +24,22 @@
 --
 
 -- Standard library imports --
+local assert = assert
 local ceil = math.ceil
+local error = error
 local ipairs = ipairs
+local pcall = pcall
+local require = require
+local type = type
 local yield = coroutine.yield
 
 -- Modules --
 local require_ex = require("tektite_core.require_ex")
 local actions = require("s3_utils.state.actions")
-local blocks = require("s3_utils.blocks")
+local blocks = require("s3_utils.blocks") -- TODO: will break once removed...
 local _ = require("s3_utils.controls")
+local _ = require("config.Directories")
+local directories = require("s3_utils.directories")
 local dots = require("s3_utils.dots")
 local enemies = require("s3_utils.enemies")
 local global_events = require("s3_utils.global_events")
@@ -70,6 +77,51 @@ local function Ipairs (t)
 	end
 end
 
+local TypeToFactories = {}
+
+local _, NotFoundErr = pcall(require, "%s") -- assumes Lua error like "module 'name' not found: etc", e.g. as in https://www.lua.org/source/5.1/loadlib.c.html#ll_require
+
+NotFoundErr = NotFoundErr:sub(1, NotFoundErr:find(":") - 1)
+
+local function FindModule (ttype)
+	local sep = assert(ttype:find("%."), "Thing type missing `.`")
+
+	assert(sep > 1 and sep < #ttype, "Missing prefix or suffix")
+
+	local label, what, nf = ttype:sub(1, sep - 1), ttype:sub(sep) -- n.b. keep the separator
+
+	for _, dir in directories.IterateForLabel(label) do
+		local full_path = dir .. what
+		local ok, res = pcall(require, full_path)
+
+		if ok then
+			return res
+		else
+			if type(res) == "string" then
+				nf = nf or NotFoundErr:format(full_path)
+				ok = res:starts(nf)
+			end
+
+			if not ok then
+				error(res)
+			end
+		end
+	end
+end
+
+local function AuxAddThing (info, params, layer)
+	local ttype = info.type
+	local factories = TypeToFactories[ttype]
+
+	if not factories then
+		local mod = FindModule(ttype)
+
+		factories, TypeToFactories[ttype] = mod, mod
+	end
+
+	factories.make(info, params, layer)
+end
+
 --- DOCME
 function M.AddThings (current_level, level, params)
 	tilesets.UseTileset(level.tileset or "tree")
@@ -81,11 +133,18 @@ function M.AddThings (current_level, level, params)
 
 	tile_maps.AddTiles(tgroup, level)
 
+	local objects, things_layer = level.objects, current_level.things_layer
+
+	for i = 1, #(objects or "") do
+		AuxAddThing(objects[i], params, things_layer)
+	end
+
 	-- ...and the blocks...
+--[=[
 	for _, block in Ipairs(level.blocks) do
 		blocks.AddBlock(block, params)
 	end
-
+]=]
 	-- ...and the dots...
 	for _, dot in Ipairs(level.dots) do
 		dots.AddDot(current_level.things_layer, dot, params)

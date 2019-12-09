@@ -169,7 +169,6 @@ function M.PushRect (what, rect, how)
 end
 
 for k, v in pairs{
-	-- Enter Level --
 	enter_level = function()
 		Circles, Rects = {}, {}
 		Stash = display.newGroup()
@@ -177,7 +176,6 @@ for k, v in pairs{
 		Stash.isVisible = false
 	end,
 
-	-- Leave Level --
 	leave_level = function()
 		local stash = Stash
 

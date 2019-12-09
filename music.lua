@@ -236,12 +236,10 @@ end
 -- Some default score (perhaps in LevelMap, if not here), if one not present?
 
 for k, v in pairs{
-	-- Enter Level --
 	enter_level = function(level)
 		Music = {}
 	end,
 
-	-- Leave Level --
 	leave_level = function()
 		local music_list = Music
 
@@ -252,14 +250,12 @@ for k, v in pairs{
 		end
 	end,
 
-	-- Reset Level --
 	reset_level = function()
 		if PlayOnReset then
 			PlayNewTrack(PlayOnReset)
 		end
 	end,
 
-	-- Things Loaded --
 	things_loaded = function()
 		for _, music in ipairs(Music) do
 			music.group:Load()
