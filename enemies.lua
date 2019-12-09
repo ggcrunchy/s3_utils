@@ -32,7 +32,6 @@ local require = require
 local sin = math.sin
 
 -- Modules --
-local require_ex = require("tektite_core.require_ex")
 local adaptive = require("tektite_core.table.adaptive")
 local bind = require("corona_utils.bind")
 local call = require("corona_utils.call")
@@ -231,9 +230,6 @@ local function EnemyFunc (event, index, type_info, info)
 	end
 end
 
--- Enemy type lookup table --
-local EnemyList
-
 -- Enemy actions that can be triggered --
 local Actions = {
 	-- Do Kill --
@@ -334,7 +330,7 @@ end
 -- @param arg3 Argument #3.
 -- @return Result of the event, if any.
 function M.EditorEvent (type, what, arg1, arg2, arg3)
-	local type_info = EnemyList[type]
+	local type_info = nil--EnemyList[type] -- TODO!!!
 	local event = type_info and type_info.EditorEvent
 
 	if event then
@@ -406,8 +402,9 @@ function M.EditorEvent (type, what, arg1, arg2, arg3)
 	end
 end
 
---- Getter.
+---
 -- @treturn {string,...} Unordered list of enemy type names.
+--[=[
 function M.GetTypes ()
 	local types = {}
 
@@ -417,7 +414,7 @@ function M.GetTypes ()
 
 	return types
 end
-
+]=]
 --- Kill all enemies on demand.
 function M.KillAll ()
 	for _, enemy in ipairs(Enemies) do
@@ -474,10 +471,7 @@ local EnemyComponent = component.RegisterType{ name = "enemy", interfaces = { "h
 -- * **type**: Name of enemy type, q.v. _name_, above.
 --
 -- Instance-specific data may also be passed in other fields.
-function M.SpawnEnemy (group, info, params)
-	local type_info = EnemyList[info.type]
-	local enemy = type_info.New(group, info)
-
+function M.New (info, params, enemy, type_info)
 	Enemies[#Enemies + 1] = enemy
 
 	--
@@ -497,7 +491,7 @@ function M.SpawnEnemy (group, info, params)
 
 	-- Find the start tile to (re)spawn the enemy there, and kick off its behavior. Unless
 	-- fixed, this starting position may attach to a block and be moved around.
-	enemy.m_start = display.newCircle(group, 0, 0, 5)
+	enemy.m_start = display.newCircle(enemy.parent, 0, 0, 5)
 
 	enemy.m_start.isVisible = false
 
@@ -671,8 +665,6 @@ TryConfigFunc("add_listeners", events)
 for k, v in pairs(events) do
 	Runtime:addEventListener(k, v)
 end
-
-EnemyList = require_ex.DoList("config.Enemies")
 
 -- TODO: Bosses too?
 

@@ -29,6 +29,9 @@ local includer = require("corona_utils.includer")
 -- Corona globals --
 local display = display
 
+-- Cached module references --
+local _AttachCanvasToPaint_
+
 -- Exports --
 local M = {}
 
@@ -68,6 +71,11 @@ M.GET_DISTORTED_RGB = includer.AddSnippet{
 }
 
 --- DOCME
+function M.AttachCanvasToPaint (paint, canvas)
+	paint.filename, paint.baseDir = canvas.filename, canvas.baseDir
+end
+
+--- DOCME
 function M.BindCanvasEffect (object, fill, name)
     object.fill = fill
     object.fill.effect = name
@@ -77,10 +85,11 @@ end
 function M.CanvasToPaintAttacher (paint)
     return function(event)
         if event.canvas then
-            paint.filename = event.canvas.filename
-            paint.baseDir = event.canvas.baseDir
+			_AttachCanvasToPaint_(paint, event.canvas)
         end
     end
 end
+
+_AttachCanvasToPaint_ = M.AttachCanvasToPaint
 
 return M

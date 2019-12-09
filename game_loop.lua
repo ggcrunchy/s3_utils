@@ -40,7 +40,7 @@ local _ = require("s3_utils.controls")
 local _ = require("config.Directories")
 local directories = require("s3_utils.directories")
 local dots = require("s3_utils.dots")
-local enemies = require("s3_utils.enemies")
+--local enemies = require("s3_utils.enemies")
 local global_events = require("s3_utils.global_events")
 local loop = require_ex.Lazy("corona_boilerplate.game.loop")
 local music = require("s3_utils.music")
@@ -146,11 +146,6 @@ function M.AddThings (current_level, level, params)
 	-- ...and the player...
 	player.AddPlayer(current_level.things_layer, level.start_col, level.start_row)
 
-	-- ...and the enemies...
-	for _, enemy in Ipairs(level.enemies) do
-		enemies.SpawnEnemy(current_level.things_layer, enemy, params)
-	end
-
 	-- ...and any global events...
 	global_events.AddEvents(level.global_events, params)
 
@@ -234,6 +229,8 @@ function M.BeforeEntering (w, h)
 		Canvas = graphics.newTexture{
 			type = "canvas", width = display.contentWidth, height = display.contentHeight
 		}
+
+		current_level.canvas = Canvas
 
 		Canvas:draw(current_level.game_group)
 		Runtime:addEventListener("enterFrame", InvalidateCanvas)
