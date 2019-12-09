@@ -180,12 +180,6 @@ local function CancelRunning ()
 end
 
 for k, v in pairs{
-	enter_level = function(level)
-		Batch, Running = {}, {}
-		TileW = level.w
-		TileH = level.h
-	end,
-
 	leave_level = function()
 		CancelRunning()
 
@@ -196,6 +190,12 @@ for k, v in pairs{
 		CancelRunning()
 
 		Batch, Running = {}, {}
+	end,
+
+	things_loaded = function(level)
+		Batch, Running = {}, {}
+		TileW = level.w
+		TileH = level.h
 	end
 } do
 	Runtime:addEventListener(k, v)

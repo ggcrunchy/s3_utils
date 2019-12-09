@@ -45,9 +45,6 @@ local M = {}
 --
 
 -- --
-local Triggers
-
--- --
 local Events = {}
 
 for _, v in ipairs{ "on_enter", "on_leave" } do
@@ -98,6 +95,8 @@ local Actions = {
 
 -- --
 local FlagGroups = { "player", "enemy", "projectile" }
+
+local Triggers
 
 --- DOCME
 function M.AddTrigger (group, info, params)
@@ -157,6 +156,7 @@ function M.AddTrigger (group, info, params)
 	end
 
 	--
+	Triggers = Triggers or {}
 	Triggers[#Triggers + 1] = trigger
 end
 
@@ -237,16 +237,14 @@ function M.EditorEvent (_, what, arg1, arg2)
 end
 
 for k, v in pairs{
-	enter_level = function()
-		Triggers = {}
-	end,
-
 	leave_level = function()
 		Triggers = nil
 	end,
 
 	reset_level = function()
-		for _, trigger in ipairs(Triggers) do
+		for i = 1, #(Triggers or "") do
+			local trigger = Triggers[i]
+
 			if trigger.restore then
 				trigger.off = false
 			end

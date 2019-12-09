@@ -91,20 +91,13 @@ local function BlockSelf (block)
 	return AuxBlock(col1, row1, col2, row2)
 end
 
--- List of loaded blocks --
-local Blocks
+local LoadedBlocks
 
 -- Tile -> ID map indicating which block, if any, occupies a given tile --
 local BlockIDs
 
 -- Creation-time values of flags within the block region, for restoration --
 local OldFlags
-
--- Layer into which dust is added --
-local MarkersLayer
-
--- Layers into which block groups are added --
-local TilesLayer
 
 -- Wipes block state at a given tile index
 local function Wipe (index)
@@ -453,7 +446,12 @@ end
 -- @todo Detect null blocks? Mention construction, Block:Reset
 -- @todo this is now out of date!
 -- @ptable params
-function M.New (info)
+function M.New (info, params)
+	if not LoadedBlocks then
+		LoadedBlocks, BlockIDs, OldFlags = {}, {}, {}
+		NCols, NRows = tile_maps.GetCounts()
+	end
+
 	local col1, row1, col2, row2 = GetExtents(info.col1, info.row1, info.col2, info.row2)
 
 	-- Validate the block region, saving indices as we go to avoid repeating some work.
@@ -477,7 +475,7 @@ function M.New (info)
 
 	-- Lift any tile images into the block's own group. Mark the block region as occupied
 	-- and cache the current flags on each tile, for restoration.
-	block.m_id, block.m_igroup = #Blocks + 1, display.newGroup()
+	block.m_id, block.m_igroup = #LoadedBlocks + 1, display.newGroup()
 
 	for i, index in ipairs(block) do
 		block[i] = GetImage(index) or false
@@ -490,10 +488,12 @@ function M.New (info)
 		OldFlags[index] = GetFlags(index)
 	end
 
-	block.m_bgroup:insert(block.m_igroup)
-	TilesLayer:insert(block.m_bgroup)
+	local tiles_layer = params:GetCurrentLevelProperty("tiles_layer")
 
-	Blocks[block.m_id] = block
+	block.m_bgroup:insert(block.m_igroup)
+	tiles_layer:insert(block.m_bgroup)
+
+	LoadedBlocks[block.m_id] = block
 
 	meta.Augment(block, Block)
 
@@ -508,7 +508,7 @@ function Block:AttachEvent (event, info, params)
 
 	call.Redirect(event, self)
 
-	if Events then -- TODO: only set up for debugging
+	if Events then -- TODO: not set up yet any more, do so for debugging
 		Events[#Events + 1] = event
 	end
 end
@@ -664,52 +664,44 @@ function M.LocalToGlobal (x, y, lcs)
 end
 
 for k, v in pairs{
-	enter_level = function(level)
-		Blocks, BlockIDs, Events, OldFlags = {}, {}, {}, {}
-		MarkersLayer = level.markers_layer
-		TilesLayer = level.tiles_layer
-		NCols, NRows = tile_maps.GetCounts()
-		-- TODO: leave Events nil
-	end,
-
 	leave_level = function()
-		Blocks, BlockIDs, Dynamic, Events, MarkersLayer, OldFlags, TilesLayer = nil
+		LoadedBlocks, BlockIDs, Dynamic, Events, OldFlags = nil
 	end,
 
 	pre_reset = function()
-		if #Blocks > 0 then
+		if LoadedBlocks then
 			BlockIDs = {}
-		end
 
-		-- Restore any flags that may have been altered by a block.
-		for i, flags in pairs(OldFlags) do
---[[
-			local image = GetImage(i) -- Relevant?...
+			-- Restore any flags that may have been altered by a block.
+			for i, flags in pairs(OldFlags) do
+	--[[
+				local image = GetImage(i) -- Relevant?...
 
-			if image then
-				PutObjectAt(i, image)
-			end
-]]
--- Physics...
-			SetFlags(i, flags)
-		end
-
-		-- Reset any block state and refill initial block regions with IDs.
-		for _, block in ipairs(Blocks) do
-			if block.Reset then
-				block:Reset()
+				if image then
+					PutObjectAt(i, image)
+				end
+	]]
+	-- Physics...
+				SetFlags(i, flags)
 			end
 
-			block:SetRect(block:GetInitialRect()) -- TODO: Make responsibilty of event?
-			block:FillSelf()
+			-- Reset any block state and refill initial block regions with IDs.
+			for _, block in ipairs(LoadedBlocks) do
+				if block.Reset then
+					block:Reset()
+				end
+
+				block:SetRect(block:GetInitialRect()) -- TODO: Make responsibilty of event?
+				block:FillSelf()
+			end
 		end
 	end,
 
 	things_loaded = function()
 		local event = { name = "block_setup" }
 
-		for _, block in ipairs(Blocks) do
-			event.block = block
+		for i = 1, #(LoadedBlocks or "") do
+			event.block = LoadedBlocks[i]
 
 			Runtime:dispatchEvent(event)
 		end

@@ -58,21 +58,21 @@ function M.ColorInterpolator (r1, g1, b1, r2, g2, b2)
 	end
 end
 
---- Getter.
+---
 -- @treturn number Current glow time, &isin; [0, 1].
 function M.GetGlowTime ()
 	return Glow.t
 end
 
 for k, v in pairs{
-	enter_level = function()
+	leave_level = function()
+		transition.cancel(Glow)
+	end,
+
+	things_loaded = function()
 		Glow.t = 0
 
 		transition.to(Glow, GlowParams)
-	end,
-
-	leave_level = function()
-		transition.cancel(Glow)
 	end
 } do
 	Runtime:addEventListener(k, v)

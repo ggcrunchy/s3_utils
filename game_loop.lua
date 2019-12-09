@@ -36,7 +36,6 @@ local yield = coroutine.yield
 -- Modules --
 local require_ex = require("tektite_core.require_ex")
 local actions = require("s3_utils.state.actions")
-local blocks = require("s3_utils.blocks") -- TODO: will break once removed...
 local _ = require("s3_utils.controls")
 local _ = require("config.Directories")
 local directories = require("s3_utils.directories")
@@ -109,7 +108,7 @@ local function FindModule (ttype)
 	end
 end
 
-local function AuxAddThing (info, params, layer)
+local function AuxAddThing (info, params)
 	local ttype = info.type
 	local factories = TypeToFactories[ttype]
 
@@ -119,7 +118,7 @@ local function AuxAddThing (info, params, layer)
 		factories, TypeToFactories[ttype] = mod, mod
 	end
 
-	factories.make(info, params, layer)
+	factories.make(info, params)
 end
 
 --- DOCME
@@ -133,18 +132,12 @@ function M.AddThings (current_level, level, params)
 
 	tile_maps.AddTiles(tgroup, level)
 
-	local objects, things_layer = level.objects, current_level.things_layer
+	local objects = level.objects
 
 	for i = 1, #(objects or "") do
-		AuxAddThing(objects[i], params, things_layer)
+		AuxAddThing(objects[i], params)
 	end
 
-	-- ...and the blocks...
---[=[
-	for _, block in Ipairs(level.blocks) do
-		blocks.AddBlock(block, params)
-	end
-]=]
 	-- ...and the dots...
 	for _, dot in Ipairs(level.dots) do
 		dots.AddDot(current_level.things_layer, dot, params)

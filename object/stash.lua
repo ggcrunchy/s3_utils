@@ -38,7 +38,8 @@ local M = {}
 --
 --
 
-local function Pull (cache, into)
+local function Pull (cset, what, into)
+	local cache = cset and cset[what]
 	local object = cache and remove(cache)
 
 	if object then
@@ -64,9 +65,7 @@ local Circles
 function M.PullCircle (what, into, new)
 	into = into or display.getCurrentStage()
 
-	local cache = Circles[what]
-
-	return Pull(cache, into) or (new or NewCircle)(into)
+	return Pull(Circles, what, into) or (new or NewCircle)(into)
 end
 
 local function NewRect (into)
@@ -85,9 +84,7 @@ local Rects
 function M.PullRect (what, into, new)
 	into = into or display.getCurrentStage()
 
-	local cache = Rects[what]
-
-	return Pull(cache, into) or (new or NewRect)(into)
+	return Pull(Rects, what, into) or (new or NewRect)(into)
 end
 
 local Stash
@@ -169,13 +166,6 @@ function M.PushRect (what, rect, how)
 end
 
 for k, v in pairs{
-	enter_level = function()
-		Circles, Rects = {}, {}
-		Stash = display.newGroup()
-
-		Stash.isVisible = false
-	end,
-
 	leave_level = function()
 		local stash = Stash
 
@@ -194,6 +184,13 @@ for k, v in pairs{
 		end, 0)
 
 		Circles, Rects, Stash = nil
+	end,
+
+	things_loaded = function()
+		Circles, Rects = {}, {}
+		Stash = display.newGroup()
+
+		Stash.isVisible = false
 	end
 } do
 	Runtime:addEventListener(k, v)
