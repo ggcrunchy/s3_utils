@@ -472,6 +472,7 @@ local EnemyComponent = component.RegisterType{ name = "enemy", interfaces = { "h
 --
 -- Instance-specific data may also be passed in other fields.
 function M.New (info, params, enemy, type_info)
+	Enemies = Enemies or {}
 	Enemies[#Enemies + 1] = enemy
 
 	--
@@ -583,22 +584,23 @@ end
 local EventToBroadcast
 
 local function Broadcast (name)
+	EventToBroadcast = EventToBroadcast or {}
 	EventToBroadcast.name = name
 
 	_BroadcastEvent_(EventToBroadcast)
 end
 
 local events = {
-	-- Block --
 	block = _BroadcastEvent_,
 
-	-- Block Setup --
 	block_setup = function(event)
 		local block = event.block
 		local cmin, cmax = block:GetColumns()
 		local rmin, rmax = block:GetRows()
 
-		for _, enemy in ipairs(Enemies) do
+		for i = 1, #(Enemies or "") do
+			local enemy = Enemies[i]
+
 			if enemy.m_can_attach then
 				local start, col, row = enemy.m_start, tile_maps.GetCell(enemy.m_tile)
 
@@ -611,16 +613,12 @@ local events = {
 		end
 	end,
 
-	-- Enter Level --
-	enter_level = function()
-		EventToBroadcast, Enemies = {}, {}
-	end,
-
-	-- Leave Level --
 	leave_level = function()
 		Broadcast("about_to_leave")
 
-		for _, enemy in ipairs(Enemies) do
+		for i = 1, #(Enemies or "") do
+			local enemy = Enemies[i]
+
 			ClearLocalVars(enemy)
 
 			timer.cancel(enemy.m_func)
@@ -629,11 +627,12 @@ local events = {
 		EventToBroadcast, Enemies = nil
 	end,
 
-	-- Reset Level --
 	reset_level = function()
 		Broadcast("about_to_reset")
 
-		for _, enemy in ipairs(Enemies) do
+		for i = 1, #(Enemies or "") do
+			local enemy = Enemies[i]
+
 			ClearLocalVars(enemy)
 
 			enemy.m_alive = false
@@ -652,10 +651,9 @@ local events = {
 		end
 	end,
 
-	-- Ready To Go --
 	ready_to_go = function()
-		for _, enemy in ipairs(Enemies) do
-			timer.resume(enemy.m_func)
+		for i = 1, #(Enemies or "") do
+			timer.resume(Enemies[i].m_func)
 		end
 	end
 }

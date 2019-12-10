@@ -488,7 +488,7 @@ function M.New (info, params)
 		OldFlags[index] = GetFlags(index)
 	end
 
-	local tiles_layer = params:GetCurrentLevelProperty("tiles_layer")
+	local tiles_layer = params.tiles_layer
 
 	block.m_bgroup:insert(block.m_igroup)
 	tiles_layer:insert(block.m_bgroup)

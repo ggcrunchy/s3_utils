@@ -42,16 +42,21 @@ local Positions
 
 --- DOCME
 -- @ptable info
-function M.AddPosition (info)
+function M.make (info, params)
 	local pos = { m_index = tile_maps.GetTileIndex(info.col, info.row) }
 
 	tile_maps.PutObjectAt(pos.m_index, pos)
 
+	Positions = Positions or {}
 	Positions[info.uid] = pos
+
+	local psl = params:GetPubSubList()
+
+	psl:Publish(pos, info.uid, "pos")
 end
 
 --- DOCME
-function M.EditorEvent (_, what, arg1, arg2)
+function M.editor (_, what, arg1, arg2)
 	-- Enumerate Properties --
 	-- arg1: Dialog
 	if what == "enum_props" then
@@ -75,21 +80,19 @@ end
 
 --- DOCME
 function M.GetPosition (id)
-	return Positions[id]
+	return Positions and Positions[id]
 end
 
 for k, v in pairs{
-	enter_level = function()
-		Positions = {}
-	end,
-
 	leave_level = function()
 		Positions = nil
 	end,
 
 	reset_level = function()
-		for id, pos in pairs(Positions) do
-			tile_maps.PutObjectAt(pos.m_index, pos)
+		if Positions then
+			for _, pos in pairs(Positions) do
+				tile_maps.PutObjectAt(pos.m_index, pos)
+			end
 		end
 	end
 } do

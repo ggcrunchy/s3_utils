@@ -41,9 +41,7 @@ local _ = require("config.Directories")
 local directories = require("s3_utils.directories")
 local global_events = require("s3_utils.global_events")
 local loop = require_ex.Lazy("corona_boilerplate.game.loop")
---local music = require("s3_utils.music")
 local player = require("game.player.core")
---local sound = require("s3_utils.sound")
 local tile_maps = require("s3_utils.tile_maps")
 local tilesets = require("s3_utils.tilesets")
 local triggers = require("s3_utils.triggers")
@@ -76,16 +74,23 @@ end
 
 local TypeToFactories = {}
 
-local _, NotFoundErr = pcall(require, "%s") -- assumes Lua error like "module 'name' not found: etc", e.g. as in https://www.lua.org/source/5.1/loadlib.c.html#ll_require
+local _, NotFoundErr = pcall(require, "%s") -- assumes Lua error like "module 'name' not found: etc", e.g.
+											-- as in https://www.lua.org/source/5.1/loadlib.c.html#ll_require
 
 NotFoundErr = NotFoundErr:sub(1, NotFoundErr:find(":") - 1)
 
 local function FindModule (ttype)
-	local sep = assert(ttype:find("%."), "Thing type missing `.`")
--- TODO: if no sep, use "catch-all"?
-	assert(sep > 1 and sep < #ttype, "Missing prefix or suffix")
+	local sep, label, what, nf = ttype:find("%.")
 
-	local label, what, nf = ttype:sub(1, sep - 1), ttype:sub(sep) -- n.b. keep the separator
+	if sep then
+		assert(sep > 1 and sep < #ttype, "Missing prefix or suffix")
+
+		label, what = ttype:sub(1, sep - 1), ttype:sub(sep) -- n.b. keep the separator...
+
+		assert(label ~= "default", "Thing cannot explicitly have `default` label")
+	else
+		label, what = "default", "." .. ttype -- ...and manually add it here
+	end
 
 	for _, dir in directories.IterateForLabel(label) do
 		local full_path = dir .. what
@@ -156,18 +161,6 @@ function M.AddThings (current_level, level, params)
 	for _, value in Ipairs(level.values) do
 		values.AddValue(value, params)
 	end
---[=[
-	-- ...and music...
-	for _, track in Ipairs(level.music) do
-		music.AddMusic(track, params)
-	end
-
-	-- ...and sounds.
-	for _, sample in Ipairs(level.sound) do
-		sound.AddSound(sample, params)
-	end
-	^^ TODO: figure out decent policy for these
-]=]
 end
 
 -- Primary display groups --

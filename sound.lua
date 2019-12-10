@@ -143,7 +143,7 @@ local function LinkSound (sound, other, ssub, osub)
 end
 
 --- DOCME
-function M.EditorEvent (_, what, arg1, arg2)
+function M.editor (_, what, arg1, arg2)
 	-- Enumerate Defaults --
 	-- arg1: Defaults
 	if what == "enum_defs" then
