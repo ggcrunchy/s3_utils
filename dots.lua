@@ -57,9 +57,6 @@ local M = {}
 --
 --
 
--- Tile index -> dot map --
-local Dots = {}
-
 local function TryToAddBody (dot) 
 	local body_prop = dot.body_P
 
@@ -67,6 +64,17 @@ local function TryToAddBody (dot)
 		collision.MakeSensor(dot, dot.body_type_P, body_prop)
 
 		return true
+	end
+end
+
+-- Tile index -> dot map --
+local Dots
+
+local function OnEnterFrame ()
+	for _, dot in ipairs(Dots) do
+		if dot.Update then
+			dot:Update()
+		end
 	end
 end
 
@@ -126,6 +134,12 @@ function M.New (info, dot)
 
 	dot.m_count = is_counted and 1 or 0
 	dot.m_index = index
+
+	if not Dots then
+		Dots, Remaining = {}, 0
+
+		Runtime:addEventListener("enterFrame", OnEnterFrame)
+	end
 
 	Remaining = Remaining + dot.m_count
 
@@ -206,14 +220,6 @@ function M.GetTypes ()
 end
 ]=]
 
-local function OnEnterFrame ()
-	for _, dot in ipairs(Dots) do
-		if dot.Update then
-			dot:Update()
-		end
-	end
-end
-
 local function DotLess (a, b)
 	return a.m_index < b.m_index
 end
@@ -244,7 +250,7 @@ for k, v in pairs{
 	act_on_dot = function(event)
 		local dot = event.dot
 
-		-- Remove the dot from any shapes it's in.
+		-- Remove the dot from any shapes that contain it.
 		shapes.RemoveAt(dot.m_index)
 
 		-- If this dot counts toward the "dots remaining", deduct it.
@@ -283,14 +289,8 @@ for k, v in pairs{
 		end
 	end,
 
-	enter_level = function()
-		Remaining = 0
-
-		Runtime:addEventListener("enterFrame", OnEnterFrame)
-	end,
-
 	leave_level = function()
-		Dots = {}
+		Dots = nil
 
 		Runtime:removeEventListener("enterFrame", OnEnterFrame)
 	end,
@@ -298,26 +298,28 @@ for k, v in pairs{
 	reset_level = function()
 		Remaining = 0
 
-		for _, dot in ipairs(Dots) do
-			tile_maps.PutObjectAt(dot.m_index, dot)
-
-			dot.isVisible = true
-			dot.rotation = 0
-
-			if dot.Reset then
-				dot:Reset()
-			end
-
-			Remaining = Remaining + dot.m_count
-		end
-
-		timer.performWithDelay(0, function()
+		if Dots then
 			for _, dot in ipairs(Dots) do
-				if collision.RemoveBody(dot) then
-					TryToAddBody(dot)
+				tile_maps.PutObjectAt(dot.m_index, dot)
+
+				dot.isVisible = true
+				dot.rotation = 0
+
+				if dot.Reset then
+					dot:Reset()
 				end
+
+				Remaining = Remaining + dot.m_count
 			end
-		end)
+
+			timer.performWithDelay(0, function()
+				for _, dot in ipairs(Dots) do
+					if collision.RemoveBody(dot) then
+						TryToAddBody(dot)
+					end
+				end
+			end)
+		end
 	end
 } do
 	Runtime:addEventListener(k, v)

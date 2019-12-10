@@ -57,6 +57,7 @@ local Shapes
 --- DOCME
 -- @uint index
 function M.AddPoint (index)
+	Shapes = Shapes or {}
 	Shapes[index] = Shapes[index] or {}
 end
 
@@ -150,7 +151,7 @@ end
 --- DOCME
 -- @uint index
 function M.RemoveAt (index)
-	local shapes = Shapes[index]
+	local shapes = Shapes and Shapes[index]
 
 	for i = #(shapes or ""), 1, -1 do
 		shapes[i]:RemoveDot()
@@ -328,26 +329,20 @@ local function Explore (shapes, tile, dot_shapes, which, pref, alt)
 end
 
 -- Helper to bake dots into shapes
-local function BakeShapes (event)
-	local shapes = {}
+local function BakeShapes ()
+	if Shapes then
+		local shapes = {}
 
-	for i, dot_shapes in pairs(Shapes) do
-		for dir in movement.Ways(i) do
-			Explore(shapes, i, dot_shapes, dir, "to_left", "to_right")
-			Explore(shapes, i, dot_shapes, dir, "to_right", "to_left")
+		for i, dot_shapes in pairs(Shapes) do
+			for dir in movement.Ways(i) do
+				Explore(shapes, i, dot_shapes, dir, "to_left", "to_right")
+				Explore(shapes, i, dot_shapes, dir, "to_right", "to_left")
+			end
 		end
 	end
 end
 
 for k, v in pairs{
-	enter_level = function(level)
-		BG = level.bg_layer
-		Rows = array_funcs.ArrayOfTables(level.nrows)
-		Shapes = {}
-
-		AddFillLayer()
-	end,
-
 	leave_level = function()
 		BG, FillLayer, Rows, Shapes = nil
 	end,
@@ -355,13 +350,15 @@ for k, v in pairs{
 	post_reset = BakeShapes,
 
 	reset_level = function()
-		for i in pairs(Shapes) do
-			Shapes[i] = {}
+		if Shapes then
+			for i in pairs(Shapes) do
+				Shapes[i] = {}
+			end
+
+			FillLayer:removeSelf()
+
+			AddFillLayer()
 		end
-
-		FillLayer:removeSelf()
-
-		AddFillLayer()
 	end,
 
 	tiles_changed = function(event)
@@ -373,7 +370,16 @@ for k, v in pairs{
 	end,
 
 	-- Things Loaded --
-	things_loaded = BakeShapes
+	things_loaded = function(level)
+		if Shapes then
+			BG = level.bg_layer
+			Rows = array_funcs.ArrayOfTables(level.nrows)
+
+			AddFillLayer()
+		end
+
+		BakeShapes()
+	end
 } do
 	Runtime:addEventListener(k, v)
 end

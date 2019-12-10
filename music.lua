@@ -53,11 +53,13 @@ local Music
 
 --
 local function PlayNewTrack (group)
-	for _, track in ipairs(Music) do
-		track.group:StopAll()
-	end -- ^^ TODO: Fade?
+	if Music then
+		for _, track in ipairs(Music) do
+			track.group:StopAll()
+		end -- ^^ TODO: Fade?
 
-	group:PlaySound("track")
+		group:PlaySound("track")
+	end
 end
 
 -- --
@@ -161,6 +163,7 @@ function M.AddMusic (info, params)
 	music:addEventListener("is_done")
 
 	--
+	Music = Music or {}
 	Music[#Music + 1] = music
 end
 
@@ -236,18 +239,12 @@ end
 -- Some default score (perhaps in LevelMap, if not here), if one not present?
 
 for k, v in pairs{
-	enter_level = function(level)
-		Music = {}
-	end,
-
 	leave_level = function()
-		local music_list = Music
+		for i = 1, #(Music or "") do
+			Music[i].group:Remove()
+		end
 
 		Music, PlayOnEnter, PlayOnReset = nil
-
-		for _, music in ipairs(music_list) do
-			music.group:Remove()
-		end
 	end,
 
 	reset_level = function()
@@ -257,12 +254,14 @@ for k, v in pairs{
 	end,
 
 	things_loaded = function()
-		for _, music in ipairs(Music) do
-			music.group:Load()
-		end
+		if Music then
+			for _, music in ipairs(Music) do
+				music.group:Load()
+			end
 
-		if PlayOnEnter then -- TODO: could also be in ready_to_go, etc.
-			PlayOnEnter:PlaySound("track")
+			if PlayOnEnter then -- TODO: could also be in ready_to_go, etc.
+				PlayOnEnter:PlaySound("track")
+			end
 		end
 	end
 } do

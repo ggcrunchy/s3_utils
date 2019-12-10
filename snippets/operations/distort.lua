@@ -29,9 +29,6 @@ local includer = require("corona_utils.includer")
 -- Corona globals --
 local display = display
 
--- Cached module references --
-local _AttachCanvasToPaint_
-
 -- Exports --
 local M = {}
 
@@ -80,16 +77,5 @@ function M.BindCanvasEffect (object, fill, name)
     object.fill = fill
     object.fill.effect = name
 end
-
---- DOCME
-function M.CanvasToPaintAttacher (paint)
-    return function(event)
-        if event.canvas then
-			_AttachCanvasToPaint_(paint, event.canvas)
-        end
-    end
-end
-
-_AttachCanvasToPaint_ = M.AttachCanvasToPaint
 
 return M

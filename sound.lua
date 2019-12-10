@@ -44,9 +44,6 @@ local M = {}
 --
 
 -- --
-local Sounds
-
--- --
 local Actions = {
 	-- Play --
 	do_play = function(sound)
@@ -92,6 +89,8 @@ local function IsDone (sound)
 	return not sound.group:IsActive()
 end
 
+local Sounds
+
 --- DOCME
 function M.AddSound (info, params)
 	--
@@ -130,6 +129,7 @@ function M.AddSound (info, params)
 	sound:addEventListener("is_done")
 
 	--
+	Sounds = Sounds or {}
 	Sounds[#Sounds + 1] = sound
 end
 
@@ -210,22 +210,18 @@ end
 -- Perhaps impose that sound is singleton (or give warning...) if certain actions are linked
 
 for k, v in pairs{
-	enter_level = function()
-		Sounds = {}
-	end,
-
 	leave_level = function()
-		local sounds = Sounds
+		for i = 1, #(Sounds or "") do
+			Sounds[i].group:Remove()
+		end
 
 		Sounds = nil
-
-		for _, sound in ipairs(sounds) do
-			sound.group:Remove()
-		end
 	end,
 
 	reset_level = function()
-		for _, sound in ipairs(Sounds) do
+		for i = 1, #(Sounds or "") do
+			local sound = Sounds[i]
+
 			if sound.stop_on_reset then
 				sound.group:StopAll()
 			end
@@ -233,8 +229,8 @@ for k, v in pairs{
 	end,
 
 	things_loaded = function()
-		for _, sound in ipairs(Sounds) do
-			sound.group:Load()
+		for i = 1, #(Sounds or "") do
+			Sounds[i].group:Load()
 		end
 	end
 	-- ??

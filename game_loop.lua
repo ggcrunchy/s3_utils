@@ -39,12 +39,11 @@ local actions = require("s3_utils.state.actions")
 local _ = require("s3_utils.controls")
 local _ = require("config.Directories")
 local directories = require("s3_utils.directories")
-local dots = require("s3_utils.dots")
 local global_events = require("s3_utils.global_events")
 local loop = require_ex.Lazy("corona_boilerplate.game.loop")
-local music = require("s3_utils.music")
+--local music = require("s3_utils.music")
 local player = require("game.player.core")
-local sound = require("s3_utils.sound")
+--local sound = require("s3_utils.sound")
 local tile_maps = require("s3_utils.tile_maps")
 local tilesets = require("s3_utils.tilesets")
 local triggers = require("s3_utils.triggers")
@@ -83,7 +82,7 @@ NotFoundErr = NotFoundErr:sub(1, NotFoundErr:find(":") - 1)
 
 local function FindModule (ttype)
 	local sep = assert(ttype:find("%."), "Thing type missing `.`")
-
+-- TODO: if no sep, use "catch-all"?
 	assert(sep > 1 and sep < #ttype, "Missing prefix or suffix")
 
 	local label, what, nf = ttype:sub(1, sep - 1), ttype:sub(sep) -- n.b. keep the separator
@@ -157,7 +156,7 @@ function M.AddThings (current_level, level, params)
 	for _, value in Ipairs(level.values) do
 		values.AddValue(value, params)
 	end
-
+--[=[
 	-- ...and music...
 	for _, track in Ipairs(level.music) do
 		music.AddMusic(track, params)
@@ -167,6 +166,8 @@ function M.AddThings (current_level, level, params)
 	for _, sample in Ipairs(level.sound) do
 		sound.AddSound(sample, params)
 	end
+	^^ TODO: figure out decent policy for these
+]=]
 end
 
 -- Primary display groups --
@@ -234,8 +235,6 @@ function M.BeforeEntering (w, h)
 
 		-- Give it a frame to take hold, and finish up.
 		yield()
-
-		Runtime:dispatchEvent{ name = "set_canvas", canvas = Canvas }
 
 		CanvasRect = display.newImageRect(current_level.canvas_group, Canvas.filename, Canvas.baseDir, display.contentWidth, display.contentHeight)
 
