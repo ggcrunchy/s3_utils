@@ -40,7 +40,6 @@ local sort = table.sort
 
 -- Modules --
 local collision = require("corona_utils.collision")
-local require_ex = require("tektite_core.require_ex")
 local shapes = require("s3_utils.shapes")
 local tile_maps = require("s3_utils.tile_maps")
 
@@ -74,8 +73,6 @@ end
 -- How many dots are left to pick up? --
 local Remaining
 
-local DotList
-
 --- Adds a new _name_-type sensor dot to the level.
 --
 -- For each name, there must be a corresponding module, the value of which will be a
@@ -108,14 +105,13 @@ local DotList
 -- Instance-specific data may also be passed in other fields.
 -- @ptable Load parameters.
 -- @see corona_utils.collision.GetType, s3_utils.shapes.RemoveAt
-function M.AddDot (group, info, params)
-	local dot = DotList[info.type].make(group, info, params)
+function M.New (info, dot)
 	local index = tile_maps.GetTileIndex(info.col, info.row)
 
 	tile_maps.PutObjectAt(index, dot)
 
 	if TryToAddBody(dot) then
-		collision.SetType(dot, info.type)
+		collision.SetType(dot, info.type:sub(5)) -- lop off the "dot." part
 	end
 
 	local is_counted
@@ -153,7 +149,7 @@ end
 -- @param arg3 Argument #3.
 -- @return Result(s) of the event, if any.
 function M.EditorEvent (type, what, arg1, arg2, arg3)
-	local cons = DotList[type].editor
+	local cons = nil -- DotList[type].editor -- TODO!
 
 	if cons then
 		local event = cons--("editor_event")
@@ -198,6 +194,7 @@ end
 
 ---
 -- @treturn {string,...} Unordered list of dot type names.
+--[=[
 function M.GetTypes ()
 	local types = {}
 
@@ -207,6 +204,7 @@ function M.GetTypes ()
 
 	return types
 end
+]=]
 
 local function OnEnterFrame ()
 	for _, dot in ipairs(Dots) do
@@ -324,8 +322,6 @@ for k, v in pairs{
 } do
 	Runtime:addEventListener(k, v)
 end
-
-DotList = require_ex.DoList("config.Dots")
 
 _DeductDot_ = M.DeductDot
 

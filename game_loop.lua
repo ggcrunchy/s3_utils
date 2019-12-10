@@ -40,7 +40,6 @@ local _ = require("s3_utils.controls")
 local _ = require("config.Directories")
 local directories = require("s3_utils.directories")
 local dots = require("s3_utils.dots")
---local enemies = require("s3_utils.enemies")
 local global_events = require("s3_utils.global_events")
 local loop = require_ex.Lazy("corona_boilerplate.game.loop")
 local music = require("s3_utils.music")
@@ -136,11 +135,6 @@ function M.AddThings (current_level, level, params)
 
 	for i = 1, #(objects or "") do
 		AuxAddThing(objects[i], params)
-	end
-
-	-- ...and the dots...
-	for _, dot in Ipairs(level.dots) do
-		dots.AddDot(current_level.things_layer, dot, params)
 	end
 
 	-- ...and the player...
