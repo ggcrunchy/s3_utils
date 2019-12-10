@@ -92,7 +92,7 @@ end
 local Sounds
 
 --- DOCME
-function M.AddSound (info, params)
+function M.make (info, params)
 	--
 	local sample, sound = {
 		file = info.filename,

@@ -123,7 +123,7 @@ local function IsDone (music)
 end
 
 --- DOCME
-function M.AddMusic (info, params)
+function M.make (info, params)
 	--
 	local music, track = system.newEventDispatcher(), { file = info.filename, is_streaming = true, loops = info.looping and "forever" or info.loop_count }
 
