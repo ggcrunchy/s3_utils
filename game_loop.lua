@@ -1,4 +1,4 @@
---- Functionality for loading game components.
+--- Loading, running, and unloading of game levels.
 
 --
 -- Permission is hereby granted, free of charge, to any person obtaining
@@ -39,9 +39,8 @@ local actions = require("s3_utils.state.actions")
 local _ = require("s3_utils.controls")
 local _ = require("config.Directories")
 local directories = require("s3_utils.directories")
---local global_events = require("s3_utils.global_events")
+local global_events = require("s3_utils.global_events")
 local loop = require_ex.Lazy("corona_boilerplate.game.loop")
-local player = require("game.player.core")
 local tile_maps = require("s3_utils.tile_maps")
 local tilesets = require("s3_utils.tilesets")
 local values = require("s3_utils.state.values")
@@ -122,14 +121,11 @@ function M.AddThings (current_level, level, params)
 
 	tile_maps.AddTiles(tgroup, level)
 
-	local objects = level.objects
+	local things = level.things
 
-	for i = 1, #(objects or "") do
-		AuxAddThing(objects[i], params)
+	for i = 1, #(things or "") do
+		AuxAddThing(things[i], params)
 	end
-
-	-- ...and the player...
-	player.AddPlayer(current_level.things_layer, level.start_col, level.start_row)
 
 	-- ...and any global events...
 --	global_events.AddEvents(level.global_events, params)
