@@ -75,22 +75,22 @@ for _, v in ipairs(config.events) do
 end
 
 --- DOCME
-function M.AddEvents (events, params)
+function M.make--[[AddEvents]] (--[[events]]info, params)
 	local psl = params:GetPubSubList()
 
 	for k, v in pairs(GetEvent) do
 	--	v.Subscribe(EventNonce, events and events[k], pubsub)
-		psl:Subscribe(events and events[k], v:GetAdder(), EventNonce)
+		psl:Subscribe(--[[events and events]]info[k], v:GetAdder(), EventNonce)
 	end
 
-	for k in adaptive.IterSet(events and events.actions) do
-		--[[bind.]]psl:Publish(--[[pubsub, ]]Actions[k], events.uid, k)
+	for k in adaptive.IterSet(--[[events and events]]info.actions) do
+		--[[bind.]]psl:Publish(--[[pubsub, ]]Actions[k], --[[events]]info.uid, k)
 	end
 
-	object_vars.PublishProperties(psl, events and events.props, OutProperties, events and events.uid)
+	object_vars.PublishProperties(psl, --[[events and events]]info.props, OutProperties, --[[events and events]]info.uid)
 
 	--
-	if not adaptive.InSet(events and events.actions, "win") then
+	if not adaptive.InSet(--[[events and events]]info.actions, "win") then
 		Defaults = { all_dots_removed = "win" }
 	end
 end
@@ -106,7 +106,7 @@ local function LinkGlobal (global, other, gsub, osub)
 end
 
 --- DOCME
-function M.EditorEvent (_, what, arg1)
+function M.editor (_, what, arg1)
 	-- Get Link Grouping --
 	if what == "get_link_grouping" then
 		return {
@@ -154,7 +154,7 @@ function M.ExtendAction (name, func)
 end
 
 local function EnterFrame ()
-	GetEvent.enter_frame(EventNonce)
+	GetEvent.enter_frame:DispatchForObject(EventNonce)
 end
 
 for k, v in pairs{

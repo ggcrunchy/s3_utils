@@ -53,20 +53,18 @@ local Music
 
 --
 local function PlayNewTrack (group)
-	if Music then
-		for _, track in ipairs(Music) do
-			track.group:StopAll()
-		end -- ^^ TODO: Fade?
+	for _, track in ipairs(Music) do
+		track.group:StopAll()
+	end -- ^^ TODO: Fade?
 
-		group:PlaySound("track")
-	end
+	group:PlaySound("track")
 end
 
 -- --
 local Actions = {
 	-- Play --
 	do_play = function(music)
-		local function play (arg)
+		local function play ()--arg)
 			return PlayNewTrack(music.group)
 		end
 
@@ -112,7 +110,7 @@ local Actions = {
 local Events = {}
 
 for _, v in ipairs{ "on_done", "on_stop" } do
-	Events[v] = bind.BroadcastBuilder_Helper()
+	Events[v] = call.NewDispatcher()--bind.BroadcastBuilder_Helper()
 end
 
 -- --
@@ -130,7 +128,7 @@ function M.make (info, params)
 	if info.on_done or info.on_stop then
 		function track.on_complete (done)
 			if Music then
-				Events[done and "on_done" or "on_stop"](music)
+				Events[done and "on_done" or "on_stop"]:DispatchForObject(music)
 			end
 		end
 	end
@@ -150,12 +148,14 @@ function M.make (info, params)
 	local psl = params:GetPubSubList()
 
 	for k, event in pairs(Events) do
-		event.Subscribe(music, info[k], psl)
+	--	event.Subscribe(music, info[k], psl)
+		psl:Subscribe(info[k], event:GetAdder(), music)
 	end
 
 	--
 	for k in adaptive.IterSet(info.actions) do
-		bind.Publish(psl, Actions[k](music), info.uid, k)
+--		bind.Publish(psl, 
+		psl:Publish(Actions[k](music), info.uid, k)
 	end
 
 	music.is_done = IsDone

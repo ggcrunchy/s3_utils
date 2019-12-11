@@ -29,7 +29,8 @@ local ipairs = ipairs
 
 -- Modules --
 local adaptive = require("tektite_core.table.adaptive")
-local bind = require("corona_utils.bind")
+--local bind = require("corona_utils.bind")
+local call = require("corona_utils.call")
 local collision = require("corona_utils.collision")
 local operators = require("bitwise_ops.operators")
 local tile_maps = require("s3_utils.tile_maps")
@@ -48,7 +49,7 @@ local M = {}
 local Events = {}
 
 for _, v in ipairs{ "on_enter", "on_leave" } do
-	Events[v] = bind.BroadcastBuilder_Helper()
+	Events[v] = call.NewDispatcher()--bind.BroadcastBuilder_Helper()
 end
 
 --
@@ -56,14 +57,14 @@ local function Enter (trigger)
 	if not trigger.off then
 		trigger.off = trigger.deactivate
 
-		Events.on_enter(trigger)
+		Events.on_enter:DispatchForObject(trigger)
 	end
 end
 
 --
 local function Leave (trigger)
 	if not trigger.off then
-		Events.on_leave(trigger)
+		Events.on_leave:DispatchForObject(trigger)
 	end
 end
 
@@ -99,7 +100,7 @@ local FlagGroups = { "player", "enemy", "projectile" }
 local Triggers
 
 --- DOCME
-function M.AddTrigger (group, info, params)
+function M.make (info, params)
 	--
 	local trigger, detect = { deactivate = info.deactivate, restore = info.restore }, info.detect_when
 
@@ -124,7 +125,7 @@ function M.AddTrigger (group, info, params)
 
 		-- 
 		local w, h = tile_maps.GetSizes()
-		local rect = display.newRect(group, (info.col - .5) * w, (info.row - .5) * h, w, h)
+		local rect = display.newRect(params.things_layer, (info.col - .5) * w, (info.row - .5) * h, w, h)
 
 		rect:addEventListener("collision", function(event)
 			local phase, which = event.phase, handles[collision.GetType(event.other)]
@@ -144,15 +145,17 @@ function M.AddTrigger (group, info, params)
 	end
 
 	--
-	local pubsub = params.pubsub
+	local psl = params:GetPubSubList()
 
 	for k, event in pairs(Events) do
-		event.Subscribe(trigger, info[k], pubsub)
+	--	event.Subscribe(trigger, info[k], pubsub)
+		psl:Subscribe(info[k], event:GetAdder(), trigger)
 	end
 
 	--
 	for k in adaptive.IterSet(info.actions) do
-		bind.Publish(pubsub, Actions[k](trigger), info.uid, k)
+--		bind.Publish(pubsub, 
+		psl:Publish(Actions[k](trigger), info.uid, k)
 	end
 
 	--
@@ -170,7 +173,7 @@ local function LinkTrigger (trigger, other, tsub, osub)
 end
 
 --- DOCME
-function M.EditorEvent (_, what, arg1, arg2)
+function M.editor (_, what, arg1, arg2)
 	-- Build --
 	-- arg1: Level
 	-- arg2: Original entry

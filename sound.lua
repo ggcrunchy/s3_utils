@@ -82,7 +82,7 @@ local Actions = {
 local Events = {}
 
 for _, v in ipairs{ "on_done", "on_stop" } do
-	Events[v] = bind.BroadcastBuilder_Helper()
+	Events[v] = call.NewDispatcher()--bind.BroadcastBuilder_Helper()
 end
 
 local function IsDone (sound)
@@ -105,7 +105,7 @@ function M.make (info, params)
 	if info.on_done or info.on_stop then
 		function sample.on_complete (done)
 			if Sounds then
-				Events[done and "on_done" or "on_stop"](sound)
+				Events[done and "on_done" or "on_stop"]:DispatchForObject(sound)
 			end
 		end
 	end
@@ -116,12 +116,14 @@ function M.make (info, params)
 	local psl = params:GetPubSubList()
 
 	for k, event in pairs(Events) do
-		event.Subscribe(sound, info[k], psl)
+	--	event.Subscribe(sound, info[k], psl)
+		psl:Subscribe(info[k], event:GetAdder(), sound)
 	end
 
 	--
 	for k in adaptive.IterSet(info.actions) do
-		bind.Publish(psl, Actions[k](sound), info.uid, k)
+--		bind.Publish(psl, 
+		psl:Publish(Actions[k](sound), info.uid, k)
 	end
 
 	sound.is_done = IsDone

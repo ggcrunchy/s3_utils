@@ -39,12 +39,11 @@ local actions = require("s3_utils.state.actions")
 local _ = require("s3_utils.controls")
 local _ = require("config.Directories")
 local directories = require("s3_utils.directories")
-local global_events = require("s3_utils.global_events")
+--local global_events = require("s3_utils.global_events")
 local loop = require_ex.Lazy("corona_boilerplate.game.loop")
 local player = require("game.player.core")
 local tile_maps = require("s3_utils.tile_maps")
 local tilesets = require("s3_utils.tilesets")
-local triggers = require("s3_utils.triggers")
 local values = require("s3_utils.state.values")
 
 -- Corona globals --
@@ -59,18 +58,6 @@ local M = {}
 --
 --
 --
-
---
-local function NoOp () end
-
--- Helper to iterate on possibly empty tables
-local function Ipairs (t)
-	if t then
-		return ipairs(t)
-	else
-		return NoOp
-	end
-end
 
 local TypeToFactories = {}
 
@@ -145,21 +132,16 @@ function M.AddThings (current_level, level, params)
 	player.AddPlayer(current_level.things_layer, level.start_col, level.start_row)
 
 	-- ...and any global events...
-	global_events.AddEvents(level.global_events, params)
-
-	-- ...and any triggers...
-	for _, trigger in Ipairs(level.triggers) do
-		triggers.AddTrigger(current_level.things_layer, trigger, params)
-	end
+--	global_events.AddEvents(level.global_events, params)
 
 	-- ...and actions...
-	for _, action in Ipairs(level.actions) do
-		actions.AddAction(action, params)
+	for i = 1, #(level.actions or "") do
+		actions.AddAction(level.actions[i], params)
 	end
 
 	-- ...and values...
-	for _, value in Ipairs(level.values) do
-		values.AddValue(value, params)
+	for i = 1, #(level.values or "") do
+		values.AddValue(level.values[i], params)
 	end
 end
 
