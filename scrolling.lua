@@ -173,6 +173,12 @@ function M.GetState (group, x, y, w, h)
 	return gx, gy, scale
 end
 
+--- DOCME
+function M.Init (params)
+	Width = params.ncols * params.w
+	Height = params.nrows * params.h
+end
+
 --- Define the left and right screen extents; while the followed object is between these,
 -- no horizontal scrolling will occur. If the object moves outside of them, the associated
 -- group will be scrolled in an attempt to put it back inside.
@@ -218,18 +224,9 @@ function M.SetYOffset (offset)
 	YOffset = offset or 0
 end
 
-for k, v in pairs{
-	enter_level = function(level)
-		Width = level.ncols * level.w
-		Height = level.nrows * level.h
-	end,
-
-	leave_level = function()
-		_Follow_(nil)
-	end
-} do
-	Runtime:addEventListener(k, v)
-end
+Runtime:addEventListener("leave_level", function()
+	_Follow_(nil)
+end)
 
 _Follow_ = M.Follow
 _GetMinScale_ = M.GetMinScale

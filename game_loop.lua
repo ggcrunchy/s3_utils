@@ -36,7 +36,6 @@ local yield = coroutine.yield
 -- Modules --
 local require_ex = require("tektite_core.require_ex")
 local actions = require("s3_utils.state.actions")
-local _ = require("s3_utils.controls")
 local _ = require("config.Directories")
 local directories = require("s3_utils.directories")
 local global_events = require("s3_utils.global_events")

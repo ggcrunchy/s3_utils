@@ -34,8 +34,6 @@
 local action = require("s3_utils.hud.action")
 local device = require("corona_utils.device")
 local move = require("s3_utils.hud.move")
-local player = require("game.player.core")
-local touch = require("corona_ui.utils.touch")
 
 -- Corona globals --
 local display = display
@@ -58,6 +56,8 @@ local Dir, Was
 -- A second held direction, to change to if Dir is released (seems to smooth out key input) --
 local ChangeTo
 
+local CancelFunc
+
 -- Begins input in a given direction
 local function BeginDir (_, target)
 	local dir = target.m_dir
@@ -65,7 +65,9 @@ local function BeginDir (_, target)
 	if not Dir then
 		Dir, Was = dir, dir
 
-		player.CancelPath()
+		if CancelFunc then
+			CancelFunc()
+		end
 	elseif Dir ~= dir and not ChangeTo then
 		ChangeTo = dir
 	else
@@ -97,15 +99,18 @@ local UseJoystick = system.getInfo("environment") == "device" and (platform == "
 -- Controls are active? --
 local Active
 
--- Helper to do player's actions if possible
+local ActionsFunc
+
 local function DoActions ()
-	if Active then
-		player.DoActions()
+	if Active and ActionsFunc then
+		ActionsFunc()
 	end
 end
 
 -- Number of frames left of "cruise control" movement --
 local FramesLeft
+
+local MovingFunc
 
 -- Updates player if any residual input is in effect
 local function UpdatePlayer ()
@@ -123,8 +128,8 @@ local function UpdatePlayer ()
 
 		-- Move the player, if we can, and if the player isn't already following a path
 		-- (in which case this is handled elsewhere).
-		if dir and not player.IsFollowingPath() then
-			player.MovePlayer(dir)
+		if MovingFunc then
+			MovingFunc(dir)
 		end
 	end
 end
@@ -207,14 +212,65 @@ local function TrapTaps (event)
 	return true
 end
 
--- Player Killed response
-local function PlayerKilled ()
+--- DOCME
+function M.Init (params)
+	local hg = params.hud_group
+
+	-- Add an invisible full-screen rect beneath the rest of the HUD to trap taps
+	-- ("tap" events don't seem to play nice with the rest of the GUI).
+	local trap = display.newRect(hg, 0, 0, display.contentWidth, display.contentHeight)
+
+	trap:translate(display.contentCenterX, display.contentCenterY)
+
+	trap.isHitTestable = true
+	trap.isVisible = false
+
+	trap:addEventListener("touch", TrapTaps)
+
+	-- Add input UI elements.
+	action.AddActionButton(hg, DoActions)
+
+	if UseJoystick then
+		move.AddJoystick(hg)
+	end
+
+	-- Bind controller input.
+	device.MapAxesToKeyEvents(true)
+
+	-- Track events to maintain input.
+	Runtime:addEventListener("enterFrame", UpdatePlayer)
+
+	local handle_key = composer.getVariable("handle_key")
+
+	handle_key:Clear() -- TODO: kludge because we don't go through title screen to wipe quick test
+	handle_key:Push(KeyEvent)
+end
+
+local function Deactivate ()
 	Active = false
 end
 
--- Reset Level response
+function M.SetActionsFunc (func)
+	ActionsFunc = func
+end
+
+function M.SetCancelFunc (func)
+	CancelFunc = func
+end
+
+local IsActivePredicate
+
+--- DOCME
+function M.SetIsActivePredicate (pred)
+	IsActivePredicate = pred
+end
+
+function M.SetMovingFunc (func)
+	MovingFunc = func
+end
+
 local function ResetLevel (how)
-	Active = how ~= "stop" and player.Alive() and not player.Stunned()
+	Active = not not (IsActivePredicate and IsActivePredicate(how))
 	FramesLeft = 0
 	Dir, Was = nil
 	ChangeTo = nil
@@ -222,39 +278,6 @@ end
 
 for k, v in pairs{
 	began_path = ResetLevel,
-
-	enter_level = function(level)
-		local hg = level.hud_group
-
-		-- Add an invisible full-screen rect beneath the rest of the HUD to trap taps
-		-- ("tap" events don't seem to play nice with the rest of the GUI).
-		local trap = display.newRect(hg, 0, 0, display.contentWidth, display.contentHeight)
-
-		trap:translate(display.contentCenterX, display.contentCenterY)
-
-		trap.isHitTestable = true
-		trap.isVisible = false
-
-		trap:addEventListener("touch", TrapTaps)
-
-		-- Add input UI elements.
-		action.AddActionButton(hg, DoActions)
-
-		if UseJoystick then
-			move.AddJoystick(hg)
-		end
-
-		-- Bind controller input.
-		device.MapAxesToKeyEvents(true)
-
-		-- Track events to maintain input.
-		Runtime:addEventListener("enterFrame", UpdatePlayer)
-
-		local handle_key = composer.getVariable("handle_key")
-
-		handle_key:Clear() -- TODO: kludge because we don't go through title screen to wipe quick test
-		handle_key:Push(KeyEvent)
-	end,
 
 	level_done = function()
 		ResetLevel("stop")
@@ -268,11 +291,11 @@ for k, v in pairs{
 
 	move_done = ResetLevel,
 
-	move_prepare = PlayerKilled,
+	move_prepare = Deactivate,
 
-	player_killed = PlayerKilled,
+	player_killed = Deactivate,
 
-	player_stunned = PlayerKilled,
+	player_stunned = Deactivate,
 
 	player_unstunned = ResetLevel,
 
