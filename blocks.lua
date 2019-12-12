@@ -108,7 +108,7 @@ end
 
 local Block = {}
 
---- Adds a new group to the block's main group.
+--- Add a new group to the block's main group.
 -- @treturn DisplayGroup Added group.
 function Block:AddGroup ()
 	local new = display.newGroup()
@@ -116,63 +116,6 @@ function Block:AddGroup ()
 	self.m_bgroup:insert(new)
 
 	return new
-end
-
-local function AuxAddToList (list, top, item, func, arg1, arg2)
-	list[top + 1], list[top + 2], list[top + 3], list[top + 4] = item, func, arg1 or false, arg2 or false
-
-	return top + 4
-end
-
---- Add an item to the block's list.
--- @param item Item to add.
--- @callable func Commands to use on _item_, according to the type of block.
--- @param[opt] arg1 Argument #1 to _func_ (default **false**)...
--- @param[opt] arg2 ...and #2 (ditto).
-function Block:AddToList (item, func, arg1, arg2)
-	local list = self.m_list or { top = 0 }
-
-	list.top = AuxAddToList(list, list.top, item, func, arg1, arg2)
-
-	self.m_list = list
-end
-
-local Dynamic
-
---- Add an item to the block's list.
--- @param item Item to add.
--- @callable func Commands to use on _item_, according to the type of block.
--- @treturn function X
-function Block:AddToList_Dynamic (item, func, arg1, arg2)
-	local list = self.m_dynamic_list or {}
-
-	Dynamic = Dynamic or {}
-
-	local dfunc = remove(Dynamic)
-
-	if dfunc then
-		dfunc(Dynamic, item, func, arg1, arg2) -- arbitrary nonce
-	else
-		function dfunc (what, a, b, c, d)
-			if rawequal(what, Dynamic) then -- see note above
-				item, func, arg1, arg2 = a, b, c, d
-			else
-				assert(list[dfunc], "Invalid dynamic function")
-
-				if what == "get" then
-					return item, func, arg1, arg2
-				elseif what == "update_args" then
-					arg1, arg2 = a, b
-				elseif what == "remove" then
-					Dynamic[#Dynamic + 1], list[dfunc], item, func, arg1, arg2 = dfunc
-				end
-			end
-		end
-	end
-
-	self.m_dynamic_list, list[dfunc] = list, true
-
-	return dfunc
 end
 
 --- Check whether a block can occupy a region without overlapping a different block.
@@ -283,26 +226,6 @@ function Block:GetRows ()
 	return self.m_rmin, self.m_rmax
 end
 
----
--- @treturn boolean List has items?
-function Block:HasItems ()
-	return self.m_list ~= nil
-end
-
---- Inject a new group above the image group's parent: i.e. the new group becomes
--- the image group's parent, and is added as a child of the old parent.
---
--- By default, the image group belongs to the main group.
--- @treturn DisplayGroup The injected group.
-function Block:InjectGroup ()
-	local new, parent = display.newGroup(), self.m_igroup.parent
-
-	new:insert(self.m_igroup)
-	parent:insert(new)
-
-	return new
-end
-
 --- Iterate over a given region.
 -- @int col1 A column...
 -- @int row1 ... and row.
@@ -311,45 +234,6 @@ end
 -- @treturn iterator Supplies tile index, column, row.
 function Block:Iter (col1, row1, col2, row2)
 	return BlockIter(col1, row1, col2, row2)
-end
-
-local function AuxIterList (list, index)
-	index = index + 4
-
-	local item = list and list[index]
-
-	if item and index <= list.n then
-		return index, item, list[index + 1], list[index + 2], list[index + 3]
-	end
-end
-
-local function AddDynamicItems (block, dlist, list)
-	local n = list and list.top or 0 -- N.B. dynamic items added after top
-
-	for dfunc in pairs(dlist) do
-		list = list or { top = 0 }
-		n = AuxAddToList(list, n, dfunc("get"))
-	end
-
-	if list then
-		block.m_list, list.n = list, n
-	end
-
-	return list
-end
-
---- Iterate over each item in the list.
--- @treturn iterator Supplies tile index, item, commands function, argument #1, argument #2.
-function Block:IterList ()
-	local list, dlist = self.m_list, self.m_dynamic_list
-
-	if dlist then
-		list = AddDynamicItems(self, dlist, list)
-	elseif list then
-		list.n = list.top
-	end
-
-	return AuxIterList, list, -3
 end
 
 --- Variant of @{Block:Iter} that iterates over the current rect.
@@ -500,17 +384,11 @@ function M.New (info, params)
 	return block
 end
 
-local Events
-
 --- DOCME
 function Block:AttachEvent (event, info, params)
-	params:GetPubSubList():--[[bind.]]Publish(--[[params.pub_sub_list, ]]event, info.uid, "fire")
+	params:GetPubSubList():Publish(event, info.uid, "fire")
 
 	call.Redirect(event, self)
-
-	if Events then -- TODO: not set up yet any more, do so for debugging
-		Events[#Events + 1] = event
-	end
 end
 
 local BlockKeys = { "type", "col1", "row1", "col2", "row2" }
@@ -591,40 +469,6 @@ function M.EditorEvent (type, what, arg1, arg2, arg3)
 	end
 end
 
---- Fire all events.
--- @bool forward Forward boolean, argument to event's **"fire"** handler.
-function M.FireAll (forward)
-	forward = not not forward
-
-	for i = 1, #(Events or "") do
-		local v = Events[i]
-
-		call.DispatchOrHandleNamedEvent_NamedArg("set_direction", v, "dir", forward)
-
-		v()
-	end
-end
-
----
--- @param name Name used to register event in @{AddBlock}.
--- @treturn callable If missing, a no-op. Otherwise, this is a function called as
---   result = event(what, arg1, arg2)
--- which should handle the following choices of _what_:
---
--- * **"fire"**: Fires the event. _arg1_ indicates whether the source, e.g. a switch, wants
--- to fire forward or backward (forward = true), for events that make such distinctions.
--- If _result_ is **"failed"**, the event was unable to fire.
--- * **"is_done"**: If _result_ is false, the event is still in progress.
--- * **"show"**: Shows or hides event hints. _arg1_ is the responsible party for firing
--- events, e.g. a switch, and _arg2_ is a boolean (true = show).
---
--- **CONSIDER**: Formalize _arg1_ in "show" more... e.g. an options list (m\_forward is
--- the only one we care about so far)... or maybe JUST the forward boolean, since the
--- hint might as well be compatible with fire?
-function M.GetEvent (name)
-	return Events and Events[name]
-end
-
 ---
 -- @treturn {string,...} Unordered list of block type names.
 --[=[
@@ -639,9 +483,119 @@ function M.GetTypes ()
 end
 --]=]
 
+-----------------------------------------------------------
+-----------------------------------------------------------
+-----------------------------------------------------------
+
+local function AuxAddToList (list, top, item, func, arg1, arg2)
+	list[top + 1], list[top + 2], list[top + 3], list[top + 4] = item, func, arg1 or false, arg2 or false
+
+	return top + 4
+end
+
+--- Add an item to the block's list.
+-- @param item Item to add.
+-- @callable func Commands to use on _item_, according to the type of block.
+-- @param[opt] arg1 Argument #1 to _func_ (default **false**)...
+-- @param[opt] arg2 ...and #2 (ditto).
+function Block:AddToList (item, func, arg1, arg2)
+	local list = self.m_list or { top = 0 }
+
+	list.top = AuxAddToList(list, list.top, item, func, arg1, arg2)
+
+	self.m_list = list
+end
+
+local Dynamic
+
+--- Add an item to the block's list.
+-- @param item Item to add.
+-- @callable func Commands to use on _item_, according to the type of block.
+-- @treturn function X
+function Block:AddToList_Dynamic (item, func, arg1, arg2)
+	local list = self.m_dynamic_list or {}
+
+	Dynamic = Dynamic or {}
+
+	local dfunc = remove(Dynamic)
+
+	if dfunc then
+		dfunc(Dynamic, item, func, arg1, arg2) -- arbitrary nonce
+	else
+		function dfunc (what, a, b, c, d)
+			if rawequal(what, Dynamic) then -- see note above
+				item, func, arg1, arg2 = a, b, c, d
+			else
+				assert(list[dfunc], "Invalid dynamic function")
+
+				if what == "get" then
+					return item, func, arg1, arg2
+				elseif what == "update_args" then
+					arg1, arg2 = a, b
+				elseif what == "remove" then
+					Dynamic[#Dynamic + 1], list[dfunc], item, func, arg1, arg2 = dfunc
+				end
+			end
+		end
+	end
+
+	self.m_dynamic_list, list[dfunc] = list, true
+
+	return dfunc
+end
+
+---
+-- @treturn boolean List has items?
+function Block:HasItems ()
+	return self.m_list ~= nil
+end
+
+local function AuxIterList (list, index)
+	index = index + 4
+
+	local item = list and list[index]
+
+	if item and index <= list.n then
+		return index, item, list[index + 1], list[index + 2], list[index + 3]
+	end
+end
+
+local function AddDynamicItems (block, dlist, list)
+	local n = list and list.top or 0 -- N.B. dynamic items added after top
+
+	for dfunc in pairs(dlist) do
+		list = list or { top = 0 }
+		n = AuxAddToList(list, n, dfunc("get"))
+	end
+
+	if list then
+		block.m_list, list.n = list, n
+	end
+
+	return list
+end
+
+--- Iterate over each item in the list.
+-- @treturn iterator Supplies tile index, item, commands function, argument #1, argument #2.
+function Block:IterList ()
+	local list, dlist = self.m_list, self.m_dynamic_list
+
+	if dlist then
+		list = AddDynamicItems(self, dlist, list)
+	elseif list then
+		list.n = list.top
+	end
+
+	return AuxIterList, list, -3
+end
+
+-----------------------------------------------------------
+-----------------------------------------------------------
+-----------------------------------------------------------
+
 for k, v in pairs{
 	leave_level = function()
-		LoadedBlocks, BlockIDs, Dynamic, Events, OldFlags = nil
+		LoadedBlocks, BlockIDs, Dynamic, OldFlags = nil
 	end,
 
 	pre_reset = function()
