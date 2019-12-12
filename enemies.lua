@@ -571,7 +571,7 @@ end)
 -- Logic for start positions in blocks
 local function BlockFunc (what, start, arg1, arg2)
 	if what == "set_local_coordinate_system" then
-		start.m_lcs = arg1
+		start.m_local_coordinate_system = arg1
 	elseif what == "get_local_xy" then
 		return arg1, arg2
 	elseif what == "set_content_xy" then
