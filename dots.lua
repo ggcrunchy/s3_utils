@@ -285,6 +285,7 @@ for k, v in pairs{
 
 			if dot and dot.m_index == index and not dot.omit_from_blocks_P then
 				block:AddToList(dot, BlockFunc, dot.x, dot.y)
+-- TODO: BLOCKFIXME
 			end
 		end
 	end,

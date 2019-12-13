@@ -606,7 +606,7 @@ local events = {
 
 				if col >= cmin and col <= cmax and row >= rmin and row <= rmax then
 					block:AddToList(start, BlockFunc, start.x, start.y)
-
+-- TODO: BLOCKFIXME
 					start.m_block = block
 				end
 			end
