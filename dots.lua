@@ -224,24 +224,21 @@ local function DotLess (a, b)
 	return a.m_index < b.m_index
 end
 
-local function BlockFunc (what, dot, arg1, arg2)
-	local prep = dot.block_func_prep_P
+local function BlockFunc (event)
+	local dot = event.target
+	local x, y = event.group:localToContent(dot.m_old_x, dot.m_old_y)
 
-	if prep and prep(what, dot, arg1, arg2) == "ignore" then
-		return
-	end
+	dot.x, dot.y = dot.parent:contentToLocal(x, y)
 
-	if what == "get_local_xy" then
-		return arg1, arg2
-	elseif what == "set_content_xy" then
-		dot.x, dot.y = dot.parent:contentToLocal(arg1, arg2)
-	elseif what == "set_angle" then
+	local angle = event.angle
+
+	if angle then
 		local on_rotate = dot.on_rotate_block_P
 
 		if on_rotate then
-			on_rotate(dot, arg1)
+			on_rotate(dot, angle)
 		else
-			dot.rotation = arg1
+			dot.rotation = angle
 		end
 	end
 end
@@ -284,8 +281,15 @@ for k, v in pairs{
 			local dot = Dots[slot]
 
 			if dot and dot.m_index == index and not dot.omit_from_blocks_P then
-				block:AddToList(dot, BlockFunc, dot.x, dot.y)
--- TODO: BLOCKFIXME
+				dot.m_old_x, dot.m_old_y = dot.x, dot.y
+
+				if dot.addEventListener then
+					dot:addEventListener("with_block_update", BlockFunc)
+				else
+					dot.with_block_update = BlockFunc
+				end
+
+				block:DataStore_Append(dot)
 			end
 		end
 	end,

@@ -38,11 +38,11 @@ local ipairs = ipairs
 local max = math.max
 local min = math.min
 local pairs = pairs
-local rawequal = rawequal
-local remove = table.remove
 
 -- Modules --
 local call = require("corona_utils.call")
+local component = require("tektite_core.component")
+local data_store = require("s3_objects.mixin.data_store")
 local meta = require("tektite_core.table.meta")
 local range = require("tektite_core.number.range")
 local rect_iters = require("iterator_ops.grid.rect")
@@ -116,6 +116,13 @@ function Block:AddGroup ()
 	self.m_bgroup:insert(new)
 
 	return new
+end
+
+--- DOCME
+function Block:AttachEvent (event, info, params)
+	params:GetPubSubList():Publish(event, info.uid, "fire")
+
+	call.Redirect(event, self)
 end
 
 --- Check whether a block can occupy a region without overlapping a different block.
@@ -318,6 +325,8 @@ function Block:WipeSelf ()
 	end
 end
 
+component.AddToObject(Block, data_store)
+
 --- Add a block to the level and register an event for it.
 -- @ptable info Block info, with at least the following properties:
 --
@@ -382,13 +391,6 @@ function M.New (info, params)
 	meta.Augment(block, Block)
 
 	return block
-end
-
---- DOCME
-function Block:AttachEvent (event, info, params)
-	params:GetPubSubList():Publish(event, info.uid, "fire")
-
-	call.Redirect(event, self)
 end
 
 local BlockKeys = { "type", "col1", "row1", "col2", "row2" }
@@ -483,119 +485,9 @@ function M.GetTypes ()
 end
 --]=]
 
------------------------------------------------------------
------------------------------------------------------------
------------------------------------------------------------
-
-local function AuxAddToList (list, top, item, func, arg1, arg2)
-	list[top + 1], list[top + 2], list[top + 3], list[top + 4] = item, func, arg1 or false, arg2 or false
-
-	return top + 4
-end
-
---- Add an item to the block's list.
--- @param item Item to add.
--- @callable func Commands to use on _item_, according to the type of block.
--- @param[opt] arg1 Argument #1 to _func_ (default **false**)...
--- @param[opt] arg2 ...and #2 (ditto).
-function Block:AddToList (item, func, arg1, arg2)
-	local list = self.m_list or { top = 0 }
-
-	list.top = AuxAddToList(list, list.top, item, func, arg1, arg2)
-
-	self.m_list = list
-end
-
-local Dynamic
-
---- Add an item to the block's list.
--- @param item Item to add.
--- @callable func Commands to use on _item_, according to the type of block.
--- @treturn function X
-function Block:AddToList_Dynamic (item, func, arg1, arg2)
-	local list = self.m_dynamic_list or {}
-
-	Dynamic = Dynamic or {}
-
-	local dfunc = remove(Dynamic)
-
-	if dfunc then
-		dfunc(Dynamic, item, func, arg1, arg2) -- arbitrary nonce
-	else
-		function dfunc (what, a, b, c, d)
-			if rawequal(what, Dynamic) then -- see note above
-				item, func, arg1, arg2 = a, b, c, d
-			else
-				assert(list[dfunc], "Invalid dynamic function")
-
-				if what == "get" then
-					return item, func, arg1, arg2
-				elseif what == "update_args" then
-					arg1, arg2 = a, b
-				elseif what == "remove" then
-					Dynamic[#Dynamic + 1], list[dfunc], item, func, arg1, arg2 = dfunc
-				end
-			end
-		end
-	end
-
-	self.m_dynamic_list, list[dfunc] = list, true
-
-	return dfunc
-end
-
----
--- @treturn boolean List has items?
-function Block:HasItems ()
-	return self.m_list ~= nil
-end
-
-local function AuxIterList (list, index)
-	index = index + 4
-
-	local item = list and list[index]
-
-	if item and index <= list.n then
-		return index, item, list[index + 1], list[index + 2], list[index + 3]
-	end
-end
-
-local function AddDynamicItems (block, dlist, list)
-	local n = list and list.top or 0 -- N.B. dynamic items added after top
-
-	for dfunc in pairs(dlist) do
-		list = list or { top = 0 }
-		n = AuxAddToList(list, n, dfunc("get"))
-	end
-
-	if list then
-		block.m_list, list.n = list, n
-	end
-
-	return list
-end
-
---- Iterate over each item in the list.
--- @treturn iterator Supplies tile index, item, commands function, argument #1, argument #2.
-function Block:IterList ()
-	local list, dlist = self.m_list, self.m_dynamic_list
-
-	if dlist then
-		list = AddDynamicItems(self, dlist, list)
-	elseif list then
-		list.n = list.top
-	end
-
-	return AuxIterList, list, -3
-end
-
------------------------------------------------------------
------------------------------------------------------------
------------------------------------------------------------
-
 for k, v in pairs{
 	leave_level = function()
-		LoadedBlocks, BlockIDs, Dynamic, OldFlags = nil
+		LoadedBlocks, BlockIDs, OldFlags = nil
 	end,
 
 	pre_reset = function()

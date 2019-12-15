@@ -569,16 +569,14 @@ end)
 -- ^^ Make these configable (with all args, DieOrReact)
 
 -- Logic for start positions in blocks
-local function BlockFunc (what, start, arg1, arg2)
-	if what == "set_local_coordinate_system" then
-		start.m_local_coordinate_system = arg1
-	elseif what == "get_local_xy" then
-		return arg1, arg2
-	elseif what == "set_content_xy" then
-		start.x, start.y = start.parent:contentToLocal(arg1, arg2)
-	elseif what == "set_angle" then
-		start.rotation = arg1
-	end
+local function BlockFunc (event)
+	local start = event.target
+
+	start.m_local_coordinate_system = event.local_coordinate_system
+
+	local x, y = event.group:localToContent(start.m_old_x, start.m_old_y)
+
+	start.rotation, start.x, start.y = event.angle or 0, start.parent:contentToLocal(x, y)
 end
 
 local EventToBroadcast
@@ -605,8 +603,11 @@ local events = {
 				local start, col, row = enemy.m_start, tile_maps.GetCell(enemy.m_tile)
 
 				if col >= cmin and col <= cmax and row >= rmin and row <= rmax then
-					block:AddToList(start, BlockFunc, start.x, start.y)
--- TODO: BLOCKFIXME
+					start.m_old_x, start.m_old_y = start.x, start.y
+
+					start:addEventListener("with_block_update", BlockFunc)
+					block:DataStore_Append(start)
+
 					start.m_block = block
 				end
 			end
