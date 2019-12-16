@@ -59,7 +59,7 @@ local ChangeTo
 local CancelFunc
 
 -- Begins input in a given direction
-local function BeginDir (_, target)
+local function BeginDir (target)
 	local dir = target.m_dir
 
 	if not Dir then
@@ -78,7 +78,7 @@ local function BeginDir (_, target)
 end
 
 -- Ends input in a given direction
-local function EndDir (_, target)
+local function EndDir (target)
 	local dir = target.m_dir
 
 	if Dir == dir or ChangeTo == dir then
@@ -157,8 +157,8 @@ local function KeyEvent (event)
 			PushDir.m_dir = key
 
 			if event.phase == "up" then
-				EndDir(nil, PushDir)
-			elseif BeginDir(nil, PushDir) then
+				EndDir(PushDir)
+			elseif BeginDir(PushDir) then
 				FramesLeft = 6
 			end
 		end
@@ -270,11 +270,23 @@ function M.SetMovingFunc (func)
 end
 
 local function ResetLevel (how)
-	Active = not not (IsActivePredicate and IsActivePredicate(how))
+	Active = not not (IsActivePredicate and IsActivePredicate(how)) -- TODO: use flag bits instead
 	FramesLeft = 0
 	Dir, Was = nil
 	ChangeTo = nil
 end
+
+---------------------------------
+
+function M.RESET ()
+	ResetLevel()
+end
+
+function M.DEACTIVATE ()
+	Deactivate()
+end
+
+---------------------------------
 
 for k, v in pairs{
 	began_path = ResetLevel,
@@ -288,10 +300,6 @@ for k, v in pairs{
 
 		composer.getVariable("handle_key"):Pop()
 	end,
-
-	move_done = ResetLevel,
-
-	move_prepare = Deactivate,
 
 	player_killed = Deactivate,
 

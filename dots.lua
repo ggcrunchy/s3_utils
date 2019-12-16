@@ -257,7 +257,7 @@ for k, v in pairs{
 
 		-- Do dot-specific logic.
 		if dot.ActOn then
-			dot:ActOn(event.facing, event.actor)
+			dot:ActOn(event.actor)
 		end
 	end,
 
