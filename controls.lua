@@ -30,10 +30,16 @@
 -- [ MIT license: http://www.opensource.org/licenses/mit-license.php ]
 --
 
+-- Standard library imports --
+local setmetatable = setmetatable
+
 -- Modules --
 local action = require("s3_utils.hud.action")
 local device = require("corona_utils.device")
 local move = require("s3_utils.hud.move")
+
+-- Plugins --
+local bit = require("plugin.bit")
 
 -- Corona globals --
 local display = display
@@ -42,6 +48,9 @@ local system = system
 
 -- Corona modules --
 local composer = require("composer")
+
+-- Cached module references --
+local _Flush_
 
 -- Exports --
 local M = {}
@@ -96,25 +105,30 @@ local platform = system.getInfo("platform")
 
 local UseJoystick = system.getInfo("environment") == "device" and (platform == "android" or platform == "ios")
 
--- Controls are active? --
-local Active
+local BlockedFlags = 0x1
+
+local InUseFlags = BlockedFlags
+
+local function IsActive ()
+	return InUseFlags == 0
+end
 
 local ActionsFunc
 
 local function DoActions ()
-	if Active and ActionsFunc then
+	if IsActive() and ActionsFunc then
 		ActionsFunc()
 	end
 end
 
 -- Number of frames left of "cruise control" movement --
-local FramesLeft
+local FramesLeft = 0
 
 local MovingFunc
 
 -- Updates player if any residual input is in effect
 local function UpdatePlayer ()
-	if Active then
+	if IsActive() then
 		-- Choose the player's heading: favor movement coming from input; failing that,
 		-- if we still have some residual motion, follow that instead. In any case, wind
 		-- down any leftover motion.
@@ -153,7 +167,7 @@ local function KeyEvent (event)
 	-- so we let the player coast along for a few frames unless interrupted.
 	-- TODO: Secure a Play or at least a tester, try out the D-pad (add bindings)
 	if key == "up" or key == "down" or key == "left" or key == "right" then
-		if Active then
+		if IsActive() then
 			PushDir.m_dir = key
 
 			if event.phase == "up" then
@@ -166,7 +180,7 @@ local function KeyEvent (event)
 	-- Confirm key or trackball press: attempt to perform player actions.
 	-- TODO: Add bindings
 	elseif key == "center" or key == "space" then
-		if Active and event.phase == "down" then
+		if IsActive() and event.phase == "down" then
 			DoActions()
 		end
 
@@ -178,12 +192,11 @@ local function KeyEvent (event)
 	return true
 end
 
--- Event dispatched on tap --
 local TappedAtEvent = { name = "tapped_at" }
 
 -- Traps touches to the screen and interprets any taps
 local function TrapTaps (event)
-	if Active then
+	if IsActive() then
 		local trap = event.target
 
 		-- Began: Did another touch release recently, or is this the first in a while?
@@ -246,8 +259,46 @@ function M.Init (params)
 	handle_key:Push(KeyEvent)
 end
 
-local function Deactivate ()
-	Active = false
+--- DOCME
+function M.Flush ()
+	FramesLeft = 0
+	Dir, Was = nil
+	ChangeTo = nil
+end
+
+local function AssignFlags (flags)
+	local was_active = InUseFlags == 0
+
+	InUseFlags = flags
+
+	if was_active and flags ~= 0 then
+		_Flush_()
+	end
+end
+
+local ControlFlag = {}
+
+ControlFlag.__index = ControlFlag
+
+--- DOCME
+function ControlFlag:Clear ()
+	AssignFlags(bit.band(InUseFlags, bit.bnot(self.m_flag)))
+end
+
+--- DOCME
+function ControlFlag:Set ()
+	AssignFlags(bit.bor(InUseFlags, self.m_flag))
+end
+
+local NextInUseFlag = 2 * BlockedFlags
+
+--- DOCME
+function M.NewFlag ()
+	local flag = NextInUseFlag
+
+	NextInUseFlag = 2 * NextInUseFlag
+
+	return setmetatable({ m_flag = flag }, ControlFlag)
 end
 
 function M.SetActionsFunc (func)
@@ -258,60 +309,24 @@ function M.SetCancelFunc (func)
 	CancelFunc = func
 end
 
-local IsActivePredicate
-
---- DOCME
-function M.SetIsActivePredicate (pred)
-	IsActivePredicate = pred
-end
-
 function M.SetMovingFunc (func)
 	MovingFunc = func
 end
 
-local function ResetLevel (how)
-	Active = not not (IsActivePredicate and IsActivePredicate(how)) -- TODO: use flag bits instead
-	FramesLeft = 0
-	Dir, Was = nil
-	ChangeTo = nil
+function M.WipeFlags ()
+	AssignFlags(0)
 end
 
----------------------------------
+Runtime:addEventListener("level_done", function()
+	AssignFlags(BlockedFlags)
 
-function M.RESET ()
-	ResetLevel()
-end
+	device.MapAxesToKeyEvents(false)
 
-function M.DEACTIVATE ()
-	Deactivate()
-end
+	Runtime:removeEventListener("enterFrame", UpdatePlayer)
 
----------------------------------
+	composer.getVariable("handle_key"):Pop()
+end)
 
-for k, v in pairs{
-	began_path = ResetLevel,
-
-	level_done = function()
-		ResetLevel("stop")
-
-		device.MapAxesToKeyEvents(false)
-
-		Runtime:removeEventListener("enterFrame", UpdatePlayer)
-
-		composer.getVariable("handle_key"):Pop()
-	end,
-
-	player_killed = Deactivate,
-
-	player_stunned = Deactivate,
-
-	player_unstunned = ResetLevel,
-
-	ready_to_go = ResetLevel,
-
-	reset_level = ResetLevel
-} do
-	Runtime:addEventListener(k, v)
-end
+_Flush_ = M.Flush
 
 return M
