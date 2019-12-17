@@ -33,7 +33,6 @@ local sin = math.sin
 
 -- Modules --
 local adaptive = require("tektite_core.table.adaptive")
-local bind = require("corona_utils.bind")
 local call = require("corona_utils.call")
 local collision = require("corona_utils.collision")
 local component = require("tektite_core.component")
@@ -424,7 +423,7 @@ end
 
 -- Enemy situation <-> events bindings --
 for _, v in ipairs{ "on_die", "on_wake" } do
-	Events[v] = call.NewDispatcher()--bind.BroadcastBuilder_Helper()
+	Events[v] = call.NewDispatcher()
 end
 
 local EnemyComponent = component.RegisterType{ name = "enemy", interfaces = { "harmable", "harmful", "damage" } }
@@ -479,13 +478,12 @@ function M.New (info, params, enemy, type_info)
 	local psl = params:GetPubSubList()
 
 	for k, event in pairs(Events) do
-	--	event.Subscribe(enemy, info[k], pubsub)
 		psl:Subscribe(info[k], event:GetAdder(), enemy)
 	end
 
 	--
 	for k in adaptive.IterSet(info.actions) do
-		--[[bind.]]psl:Publish(--[[pubsub, ]]Actions[k](enemy), info.uid, k)
+		psl:Publish(Actions[k](enemy), info.uid, k)
 	end
 
 	object_vars.PublishProperties(psl, info.props, Properties, info.uid, enemy)

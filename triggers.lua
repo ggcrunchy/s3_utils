@@ -29,11 +29,12 @@ local ipairs = ipairs
 
 -- Modules --
 local adaptive = require("tektite_core.table.adaptive")
---local bind = require("corona_utils.bind")
 local call = require("corona_utils.call")
 local collision = require("corona_utils.collision")
-local operators = require("bitwise_ops.operators")
 local tile_maps = require("s3_utils.tile_maps")
+
+-- Plugins --
+local bit = require("plugin.bit")
 
 -- Corona globals --
 local display = display
@@ -45,11 +46,10 @@ local M = {}
 --
 --
 
--- --
 local Events = {}
 
 for _, v in ipairs{ "on_enter", "on_leave" } do
-	Events[v] = call.NewDispatcher()--bind.BroadcastBuilder_Helper()
+	Events[v] = call.NewDispatcher()
 end
 
 --
@@ -99,6 +99,9 @@ local FlagGroups = { "player", "enemy", "projectile" }
 
 local Triggers
 
+local BitBegan, BitEnded = 0x1, 0x2
+local BitBoth = BitBegan + BitEnded
+
 --- DOCME
 function M.make (info, params)
 	--
@@ -108,7 +111,7 @@ function M.make (info, params)
 		local flags, handles = 0, {}
 
 		for _, name in ipairs(FlagGroups) do
-			local bits = operators.band(detect, 0x3)
+			local bits = bit.band(detect, BitBoth)
 
 			if bits ~= 0 then
 				flags = flags + collision.FilterBits(name)
@@ -116,7 +119,7 @@ function M.make (info, params)
 				if bits == 0x3 then
 					handles[name] = "both"
 				else
-					handles[name] = bits == 0x1 and "began" or "ended"
+					handles[name] = bits == BitBegan and "began" or "ended"
 				end
 			end
 
@@ -144,21 +147,16 @@ function M.make (info, params)
 		collision.MakeSensor(rect, "static", { filter = { categoryBits = flags, maskBits = 0xFFFF } })
 	end
 
-	--
 	local psl = params:GetPubSubList()
 
 	for k, event in pairs(Events) do
-	--	event.Subscribe(trigger, info[k], pubsub)
 		psl:Subscribe(info[k], event:GetAdder(), trigger)
 	end
 
-	--
 	for k in adaptive.IterSet(info.actions) do
---		bind.Publish(pubsub, 
 		psl:Publish(Actions[k](trigger), info.uid, k)
 	end
 
-	--
 	Triggers = Triggers or {}
 	Triggers[#Triggers + 1] = trigger
 end
@@ -185,7 +183,7 @@ function M.editor (_, what, arg1, arg2)
 	-- arg1: Defaults
 	elseif what == "enum_defs" then
 		arg1.deactivate = false
-		arg1.detect_when = 0x3
+		arg1.detect_when = BitBoth
 		arg1.restore = true
 
 	-- Enumerate Properties --

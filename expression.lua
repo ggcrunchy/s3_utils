@@ -111,7 +111,7 @@ local function AddOps (grammar, params, what)
 	end
 end
 
---- Defines a grammar for later consumption by @{Process}.
+--- Define a grammar for later consumption by @{Process}.
 -- @ptable params Grammar parameters:
 --
 --   * **binary\_ops**: Optional name-info list, with _info_ in the form `{ op = X, prec = Y }`,

@@ -36,7 +36,7 @@ local M = {}
 --
 --
 
---- Advances the state of an in-progress path.
+--- Advance the state of an in-progress path.
 -- @param cur Current regular node of path.
 --
 -- The internal index of this node may change.
@@ -101,7 +101,7 @@ function M.ChooseBranch_Facing (branch, facing)
 	return cur
 end
 
---- Getter.
+---
 -- @param cur Current regular node.
 -- @treturn string Current direction, or **nil** if unavailable.
 function M.CurrentDir (cur)
