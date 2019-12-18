@@ -32,16 +32,14 @@ local rawequal = rawequal
 
 -- Modules --
 local grid_funcs = require("tektite_core.array.grid")
-local powers_of_2 = require("bitwise_ops.powers_of_2")
 local range = require("tektite_core.number.range")
 local table_funcs = require("tektite_core.table.funcs")
 
+-- Plugins --
+local bit = require("plugin.bit")
+
 -- Corona globals --
 local Runtime = Runtime
-
--- Imports --
-local IsSet = powers_of_2.IsSet
-local PowersOf2 = powers_of_2.PowersOf2
 
 -- Cached module references --
 local _ResolveFlags_
@@ -159,13 +157,17 @@ function M.GetResolvedFlags_FromGroup (name, index)
 	return fgroup and fgroup.resolved[index] or 0 -- n.b. fallthrough when resolved[index] nil
 end
 
+local function AuxIsFlagSet (rflags, flag)
+	return bit.band(rflags, flag) ~= 0
+end
+
 ---
 -- @int index Tile index.
 -- @string name One of **"left"**, **"right"**, **"up"**, or **"down"**.
 -- @treturn boolean _index_ is valid and the resolved flag is set for the tile?
 -- @see ResolveFlags
 function M.IsFlagSet (index, name)
-	return IsSet(ResolvedFlags[index] or 0, DirFlags[name])
+	return AuxIsFlagSet(ResolvedFlags[index] or 0, DirFlags[name])
 end
 
 --- Variant of @{IsFlagSet} that refers to the working flags, rather than resolved ones.
@@ -174,7 +176,27 @@ end
 -- @treturn boolean _index_ is valid and the working flag is set for the tile?
 -- @see IsFlagSet
 function M.IsFlagSet_Working (index, name)
-	return IsSet(Flags[index] or 0, DirFlags[name])
+	return AuxIsFlagSet(Flags[index] or 0, DirFlags[name])
+end
+
+local Highest = { 1, 2, 2 }
+
+for i = 4, 7 do
+	Highest[i] = 4
+end
+
+for i = 8, 15 do
+	Highest[i] = 8
+end
+
+local function AuxPowers (_, n)
+	local bit = Highest[n]
+
+	return bit and n - bit, bit
+end
+
+local function Powers (n)
+	return AuxPowers, nil, n
 end
 
 ---
@@ -185,7 +207,7 @@ end
 function M.IsJunction (index)
 	local n = 0
 
-	for _ in PowersOf2(ResolvedFlags[index] or 0) do
+	for _ in Powers(ResolvedFlags[index]) do do
 		n = n + 1
 	end
 
@@ -255,11 +277,11 @@ function M.ResolveFlags (update)
 
 		local flags = Flags[i]
 
-		for _, power in PowersOf2(flags or 0) do
+		for _, power in Powers(flags) do do
 			local what = NamesByValueDir[power]
 			local all = Flags[i + Deltas[what]]
 
-			if not (all and IsSet(all, Reverse[what])) then
+			if not (all and AuxIsFlagSet(all, Reverse[what])) then
 				flags = flags - power
 			end
 		end
@@ -282,13 +304,12 @@ local RotateCCW = table_funcs.Invert(RotateCW)
 -- degrees, respectively. Otherwise, the rotation is by 90 degrees.
 -- @treturn uint Union of rotated flags.
 function M.Rotate (flags, how)
-	local rotate = how == "ccw" and RotateCCW or RotateCW
-	local rflags = 0
+	local rotate, flip, rflags = how == "ccw" and RotateCCW or RotateCW, how == "180", 0
 
-	for _, power in PowersOf2(flags) do
+	for _, power in Powers--[[Of2]](flags) do
 		local new = rotate[NamesByValueDir[power]]
 
-		new = how == "180" and rotate[new] or new
+		new = flip and rotate[new] or new
 		rflags = rflags + DirFlags[new]
 	end
 
