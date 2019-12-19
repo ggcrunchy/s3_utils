@@ -207,7 +207,7 @@ end
 function M.IsJunction (index)
 	local n = 0
 
-	for _ in Powers(ResolvedFlags[index]) do do
+	for _ in Powers(ResolvedFlags[index]) do
 		n = n + 1
 	end
 
@@ -277,7 +277,7 @@ function M.ResolveFlags (update)
 
 		local flags = Flags[i]
 
-		for _, power in Powers(flags) do do
+		for _, power in Powers(flags) do
 			local what = NamesByValueDir[power]
 			local all = Flags[i + Deltas[what]]
 
