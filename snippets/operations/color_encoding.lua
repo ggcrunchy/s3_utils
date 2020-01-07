@@ -49,7 +49,7 @@ if HasSinglePrecisionFloats then -- are the larger numbers representable? (TODO:
 
 	_PRECISION_ float DecodeFloatRGBA (_PRECISION_ vec4 rgba)
 	{
-		return dot(rgba, vec4(1., 1. / 255., 1. / 65025., 1. / 16581375.));
+		return dot(rgba, vec4(1., 1. / 255., 1. / 65025., 1. / 16581375.)); // powers of 255, 0-3
 	}
 
 ]]):gsub("_PRECISION_", Precision))
@@ -59,10 +59,7 @@ if HasSinglePrecisionFloats then -- are the larger numbers representable? (TODO:
 
 	_PRECISION_ vec4 EncodeFloatRGBA (_PRECISION_ float v)
 	{
-		_PRECISION_ vec4 enc = vec4(1., 255., 65025., 16581375.) * v;	//                             1 = 1
-																		//                     1111 1111 = 255
-																		//           1111 1110 0000 0001 = 65025
-																		// 1111 1101 0000 0010 1111 1111 = 16581375
+		_PRECISION_ vec4 enc = vec4(1., 255., 65025., 16581375.) * v; // powers of 255, 0-3
 
 		enc = fract(enc);
 

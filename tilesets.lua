@@ -53,9 +53,10 @@ local M = {}
 
 --
 local Names = {
-	{ "UpperLeft", "TopT", "UpperRight", "TopNub", "LeftNub", "Horizontal", "RightNub" },
+	{ "UpperLeft", "TopT", "UpperRight", "TopNub" },
 	{ "LeftT", "FourWays", "RightT", "Vertical" },
-	{ "LowerLeft", "BottomT", "LowerRight", "BottomNub" }
+	{ "LowerLeft", "BottomT", "LowerRight", "BottomNub" },
+	{ "LeftNub", "Horizontal", "RightNub" }
 }
 
 --
@@ -660,7 +661,9 @@ function M.UseTileset (name, prefer_raw)
 
 		--
 		Image:invalidate()
-
+timer.performWithDelay(50, function()
+	local rr = display.newImage(Image.filename, Image.baseDir, display.contentCenterX, display.contentCenterY)
+end)
 		Runtime:dispatchEvent{ name = "tileset_details_changed" }
 	end
 end

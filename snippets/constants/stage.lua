@@ -1,4 +1,4 @@
---- Constants related to &pi;.
+--- Constants related to shader stage.
 
 --
 -- Permission is hereby granted, free of charge, to any person obtaining
@@ -34,14 +34,16 @@ local M = {}
 --
 
 --- DOCME
-M.PI = includer.AddSnippet[[
+M.STAGE = includer.AddSnippet[[
 
-    #define PI 3.1415926535898
-    #define TWO_PI 6.2831853071796
-    #define PI_OVER_TWO 1.5707963267949
+    #define VERTEX_STAGE 0
+    #define FRAGMENT_STAGE 1
 
-    #define ONE_OVER_PI 0.31830988618379
-    #define ONE_OVER_TWO_PI 0.1591549430919
+    #ifdef CoronaColorScale
+        #define SHADER_STAGE FRAGMENT_STAGE
+    #else
+        #define SHADER_STAGE VERTEX_STAGE
+    #endif
 ]]
 
 return M
