@@ -239,6 +239,13 @@ local NoMove = setmetatable({}, {
 -- --
 local TooManyMoves = 2
 
+local function GetTileInfo (x, y)
+	local tile = tile_maps.GetTileIndex_XY(x, y)
+	local tx, ty = tile_maps.GetTilePos(tile)
+
+	return tx, ty, tile
+end
+
 --- DOCME
 -- @param entity
 -- @number dist
@@ -253,11 +260,12 @@ local TooManyMoves = 2
 function M.TryToMove (entity, dist, dir, near, path_funcs, update)
 	local acc, step, x, y = 0, min(near or dist, dist), entity.x, entity.y
 	local x0, y0, tilew, tileh = x, y, tile_maps.GetSizes()
+	local tx, ty, tile = GetTileInfo(x, y)
 
 	while acc < dist do
 		local prevx, prevy = x, y
 
-		acc, x, y = acc + step, movement.MoveFrom(x, y, min(step, dist - acc), dir)
+		acc, x, y = acc + step, movement.MoveFrom(x, y, tx, ty, tile_flags.GetResolvedFlags(tile), min(step, dist - acc), dir)
 
 		-- If the entity is following a path, stop if it reaches the goal (or gets impeded).
 		-- Because the goal can be on the fringe of the rectangular cell, radius checks have
@@ -281,8 +289,7 @@ function M.TryToMove (entity, dist, dir, near, path_funcs, update)
 
 			-- If the entity steps onto the center of a non-corner / junction tile for the
 			-- first time during a path, update the pathing state.
-			local tile = tile_maps.GetTileIndex_XY(x, y)
-			local tx, ty = tile_maps.GetTilePos(tile)
+			tx, ty, tile = GetTileInfo(x, y)
 
 			if not tile_flags.IsStraight(tile) and gtile ~= tile and _IsClose_(tx - x, ty - y, near) then
 				dir = update(dir, tile, entity)

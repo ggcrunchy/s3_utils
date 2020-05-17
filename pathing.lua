@@ -32,6 +32,7 @@ local ipairs = ipairs
 local array_funcs = require("tektite_core.array.funcs")
 local movement = require("s3_utils.movement")
 local tile_flags = require("s3_utils.tile_flags")
+local tile_maps = require("s3_utils.tile_maps")
 
 -- Exports --
 local M = {}
@@ -78,13 +79,13 @@ local N
 
 -- Tries to head in a given direction from a tile
 local function TryDir (tile, cur_dir, headed)
-	local dir, dt = movement.NextDirection(cur_dir, headed, "tile_delta")
+	local dir = movement.NextDirection(cur_dir, headed, "tile_delta")
 
 	if tile_flags.IsFlagSet(tile, dir) then
 		N = N + 1
 
 		Dirs[N].dir = dir
-		Dirs[N].dt = dt 
+		Dirs[N].dt = movement.GetTileDelta(dir, tile_maps.GetCounts()) 
 	end
 end
 
@@ -115,12 +116,12 @@ function M.FindPath (start, goal)
 	end
 
 	-- Launch an expedition in each direction.
-	local probes = {}
+	local probes, ncols = {}, tile_maps.GetCounts()
 
-	for cur_dir in movement.Ways(start) do
-		local dir, dt = movement.NextDirection(cur_dir, "forward", "tile_delta")
+	for cur_dir in movement.DirectionsFromFlags(tile_flags.GetResolvedFlags(start)) do
+		local dir = movement.NextDirection(cur_dir, "forward", "tile_delta")
 
-		probes[#probes + 1] = { dt = dt, start, dir }
+		probes[#probes + 1] = { dt = movement.GetTileDelta(dir, ncols), start, dir }
 	end
 
 	-- Iterate, updating all probes in progress, until either all probes fail or some goals

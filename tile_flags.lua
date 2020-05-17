@@ -32,6 +32,7 @@ local rawequal = rawequal
 
 -- Modules --
 local grid_funcs = require("tektite_core.array.grid")
+local movement = require("s3_utils.movement")
 local range = require("tektite_core.number.range")
 local table_funcs = require("tektite_core.table.funcs")
 
@@ -42,6 +43,8 @@ local bit = require("plugin.bit")
 local Runtime = Runtime
 
 -- Cached module references --
+local _GetResolvedFlags_
+local _GetWorkingSetFlags_
 local _ResolveFlags_
 
 -- Exports --
@@ -59,7 +62,11 @@ function M.GetCurrentGroup ()
 	return Current
 end
 
-local DirFlags = { left = 0x1, right = 0x2, up = 0x4, down = 0x8 }
+local DirFlags = { left = true, right = true, up = true, down = true }
+
+for k in pairs(DirFlags) do
+	DirFlags[k] = movement.GetDirectionFlag(k)
+end
 
 local function OrFlags (name1, name2, name3, name4)
 	return DirFlags[name1] + DirFlags[name2] + (DirFlags[name3] or 0) + (DirFlags[name4] or 0)
@@ -82,19 +89,6 @@ local TileFlags = {
 	BottomNub = DirFlags.up,
 	TopNub = DirFlags.down
 }
-
--- Working set of per-tile flags --
-local Flags
-
----
--- @int index Tile index.
--- @treturn uint Working flags, as assigned by @{SetFlags}; 0 if no value has been assigned,
--- or _index_ is outside the level.
---
--- When the level starts, no flags are considered assigned.
-function M.GetFlags (index)
-	return Flags[index] or 0
-end
 
 local function MaybeNil (name)
 	if name == nil then
@@ -157,6 +151,19 @@ function M.GetResolvedFlags_FromGroup (name, index)
 	return fgroup and fgroup.resolved[index] or 0 -- n.b. fallthrough when resolved[index] nil
 end
 
+-- Working set of per-tile flags --
+local Flags
+
+---
+-- @int index Tile index.
+-- @treturn uint Working flags, as assigned by @{SetFlags}; 0 if no value has been assigned,
+-- or _index_ is outside the level.
+--
+-- When the level starts, no flags are considered assigned.
+function M.GetWorkingSetFlags (index)
+	return Flags[index] or 0
+end
+
 local function AuxIsFlagSet (rflags, flag)
 	return bit.band(rflags, flag) ~= 0
 end
@@ -167,7 +174,7 @@ end
 -- @treturn boolean _index_ is valid and the resolved flag is set for the tile?
 -- @see ResolveFlags
 function M.IsFlagSet (index, name)
-	return AuxIsFlagSet(ResolvedFlags[index] or 0, DirFlags[name])
+	return AuxIsFlagSet(_GetResolvedFlags_(index), DirFlags[name])
 end
 
 --- Variant of @{IsFlagSet} that refers to the working flags, rather than resolved ones.
@@ -176,7 +183,7 @@ end
 -- @treturn boolean _index_ is valid and the working flag is set for the tile?
 -- @see IsFlagSet
 function M.IsFlagSet_Working (index, name)
-	return AuxIsFlagSet(Flags[index] or 0, DirFlags[name])
+	return AuxIsFlagSet(_GetWorkingSetFlags_(index), DirFlags[name])
 end
 
 local Highest = { 1, 2, 2 }
@@ -306,7 +313,7 @@ local RotateCCW = table_funcs.Invert(RotateCW)
 function M.Rotate (flags, how)
 	local rotate, flip, rflags = how == "ccw" and RotateCCW or RotateCW, how == "180", 0
 
-	for _, power in Powers--[[Of2]](flags) do
+	for _, power in Powers(flags) do
 		local new = rotate[NamesByValueDir[power]]
 
 		new = flip and rotate[new] or new
@@ -431,6 +438,8 @@ for k, v in pairs{
 	Runtime:addEventListener(k, v)
 end
 
+_GetResolvedFlags_ = M.GetResolvedFlags
+_GetWorkingSetFlags_ = M.GetWorkingSetFlags
 _ResolveFlags_ = M.ResolveFlags
 
 return M

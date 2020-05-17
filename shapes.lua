@@ -169,7 +169,7 @@ end
 
 -- Indicates whether the shape defined by a group of corners is listed yet
 local function InShapesList (shapes, corners)
-	-- Since the same loop may be found by exploring in different directions, we can end up
+	-- Since the same loop might be found by exploring in different directions, we can end up
 	-- with different orderings of the same set of corner tiles, i.e. an equivalence class
 	-- for the shape. The sorted order is as good a canonical form as any, so we impose it
 	-- on the corners, making them trivial to compare against the (also sorted) shape.
@@ -191,7 +191,7 @@ local Alts = {}
 
 -- Detect if an alternate would have made a better loop
 local function BetterAlt (attempted, n)
-	local nrows, ncols = tile_maps.GetCounts()
+	local nrows, ncols = tile_maps.GetCounts() -- TODO: was ordering it this way intentional?
 
 	for i = 1, n, 3 do
 		local dir, dt = Alts[i + 1], Alts[i + 2]
@@ -258,7 +258,7 @@ local function NewShape (dots, tiles)
 end
 
 -- Tries to form a closed loop containing a given tile
-local function TryLoop (attempted, dots, corners, tile, facing, pref, alt)
+local function TryLoop (attempted, dots, corners, tile, facing, pref, alt, ncols)
 	local start_tile, nalts = tile, 0
 
 	repeat
@@ -277,24 +277,29 @@ local function TryLoop (attempted, dots, corners, tile, facing, pref, alt)
 		end
 
 		-- Try to advance. If we have to turn around, there's no loop.
-		local going, dt = movement.WayToGo(tile, pref, "forward", alt, facing)
+		local flags = tile_flags.GetResolvedFlags(tile)
+		local going, dt = movement.WayToGo(flags, pref, "forward", alt, facing)
 
 		if going == "backward" then
 			return false
 
-		-- We may overlook a better alternative by following our preference. In that case,
+		-- We might overlook a better alternative by following our preference. In that case,
 		-- our inferior shape would enclose the other path, so we can detect this case by
 		-- heading straight out in the alternate direction until we hit an edge.
-		elseif going ~= alt and tile ~= start_tile and movement.CanGo(tile, alt, facing) then
-			Alts[nalts + 1] = tile
-			Alts[nalts + 2], Alts[nalts + 3] = movement.NextDirection(facing, alt, "tile_delta")
+		elseif going ~= alt and tile ~= start_tile then
+			local next_dir = movement.NextDirection(facing, alt)
 
-			nalts = nalts + 3
+			if movement.CanGo(flags, next_dir) then
+				Alts[nalts + 1] = tile
+				Alts[nalts + 2] = next_dir
+				Alts[nalts + 3] = movement.GetTileDelta(next_dir, ncols)
+				nalts = nalts + 3
+			end
 		end
 
 		-- Advance to the next tile. On the first tile, stay the course moving forward.
-		facing, dt = movement.NextDirection(facing, tile ~= start_tile and going or "forward", "tile_delta")
-
+		facing = movement.NextDirection(facing, tile ~= start_tile and going or "forward")
+		dt = movement.GetTileDelta(facing, ncols)
 		tile = tile + dt
 	until attempted[tile]
 
@@ -303,15 +308,15 @@ local function TryLoop (attempted, dots, corners, tile, facing, pref, alt)
 end
 
 -- Helper to discover new shapes by finding minimum loops
-local function Explore (shapes, tile, dot_shapes, which, pref, alt)
+local function Explore (shapes, tile, dot_shapes, which, pref, alt, ncols)
 	if not dot_shapes[which] then
 		local attempt, dots, corners = {}, {}, {}
 
-		if TryLoop(attempt, dots, corners, tile, which, pref, alt) and not InShapesList(shapes, corners) then
+		if TryLoop(attempt, dots, corners, tile, which, pref, alt, ncols) and not InShapesList(shapes, corners) then
 			local shape = NewShape(dots, attempt)
 
 			-- Now that we have a new shape that knows about all of its dots, return the
-			-- favor and tell the dots the shape holds them. Also, we may not have gone
+			-- favor and tell the dots the shape holds them. Also, we might not have gone
 			-- exploring from some of these dots yet, but we already know they will end
 			-- up on this same loop / shape when heading in this direction, so we mark
 			-- each dot to avoid wasted effort.
@@ -320,7 +325,6 @@ local function Explore (shapes, tile, dot_shapes, which, pref, alt)
 
 				if shape_info then
 					shape_info[which] = true
-
 					shape_info[#shape_info + 1] = shape
 				end
 			end
@@ -331,12 +335,12 @@ end
 -- Helper to bake dots into shapes
 local function BakeShapes ()
 	if Shapes then
-		local shapes = {}
+		local shapes, ncols = {}, tile_maps.GetCounts()
 
 		for i, dot_shapes in pairs(Shapes) do
-			for dir in movement.Ways(i) do
-				Explore(shapes, i, dot_shapes, dir, "to_left", "to_right")
-				Explore(shapes, i, dot_shapes, dir, "to_right", "to_left")
+			for dir in movement.DirectionsFromFlags(tile_flags.GetResolvedFlags(i)) do
+				Explore(shapes, i, dot_shapes, dir, "to_left", "to_right", ncols)
+				Explore(shapes, i, dot_shapes, dir, "to_right", "to_left", ncols)
 			end
 		end
 	end
