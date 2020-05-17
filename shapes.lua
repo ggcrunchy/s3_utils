@@ -41,9 +41,6 @@ local tile_maps = require("s3_utils.tile_maps")
 local display = display
 local Runtime = Runtime
 
--- Imports --
-local IsFlagSet = tile_flags.IsFlagSet
-
 -- Exports --
 local M = {}
 
@@ -80,7 +77,7 @@ local function FillShape (_, tiles)
 
 	-- Make a first pass over each row to accumulate its tile spans, i.e. each consecutive
 	-- pair of tiles with a downward-exiting path and any tiles in between.
-	local ncols, row, next, left, from = tile_maps.GetCounts(), 0, 0
+	local ncols, row, next, left, from, from_flags = tile_maps.GetCounts(), 0, 0
 
 	for _, cur in ipairs(indices) do
 		while next < cur do
@@ -89,11 +86,13 @@ local function FillShape (_, tiles)
 
 		left = next - ncols
 
-		if IsFlagSet(cur, "down") then
+		local cur_flags = tile_flags.GetFlags(cur)
+
+		if movement.CanGo(cur_flags, "down") then
 			-- Left side of span: If this is the first span in the row, do some bookkeeping.
 			-- Remember the left column. 
 			if not from then
-				from = cur
+				from, from_flags = cur, cur_flags
 
 			-- Right side: add the right column to the row's spans, indexed by left column.
 			-- Go back to watching for a left side tile. If a row of tiles snuck between the
@@ -101,7 +100,7 @@ local function FillShape (_, tiles)
 			else
 				local offset = cur - left
 
-				if IsFlagSet(from, "right") or IsFlagSet(cur, "left") then
+				if movement.CanGo(from_flags, "right") or movement.CanGo(cur_flags, "left") then
 					offset = -offset
 				end
 
@@ -277,7 +276,7 @@ local function TryLoop (attempted, dots, corners, tile, facing, pref, alt, ncols
 		end
 
 		-- Try to advance. If we have to turn around, there's no loop.
-		local flags = tile_flags.GetResolvedFlags(tile)
+		local flags = tile_flags.GetFlags(tile)
 		local going, dt = movement.WayToGo(flags, pref, "forward", alt, facing)
 
 		if going == "backward" then
@@ -338,7 +337,7 @@ local function BakeShapes ()
 		local shapes, ncols = {}, tile_maps.GetCounts()
 
 		for i, dot_shapes in pairs(Shapes) do
-			for dir in movement.DirectionsFromFlags(tile_flags.GetResolvedFlags(i)) do
+			for dir in movement.DirectionsFromFlags(tile_flags.GetFlags(i)) do
 				Explore(shapes, i, dot_shapes, dir, "to_left", "to_right", ncols)
 				Explore(shapes, i, dot_shapes, dir, "to_right", "to_left", ncols)
 			end

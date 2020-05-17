@@ -218,9 +218,9 @@ function M.WayToGo (flags, dir1, dir2, dir3, facing)
 	local was1, was2, was3
 
 	if facing ~= nil then
-		dir1, was1 = _NextDirection_(dir1, facing), dir1
-		dir2, was2 = _NextDirection_(dir2, facing), dir2
-		dir3, was3 = _NextDirection_(dir3, facing), dir3
+		dir1, was1 = _NextDirection_(facing, dir1), dir1
+		dir2, was2 = _NextDirection_(facing, dir2), dir2
+		dir3, was3 = _NextDirection_(facing, dir3), dir3
 	end
 
 	if _CanGo_(flags, dir1) then

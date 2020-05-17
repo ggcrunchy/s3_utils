@@ -78,10 +78,10 @@ local Dirs = { {}, {}, {} }
 local N
 
 -- Tries to head in a given direction from a tile
-local function TryDir (tile, cur_dir, headed)
+local function TryDir (flags, cur_dir, headed)
 	local dir = movement.NextDirection(cur_dir, headed, "tile_delta")
 
-	if tile_flags.IsFlagSet(tile, dir) then
+	if movement.CanGo(flags, dir) then
 		N = N + 1
 
 		Dirs[N].dir = dir
@@ -118,7 +118,7 @@ function M.FindPath (start, goal)
 	-- Launch an expedition in each direction.
 	local probes, ncols = {}, tile_maps.GetCounts()
 
-	for cur_dir in movement.DirectionsFromFlags(tile_flags.GetResolvedFlags(start)) do
+	for cur_dir in movement.DirectionsFromFlags(tile_flags.GetFlags(start)) do
 		local dir = movement.NextDirection(cur_dir, "forward", "tile_delta")
 
 		probes[#probes + 1] = { dt = movement.GetTileDelta(dir, ncols), start, dir }
@@ -154,11 +154,11 @@ function M.FindPath (start, goal)
 				-- Explore prospective routes, ahead and to each side.
 				N = 0
 
-				local cur_dir = cur[ncur]
+				local cur_dir, flags = cur[ncur], tile_flags.GetFlags(tile)
 
-				TryDir(tile, cur_dir, "forward")
-				TryDir(tile, cur_dir, "to_left")
-				TryDir(tile, cur_dir, "to_right")
+				TryDir(flags, cur_dir, "forward")
+				TryDir(flags, cur_dir, "to_left")
+				TryDir(flags, cur_dir, "to_right")
 
 				-- More than one route open:
 				-- Any probes leaving a tile in a given direction share the same future(s).

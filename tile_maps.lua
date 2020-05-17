@@ -39,8 +39,8 @@ local display = display
 -- Imports --
 local CellToIndex = grid.CellToIndex
 local FitToSlot = array_index.FitToSlot
+local GetFlags = tile_flags.GetFlags
 local GetNameByFlags = tile_flags.GetNameByFlags
-local GetResolvedFlags = tile_flags.GetResolvedFlags
 local IndexToCell = grid.IndexToCell
 local SetFlags = tile_flags.SetFlags
 
@@ -210,7 +210,7 @@ function M.SetTilesFromFlags (group, col1, row1, col2, row2)
 
 	for _ = row1, row2 do
 		for i = 0, col2 - col1 do
-			local tile, flags = Tiles[index + i], GetResolvedFlags(index + i)
+			local tile, flags = Tiles[index + i], GetFlags(index + i)
 
 			display.remove(tile.image)
 

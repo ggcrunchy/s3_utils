@@ -265,7 +265,7 @@ function M.TryToMove (entity, dist, dir, near, path_funcs, update)
 	while acc < dist do
 		local prevx, prevy = x, y
 
-		acc, x, y = acc + step, movement.MoveFrom(x, y, tx, ty, tile_flags.GetResolvedFlags(tile), min(step, dist - acc), dir)
+		acc, x, y = acc + step, movement.MoveFrom(x, y, tx, ty, tile_flags.GetFlags(tile), min(step, dist - acc), dir)
 
 		-- If the entity is following a path, stop if it reaches the goal (or gets impeded).
 		-- Because the goal can be on the fringe of the rectangular cell, radius checks have

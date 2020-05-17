@@ -76,6 +76,7 @@ end
 
 --- DOCME
 function M.make--[[AddEvents]] (--[[events]]info, params)
+if info then
 	local psl = params:GetPubSubList()
 
 	for k, v in pairs(GetEvent) do
@@ -92,7 +93,9 @@ function M.make--[[AddEvents]] (--[[events]]info, params)
 	--
 	if not adaptive.InSet(--[[events and events]]info.actions, "win") then
 		Defaults = { all_dots_removed = "win" }
+		-- ^^^ TODO: this is rather ugly!
 	end
+end
 end
 
 --

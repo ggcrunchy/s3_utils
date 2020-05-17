@@ -128,6 +128,8 @@ function M.AddThings (current_level, level, params)
 
 	-- ...and any global events...
 --	global_events.AddEvents(level.global_events, params)
+global_events.make(level.global_events, params)
+-- ^^^ argh... need to change how "win" is handled... then can divvy this up as specific objects
 
 	-- ...and actions...
 	for i = 1, #(level.actions or "") do

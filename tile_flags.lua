@@ -43,8 +43,7 @@ local bit = require("plugin.bit")
 local Runtime = Runtime
 
 -- Cached module references --
-local _GetResolvedFlags_
-local _GetWorkingSetFlags_
+local _GetFlags_
 local _ResolveFlags_
 
 -- Exports --
@@ -140,50 +139,15 @@ local ResolvedFlags
 -- has been performed or _index_ is invalid.
 --
 -- When the level begins, no flags are considered resumed.
-function M.GetResolvedFlags (index)
+function M.GetFlags (index)
 	return ResolvedFlags[index] or 0
 end
 
 --- DOCME
-function M.GetResolvedFlags_FromGroup (name, index)
+function M.GetFlags_FromGroup (name, index)
 	local fgroup = FlagGroups and FlagGroups[MaybeNil(name)]
 
 	return fgroup and fgroup.resolved[index] or 0 -- n.b. fallthrough when resolved[index] nil
-end
-
--- Working set of per-tile flags --
-local Flags
-
----
--- @int index Tile index.
--- @treturn uint Working flags, as assigned by @{SetFlags}; 0 if no value has been assigned,
--- or _index_ is outside the level.
---
--- When the level starts, no flags are considered assigned.
-function M.GetWorkingSetFlags (index)
-	return Flags[index] or 0
-end
-
-local function AuxIsFlagSet (rflags, flag)
-	return bit.band(rflags, flag) ~= 0
-end
-
----
--- @int index Tile index.
--- @string name One of **"left"**, **"right"**, **"up"**, or **"down"**.
--- @treturn boolean _index_ is valid and the resolved flag is set for the tile?
--- @see ResolveFlags
-function M.IsFlagSet (index, name)
-	return AuxIsFlagSet(_GetResolvedFlags_(index), DirFlags[name])
-end
-
---- Variant of @{IsFlagSet} that refers to the working flags, rather than resolved ones.
--- @int index Tile index.
--- @string name One of **"left"**, **"right"**, **"up"**, or **"down"**.
--- @treturn boolean _index_ is valid and the working flag is set for the tile?
--- @see IsFlagSet
-function M.IsFlagSet_Working (index, name)
-	return AuxIsFlagSet(_GetWorkingSetFlags_(index), DirFlags[name])
 end
 
 local Highest = { 1, 2, 2 }
@@ -242,6 +206,20 @@ function M.IsStraight (index)
 	return flags == TileFlags.Horizontal or flags == TileFlags.Vertical
 end
 
+local function IsFlagSet (rflags, flag)
+	return bit.band(rflags or 0, flag) ~= 0
+end
+
+local WorkingFlags
+
+---
+-- @int index Tile index.
+-- @string name One of **"left"**, **"right"**, **"up"**, or **"down"**.
+-- @treturn boolean _index_ is valid and the working flag is set for the tile?
+function M.IsWorkingFlagSet (index, name)
+	return IsFlagSet(WorkingFlags[index], DirFlags[name])
+end
+
 local Reverse = { left = "right", right = "left", up = "down", down = "up" }
 
 for k, v in pairs(Reverse) do
@@ -282,13 +260,13 @@ function M.ResolveFlags (update)
 			col, Deltas.right = 0, 1 / 0
 		end
 
-		local flags = Flags[i]
+		local flags = WorkingFlags[i]
 
 		for _, power in Powers(flags) do
 			local what = NamesByValueDir[power]
-			local all = Flags[i + Deltas[what]]
+			local all = WorkingFlags[i + Deltas[what]]
 
-			if not (all and AuxIsFlagSet(all, Reverse[what])) then
+			if not (all and IsFlagSet(all, Reverse[what])) then
 				flags = flags - power
 			end
 		end
@@ -336,14 +314,14 @@ function M.SetFlags (index, flags)
 	local old
 
 	if index >= 1 and index <= Area then
-		old, Flags[index] = Flags[index], flags
+		old, WorkingFlags[index] = WorkingFlags[index], flags
 	end
 
 	return old or 0
 end
 
 local function AuxBindGroup (fgroup)
-	Flags, ResolvedFlags = fgroup.working, fgroup.resolved
+	ResolvedFlags, WorkingFlags = fgroup.resolved, fgroup.working
 end
 
 local function AuxUseFlags (name)
@@ -404,7 +382,7 @@ function M.WipeFlags (col1, row1, col2, row2)
 
 	for _ = row1, row2 do
 		for i = 0, col2 - col1 do
-			ResolvedFlags[index + i], Flags[index + i] = nil
+			ResolvedFlags[index + i], WorkingFlags[index + i] = nil
 		end
 
 		index = index + NCols
@@ -424,7 +402,7 @@ for k, v in pairs{
 	end,
 
 	leave_level = function()
-		FlagGroups, Flags, ResolvedFlags = nil
+		FlagGroups, WorkingFlags, ResolvedFlags = nil
 	end,
 
 	reset_level = function()
@@ -438,8 +416,7 @@ for k, v in pairs{
 	Runtime:addEventListener(k, v)
 end
 
-_GetResolvedFlags_ = M.GetResolvedFlags
-_GetWorkingSetFlags_ = M.GetWorkingSetFlags
+_GetFlags_ = M.GetFlags
 _ResolveFlags_ = M.ResolveFlags
 
 return M

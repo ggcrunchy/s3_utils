@@ -539,8 +539,8 @@ local function TryConfigFunc (key, arg)
 
 		-- Helper to apply an action to each enemy
 		for_each = function(func, arg)
-			for _, enemy in ipairs(Enemies) do
-				func(enemy, arg)
+			for i = 1, #(Enemies or "") do
+				func(Enemies[i], arg)
 			end
 		end
 	}, arg)
