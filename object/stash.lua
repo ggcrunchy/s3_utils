@@ -27,7 +27,7 @@
 local max = math.max
 local remove = table.remove
 
--- Corona globals --
+-- Solar2D globals --
 local display = display
 local timer = timer
 

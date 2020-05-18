@@ -37,7 +37,7 @@ local movement = require("s3_utils.movement")
 local tile_flags = require("s3_utils.tile_flags")
 local tile_maps = require("s3_utils.tile_maps")
 
--- Corona globals --
+-- Solar2D globals --
 local display = display
 local Runtime = Runtime
 

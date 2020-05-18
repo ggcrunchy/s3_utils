@@ -36,7 +36,7 @@ local tile_maps = require("s3_utils.tile_maps")
 -- Plugins --
 local bit = require("plugin.bit")
 
--- Corona globals --
+-- Solar2D globals --
 local display = display
 
 -- Exports --

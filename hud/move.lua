@@ -33,7 +33,7 @@ local round = math.round
 -- Modules --
 local touch = require("solar2d_ui.utils.touch")
 
--- Corona globals --
+-- Solar2D globals --
 local display = display
 local Runtime = Runtime
 local timer = timer

@@ -43,7 +43,7 @@ local collision = require("solar2d_utils.collision")
 local shapes = require("s3_utils.shapes")
 local tile_maps = require("s3_utils.tile_maps")
 
--- Corona globals --
+-- Solar2D globals --
 local Runtime = Runtime
 local timer = timer
 
@@ -257,7 +257,7 @@ for k, v in pairs{
 
 		-- Do dot-specific logic.
 		if dot.ActOn then
-			dot:ActOn(event.actor)
+			dot:ActOn(event.actor, event.body)
 		end
 	end,
 

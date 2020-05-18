@@ -38,7 +38,7 @@ local sqrt = math.sqrt
 local glow = require("s3_utils.object.glow")
 local length = require("tektite_core.number.length")
 
--- Corona globals --
+-- Solar2D globals --
 local display = display
 local timer = timer
 

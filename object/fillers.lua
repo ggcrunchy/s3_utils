@@ -42,7 +42,7 @@ local tile_maps = require("s3_utils.tile_maps")
 -- Effects --
 local caustics_effect = require("s3_utils.effect.caustics")
 
--- Corona globals --
+-- Solar2D globals --
 local display = display
 local timer = timer
 

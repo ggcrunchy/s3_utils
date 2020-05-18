@@ -44,7 +44,7 @@ local tile_maps = require("s3_utils.tile_maps")
 local timers = require("solar2d_utils.timers")
 local visibility = require("solar2d_utils.visibility")
 
--- Corona globals --
+-- Solar2D globals --
 local display = display
 local Runtime = Runtime
 local timer = timer

@@ -37,7 +37,7 @@ local call = require("solar2d_utils.call")
 local config = require("config.GlobalEvents")
 local object_vars = require("config.ObjectVariables")
 
--- Corona globals --
+-- Solar2D globals --
 local Runtime = Runtime
 local timer = timer
 

@@ -32,7 +32,7 @@ local meta = require("tektite_core.table.meta")
 -- Plugins --
 local ok, memoryBitmap = pcall(require, "plugin.memoryBitmap")
 
--- Corona globals --
+-- Solar2D globals --
 local display = display
 local graphics = graphics
 

@@ -39,7 +39,7 @@ local table_funcs = require("tektite_core.table.funcs")
 -- Plugins --
 local bit = require("plugin.bit")
 
--- Corona globals --
+-- Solar2D globals --
 local Runtime = Runtime
 
 -- Cached module references --

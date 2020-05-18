@@ -36,7 +36,7 @@ local array_index = require("tektite_core.array.index")
 local curves = require("tektite_core.number.curves")
 local frames = require("solar2d_utils.frames")
 
--- Corona globals --
+-- Solar2D globals --
 local display = display
 local timer = timer
 

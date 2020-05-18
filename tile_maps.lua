@@ -33,7 +33,7 @@ local range = require("tektite_core.number.range")
 local tile_flags = require("s3_utils.tile_flags")
 local tilesets = require("s3_utils.tilesets")
 
--- Corona globals --
+-- Solar2D globals --
 local display = display
 
 -- Imports --

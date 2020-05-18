@@ -33,7 +33,7 @@ local random = math.random
 local sin = math.sin
 local type = type
 
--- Corona globals --
+-- Solar2D globals --
 local display = display
 local timer = timer
 

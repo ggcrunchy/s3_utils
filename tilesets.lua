@@ -39,7 +39,7 @@ local orange_duck = require("s3_utils.snippets.operations.orange_duck")
 local pi = require("s3_utils.snippets.constants.pi")
 local require_ex = require("tektite_core.require_ex")
 
--- Corona globals --
+-- Solar2D globals --
 local display = display
 local graphics = graphics
 local Runtime = Runtime

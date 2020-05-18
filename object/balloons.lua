@@ -29,7 +29,7 @@ local floor = math.floor
 local min = math.min
 local random = math.random
 
--- Corona globals --
+-- Solar2D globals --
 local display = display
 local native = native
 local timer = timer

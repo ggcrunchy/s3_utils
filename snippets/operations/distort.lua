@@ -26,7 +26,7 @@
 -- Modules --
 local includer = require("solar2d_utils.includer")
 
--- Corona globals --
+-- Solar2D globals --
 local display = display
 
 -- Exports --

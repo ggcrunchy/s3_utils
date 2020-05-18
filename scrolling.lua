@@ -28,7 +28,7 @@ local ipairs = ipairs
 local max = math.max
 local min = math.min
 
--- Corona globals --
+-- Solar2D globals --
 local display = display
 local Runtime = Runtime
 

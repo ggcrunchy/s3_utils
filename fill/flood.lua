@@ -35,7 +35,7 @@ local bitmap = require("s3_utils.bitmap")
 local embedded_predicate = require("tektite_core.array.embedded_predicate")
 local grid = require("tektite_core.array.grid")
 
--- Corona globals --
+-- Solar2D globals --
 local display = display
 local graphics = graphics
 local timer = timer

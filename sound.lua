@@ -33,7 +33,7 @@ local audio = require("solar2d_utils.audio")
 local bind = require("solar2d_utils.bind")
 local call = require("solar2d_utils.call")
 
--- Corona globals --
+-- Solar2D globals --
 local system = system
 
 -- Exports --

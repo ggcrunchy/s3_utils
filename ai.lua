@@ -40,7 +40,7 @@ local tile_maps = require("s3_utils.tile_maps")
 -- Plugins --
 local mwc = require("plugin.mwc")
 
--- Corona globals --
+-- Solar2D globals --
 local display = display
 
 -- Cached module references --

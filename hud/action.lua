@@ -35,7 +35,7 @@ local type = type
 local array_index = require("tektite_core.array.index")
 local touch = require("solar2d_ui.utils.touch")
 
--- Corona globals --
+-- Solar2D globals --
 local display = display
 local easing = easing
 local native = native

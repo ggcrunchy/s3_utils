@@ -44,7 +44,7 @@ local tile_maps = require("s3_utils.tile_maps")
 local tilesets = require("s3_utils.tilesets")
 local values = require("s3_utils.state.values")
 
--- Corona globals --
+-- Solar2D globals --
 local display = display
 local graphics = graphics
 local Runtime = Runtime

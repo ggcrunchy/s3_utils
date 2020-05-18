@@ -41,12 +41,12 @@ local move = require("s3_utils.hud.move")
 -- Plugins --
 local bit = require("plugin.bit")
 
--- Corona globals --
+-- Solar2D globals --
 local display = display
 local Runtime = Runtime
 local system = system
 
--- Corona modules --
+-- Solar2D modules --
 local composer = require("composer")
 
 -- Cached module references --
