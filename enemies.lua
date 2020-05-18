@@ -33,16 +33,16 @@ local sin = math.sin
 
 -- Modules --
 local adaptive = require("tektite_core.table.adaptive")
-local call = require("corona_utils.call")
-local collision = require("corona_utils.collision")
+local call = require("solar2d_utils.call")
+local collision = require("solar2d_utils.collision")
 local component = require("tektite_core.component")
 local enemy_events = require("annex.EnemyEvents")
 local flow_ops = require("coroutine_ops.flow")
 local object_vars = require("config.ObjectVariables")
 local store = require("s3_utils.state.store")
 local tile_maps = require("s3_utils.tile_maps")
-local timers = require("corona_utils.timers")
-local visibility = require("corona_utils.visibility")
+local timers = require("solar2d_utils.timers")
+local visibility = require("solar2d_utils.visibility")
 
 -- Corona globals --
 local display = display

@@ -35,7 +35,7 @@ local type = type
 
 -- Modules --
 local args = require("s3_utils.snippets.miscellany.args")
-local includer = require("corona_utils.includer")
+local includer = require("solar2d_utils.includer")
 local qualifiers = require("s3_utils.snippets.utils.qualifiers")
 
 -- Cached module references --

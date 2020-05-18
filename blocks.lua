@@ -40,7 +40,7 @@ local min = math.min
 local pairs = pairs
 
 -- Modules --
-local call = require("corona_utils.call")
+local call = require("solar2d_utils.call")
 local component = require("tektite_core.component")
 local data_store = require("s3_objects.mixin.data_store")
 local meta = require("tektite_core.table.meta")

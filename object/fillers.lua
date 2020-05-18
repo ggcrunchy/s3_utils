@@ -33,8 +33,8 @@ local random = math.random
 local indexOf = table.indexOf
 
 -- Modules --
-local audio = require("corona_utils.audio")
-local color = require("corona_ui.utils.color")
+local audio = require("solar2d_utils.audio")
+local color = require("solar2d_ui.utils.color")
 local directories = require("config.Directories")
 local flood = require("s3_utils.fill.flood")
 local tile_maps = require("s3_utils.tile_maps")

@@ -29,9 +29,9 @@ local pairs = pairs
 
 -- Modules --
 local adaptive = require("tektite_core.table.adaptive")
-local audio = require("corona_utils.audio")
-local bind = require("corona_utils.bind")
-local call = require("corona_utils.call")
+local audio = require("solar2d_utils.audio")
+local bind = require("solar2d_utils.bind")
+local call = require("solar2d_utils.call")
 
 -- Corona globals --
 local system = system

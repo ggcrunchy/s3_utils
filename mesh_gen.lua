@@ -35,7 +35,7 @@ local sin = math.sin
 local sqrt = math.sqrt
 
 -- Modules --
-local soup = require("corona_utils.soup")
+local soup = require("solar2d_utils.soup")
 
 -- Cached module references --
 local _NewQuadrantArc_

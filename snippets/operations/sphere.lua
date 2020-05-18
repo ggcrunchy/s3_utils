@@ -24,7 +24,7 @@
 --
 
 -- Modules --
-local includer = require("corona_utils.includer")
+local includer = require("solar2d_utils.includer")
 local pi = require("s3_utils.snippets.constants.pi")
 
 -- Exports --

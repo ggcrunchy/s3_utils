@@ -29,8 +29,8 @@ local ipairs = ipairs
 
 -- Modules --
 local adaptive = require("tektite_core.table.adaptive")
-local call = require("corona_utils.call")
-local collision = require("corona_utils.collision")
+local call = require("solar2d_utils.call")
+local collision = require("solar2d_utils.collision")
 local tile_maps = require("s3_utils.tile_maps")
 
 -- Plugins --

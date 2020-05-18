@@ -33,7 +33,7 @@ local type = type
 
 -- Modules --
 local array_index = require("tektite_core.array.index")
-local touch = require("corona_ui.utils.touch")
+local touch = require("solar2d_ui.utils.touch")
 
 -- Corona globals --
 local display = display

@@ -35,7 +35,7 @@ local setmetatable = setmetatable
 
 -- Modules --
 local action = require("s3_utils.hud.action")
-local device = require("corona_utils.device")
+local device = require("solar2d_utils.device")
 local move = require("s3_utils.hud.move")
 
 -- Plugins --

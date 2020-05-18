@@ -32,8 +32,8 @@ local rawequal = rawequal
 
 -- Modules --
 local adaptive = require("tektite_core.table.adaptive")
-local bind = require("corona_utils.bind")
-local call = require("corona_utils.call")
+local bind = require("solar2d_utils.bind")
+local call = require("solar2d_utils.call")
 local config = require("config.GlobalEvents")
 local object_vars = require("config.ObjectVariables")
 

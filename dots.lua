@@ -39,7 +39,7 @@ local pairs = pairs
 local sort = table.sort
 
 -- Modules --
-local collision = require("corona_utils.collision")
+local collision = require("solar2d_utils.collision")
 local shapes = require("s3_utils.shapes")
 local tile_maps = require("s3_utils.tile_maps")
 
@@ -101,7 +101,7 @@ local Remaining
 -- Unless the **omit\_from\_event\_blocks\_P** property is true, a dot will be added to any event
 -- block that it happens to occupy.
 --
--- The **body\_P** and **body_type\_P** properties can be supplied to @{corona_utils.collision.MakeSensor}.
+-- The **body\_P** and **body_type\_P** properties can be supplied to @{solar2d_utils.collision.MakeSensor}.
 -- If **body\_P** is **false**, these properties are not assigned.
 -- @pgroup group Display group that will hold the dot.
 -- @ptable info Information about the new dot. Required fields:
@@ -112,7 +112,7 @@ local Remaining
 --
 -- Instance-specific data may also be passed in other fields.
 -- @ptable Load parameters.
--- @see corona_utils.collision.GetType, s3_utils.shapes.RemoveAt
+-- @see solar2d_utils.collision.GetType, s3_utils.shapes.RemoveAt
 function M.New (info, dot)
 	local index = tile_maps.GetTileIndex(info.col, info.row)
 

@@ -31,7 +31,7 @@ local sqrt = math.sqrt
 local round = math.round
 
 -- Modules --
-local touch = require("corona_ui.utils.touch")
+local touch = require("solar2d_ui.utils.touch")
 
 -- Corona globals --
 local display = display
@@ -46,7 +46,7 @@ local M = {}
 --
 
 -- Partially adapted from ponywolf's vjoy
-local AxisEvent = { name = "axis", axis = {}, device = { type = "joystick" } } -- cf. corona_utils.device.AxisToKey()
+local AxisEvent = { name = "axis", axis = {}, device = { type = "joystick" } } -- cf. solar2d_utils.device.AxisToKey()
 
 local InnerRadius, OuterRadius = 65, 96
 local StickRange = OuterRadius - InnerRadius

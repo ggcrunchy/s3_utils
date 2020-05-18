@@ -29,7 +29,7 @@ local pairs = pairs
 
 -- Modules --
 local require_ex = require("tektite_core.require_ex")
-local bind = require("corona_utils.bind")
+local bind = require("solar2d_utils.bind")
 local extend = require("s3_utils.state.extend")
 local meta = require("tektite_core.table.meta")
 
