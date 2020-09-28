@@ -89,13 +89,13 @@ if info then
 	end
 
 	object_vars.PublishProperties(psl, --[[events and events]]info.props, OutProperties, --[[events and events]]info.uid)
+end
 
 	--
-	if not adaptive.InSet(--[[events and events]]info.actions, "win") then
+	if not adaptive.InSet(--[[events and events]]info and info.actions, "win") then
 		Defaults = { all_dots_removed = "win" }
 		-- ^^^ TODO: this is rather ugly!
 	end
-end
 end
 
 --

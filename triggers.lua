@@ -31,7 +31,7 @@ local ipairs = ipairs
 local adaptive = require("tektite_core.table.adaptive")
 local call = require("solar2d_utils.call")
 local collision = require("solar2d_utils.collision")
-local tile_maps = require("s3_utils.tile_maps")
+local tile_layout = require("s3_utils.tile_layout")
 
 -- Plugins --
 local bit = require("plugin.bit")
@@ -127,7 +127,7 @@ function M.make (info, params)
 		end
 
 		-- 
-		local w, h = tile_maps.GetSizes()
+		local w, h = tile_layout.GetSizes()
 		local rect = display.newRect(params.things_layer, (info.col - .5) * w, (info.row - .5) * h, w, h)
 
 		rect:addEventListener("collision", function(event)

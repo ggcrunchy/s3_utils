@@ -35,7 +35,7 @@ local flow = require("coroutine_ops.flow")
 local movement = require("s3_utils.movement")
 local range = require("tektite_core.number.range")
 local tile_flags = require("s3_utils.tile_flags")
-local tile_maps = require("s3_utils.tile_maps")
+local tile_layout = require("s3_utils.tile_layout")
 
 -- Plugins --
 local mwc = require("plugin.mwc")
@@ -107,15 +107,15 @@ end
 -- @callable gen
 -- @treturn uint T
 function M.GetTileNeighbor (start, halfx, halfy, gen)
-	local col, row = tile_maps.GetCell(start)
-	local ncols, nrows = tile_maps.GetCounts()
+	local col, row = tile_layout.GetCell(start)
+	local ncols, nrows = tile_layout.GetCounts()
 	local w, h, tile = 2 * halfx + 1, 2 * halfy + 1
 
 	repeat
 		col = min(ncols, max(col - halfx, 1) + gen() % w)
 		row = min(nrows, max(row - halfy, 1) + gen() % h)
 
-		tile = tile_maps.GetTileIndex(col, row)
+		tile = tile_layout.GetIndex(col, row)
 	until tile ~= start
 
 	return tile
@@ -137,8 +137,8 @@ end
 function M.GetTileNeighbor_Biased (start, halfx, halfy, gen, biasx, biasy)
 	halfx, halfy = halfx - biasx, halfy - biasy
 
-	local col, row = tile_maps.GetCell(start)
-	local ncols, nrows = tile_maps.GetCounts()
+	local col, row = tile_layout.GetCell(start)
+	local ncols, nrows = tile_layout.GetCounts()
 	local w, h, tile = 2 * halfx + 1, 2 * halfy + 1, start
 
 	repeat
@@ -149,7 +149,7 @@ function M.GetTileNeighbor_Biased (start, halfx, halfy, gen, biasx, biasy)
 			col = range.ClampIn(col + TSign(gw, biasx), 1, ncols)
 			row = range.ClampIn(row + TSign(gh, biasy), 1, nrows)
 
-			tile = tile_maps.GetTileIndex(col, row)
+			tile = tile_layout.GetIndex(col, row)
 		end
 	until tile ~= start
 
@@ -240,8 +240,8 @@ local NoMove = setmetatable({}, {
 local TooManyMoves = 2
 
 local function GetTileInfo (x, y)
-	local tile = tile_maps.GetTileIndex_XY(x, y)
-	local tx, ty = tile_maps.GetTilePos(tile)
+	local tile = tile_layout.GetIndex_XY(x, y)
+	local tx, ty = tile_layout.GetPosition(tile)
 
 	return tx, ty, tile
 end
@@ -259,13 +259,13 @@ end
 -- @treturn string D
 function M.TryToMove (entity, dist, dir, near, path_funcs, update)
 	local acc, step, x, y = 0, min(near or dist, dist), entity.x, entity.y
-	local x0, y0, tilew, tileh = x, y, tile_maps.GetSizes()
+	local x0, y0, tilew, tileh = x, y, tile_layout.GetSizes()
 	local tx, ty, tile = GetTileInfo(x, y)
 
 	while acc < dist do
-		local prevx, prevy = x, y
+		local prevx, prevy, flags = x, y, tile_flags.GetFlags(tile)
 
-		acc, x, y = acc + step, movement.MoveFrom(x, y, tx, ty, tile_flags.GetFlags(tile), min(step, dist - acc), dir)
+		acc, x, y = acc + step, movement.MoveFrom(x, y, tx, ty, flags, min(step, dist - acc), dir)
 
 		-- If the entity is following a path, stop if it reaches the goal (or gets impeded).
 		-- Because the goal can be on the fringe of the rectangular cell, radius checks have
@@ -291,7 +291,7 @@ function M.TryToMove (entity, dist, dir, near, path_funcs, update)
 			-- first time during a path, update the pathing state.
 			tx, ty, tile = GetTileInfo(x, y)
 
-			if not tile_flags.IsStraight(tile) and gtile ~= tile and _IsClose_(tx - x, ty - y, near) then
+			if not tile_layout.IsStraight(flags) and gtile ~= tile and _IsClose_(tx - x, ty - y, near) then
 				dir = update(dir, tile, entity)
 			end
 		end
@@ -317,8 +317,10 @@ function M.WipePath (entity)
 end
 
 Runtime:addEventListener("things_loaded", function(level)
-	MaxX = max(level.ncols * level.w, display.contentWidth)
-	MaxY = max(level.nrows * level.h, display.contentHeight)
+	local w, h = tile_layout.GetFullSizes()
+
+	MaxX = max(--[[level.ncols * level.w]]w, display.contentWidth)
+	MaxY = max(--[[level.nrows * level.h]]h, display.contentHeight)
 end)
 
 _IsClose_ = M.IsClose

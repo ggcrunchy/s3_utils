@@ -40,6 +40,7 @@ local _ = require("config.Directories")
 local directories = require("s3_utils.directories")
 local global_events = require("s3_utils.global_events")
 local loop = require_ex.Lazy("solar2d_boilerplate.game.loop")
+local tile_layout = require("s3_utils.tile_layout")
 local tile_maps = require("s3_utils.tile_maps")
 local tilesets = require("s3_utils.tilesets")
 local values = require("s3_utils.state.values")
@@ -118,7 +119,7 @@ function M.AddThings (current_level, level, params)
 
 	current_level.tiles_layer:insert(tgroup)
 
-	tile_maps.AddTiles(tgroup, level)
+	tile_maps.AddTiles(tgroup, tilesets.NewTile, level)
 
 	local things = level.things
 
@@ -179,11 +180,16 @@ end
 --- DOCME
 function M.BeforeEntering (w, h)
 	return function(view, current_level, level, level_list)
+		local ncols, nrows = level.ncols, ceil(#level / level.ncols)
+
 		-- Record some information to pass along via dispatch.
 		current_level.ncols = level.ncols
 		current_level.nrows = ceil(#level / level.ncols)
 		current_level.w = w
 		current_level.h = h
+
+		tile_layout.SetCounts(ncols, nrows)
+		tile_layout.SetSizes(w, h)
 
 		-- Add the primary display groups.
 		for _, name in ipairs(Groups) do
@@ -224,7 +230,7 @@ function M.BeforeEntering (w, h)
 		-- Add the level background, falling back to a decent default if none was given.
 		local bg_func = level.background or level_list.DefaultBackground
 
-		bg_func(current_level.bg_layer, current_level.ncols, current_level.nrows, w, h)
+		bg_func(current_level.bg_layer)
 
 		-- Enforce true letterbox mode.
 		if display.screenOriginX ~= 0 then

@@ -35,7 +35,7 @@ local array_preds = require("tektite_core.array.predicates")
 local fillers = require("s3_utils.object.fillers")
 local movement = require("s3_utils.movement")
 local tile_flags = require("s3_utils.tile_flags")
-local tile_maps = require("s3_utils.tile_maps")
+local tile_layout = require("s3_utils.tile_layout")
 
 -- Solar2D globals --
 local display = display
@@ -48,7 +48,6 @@ local M = {}
 --
 --
 
--- Lists of shapes to which given points belong --
 local Shapes
 
 --- DOCME
@@ -77,7 +76,7 @@ local function FillShape (_, tiles)
 
 	-- Make a first pass over each row to accumulate its tile spans, i.e. each consecutive
 	-- pair of tiles with a downward-exiting path and any tiles in between.
-	local ncols, row, next, left, from, from_flags = tile_maps.GetCounts(), 0, 0
+	local ncols, row, next, left, from, from_flags = tile_layout.GetCounts(), 0, 0
 
 	for _, cur in ipairs(indices) do
 		while next < cur do
@@ -168,10 +167,9 @@ end
 
 -- Indicates whether the shape defined by a group of corners is listed yet
 local function InShapesList (shapes, corners)
-	-- Since the same loop might be found by exploring in different directions, we can end up
-	-- with different orderings of the same set of corner tiles, i.e. an equivalence class
-	-- for the shape. The sorted order is as good a canonical form as any, so we impose it
-	-- on the corners, making them trivial to compare against the (also sorted) shape.
+	-- Since the same loop might be found by exploring in different directions, different
+	-- orderings of the corner tiles are possible. We choose the sorted one, since it gives
+	-- us trivial comparisons against the (also sorted) shape.
 	sort(corners)
 
 	-- Report if the loop is in the list anywhere.
@@ -190,12 +188,12 @@ local Alts = {}
 
 -- Detect if an alternate would have made a better loop
 local function BetterAlt (attempted, n)
-	local nrows, ncols = tile_maps.GetCounts() -- TODO: was ordering it this way intentional?
+	local nrows, ncols = tile_layout.GetCounts() -- TODO: was ordering it this way intentional?
 
 	for i = 1, n, 3 do
 		local dir, dt = Alts[i + 1], Alts[i + 2]
 		local tile = Alts[i] + dt
-		local col, row = tile_maps.GetCell(tile)
+		local col, row = tile_layout.GetCell(tile)
 
 		if dir == "left" or dir == "right" then
 			col = dir == "right" and ncols or 1
@@ -203,7 +201,7 @@ local function BetterAlt (attempted, n)
 			row = dir == "down" and nrows or 1
 		end
 
-		local endt = tile_maps.GetTileIndex(col, row)
+		local endt = tile_layout.GetIndex(col, row)
 
 		if dt < 0 then
 			tile, endt = endt, tile
@@ -271,12 +269,13 @@ local function TryLoop (attempted, dots, corners, tile, facing, pref, alt, ncols
 		-- If there's a corner or junction on this tile, add its index to the list. Indices
 		-- are easy to sort, and the actual corners aren't important, only that a unique
 		-- sequence was recorded for later comparison.
-		if not tile_flags.IsStraight(tile) then
+		local flags = tile_flags.GetFlags(tile)
+
+		if not tile_layout.IsStraight(flags) then
 			corners[#corners + 1] = tile
 		end
 
 		-- Try to advance. If we have to turn around, there's no loop.
-		local flags = tile_flags.GetFlags(tile)
 		local going, dt = movement.WayToGo(flags, pref, "forward", alt, facing)
 
 		if going == "backward" then
@@ -334,10 +333,10 @@ end
 -- Helper to bake dots into shapes
 local function BakeShapes ()
 	if Shapes then
-		local shapes, ncols = {}, tile_maps.GetCounts()
+		local shapes, ncols = {}, tile_layout.GetCounts()
 
 		for i, dot_shapes in pairs(Shapes) do
-			for dir in movement.DirectionsFromFlags(tile_flags.GetFlags(i)) do
+			for dir in tile_flags.GetDirections(i) do
 				Explore(shapes, i, dot_shapes, dir, "to_left", "to_right", ncols)
 				Explore(shapes, i, dot_shapes, dir, "to_right", "to_left", ncols)
 			end

@@ -47,6 +47,7 @@ local meta = require("tektite_core.table.meta")
 local range = require("tektite_core.number.range")
 local rect_iters = require("iterator_ops.grid.rect")
 local tile_flags = require("s3_utils.tile_flags")
+local tile_layout = require("s3_utils.tile_layout")
 local tile_maps = require("s3_utils.tile_maps")
 
 -- Solar2D globals --
@@ -55,7 +56,6 @@ local Runtime = Runtime
 local system = system
 
 -- Imports --
-local GetFlags = tile_flags.GetFlags
 local GetFlags_FromGroup = tile_flags.GetFlags_FromGroup
 local GetImage = tile_maps.GetImage
 local SetFlags = tile_flags.SetFlags
@@ -258,10 +258,10 @@ end
 
 --- Populate the flags in a group with the block's old flags, zeroing out a one-cell
 -- rect around them for safety.
--- @param[opt=self] name Name of flag group, cf. @{tile_flags.UseFlags}.
+-- @param[opt=self] name Name of flag group, cf. @{tile_flags.UseGroup}.
 -- @param[opt] from Name of source flag group. If absent, uses the default.
 function Block:MakeIsland (name, from)
-	local cur = tile_flags.UseFlags(name or self)
+	local cur = tile_flags.UseGroup(name or self)
 	local cmin, cmax = self:GetColumns()
 	local rmin, rmax = self:GetRows()
 
@@ -285,8 +285,8 @@ function Block:MakeIsland (name, from)
 		SetFlags(index, GetFlags_FromGroup(from, index))
 	end
 
-	tile_flags.ResolveFlags()
-	tile_flags.UseFlags(cur)
+	tile_flags.Resolve()
+	tile_flags.UseGroup(cur)
 end
 
 --- Set the block's current rect, as used by the ***Self** methods.
@@ -342,7 +342,7 @@ component.AddToObject(Block, data_store)
 function M.New (info, params)
 	if not LoadedBlocks then
 		LoadedBlocks, BlockIDs, OldFlags = {}, {}, {}
-		NCols, NRows = tile_maps.GetCounts()
+		NCols, NRows = tile_layout.GetCounts()
 	end
 
 	local col1, row1, col2, row2 = GetExtents(info.col1, info.row1, info.col2, info.row2)
@@ -378,7 +378,7 @@ function M.New (info, params)
 		end
 
 		BlockIDs[index] = block.m_id
-		OldFlags[index] = GetFlags(index)
+		OldFlags[index] = tile_flags.GetWorkingFlags(index)
 	end
 
 	local tiles_layer = params.tiles_layer

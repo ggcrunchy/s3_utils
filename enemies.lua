@@ -40,7 +40,7 @@ local enemy_events = require("annex.EnemyEvents")
 local flow_ops = require("coroutine_ops.flow")
 local object_vars = require("config.ObjectVariables")
 local store = require("s3_utils.state.store")
-local tile_maps = require("s3_utils.tile_maps")
+local tile_layout = require("s3_utils.tile_layout")
 local timers = require("solar2d_utils.timers")
 local visibility = require("solar2d_utils.visibility")
 
@@ -105,7 +105,7 @@ local function PhaseSpawning (t, _, enemy)
 end
 
 local function SetTile (enemy)
-	enemy.m_tile = tile_maps.GetTileIndex_XY(enemy.x, enemy.y)
+	enemy.m_tile = tile_layout.GetIndex_XY(enemy.x, enemy.y)
 end
 
 local function PutInPlace (enemy)
@@ -494,7 +494,7 @@ function M.New (info, params, enemy, type_info)
 
 	enemy.m_start.isVisible = false
 
-	tile_maps.PutObjectAt(tile_maps.GetTileIndex(info.col, info.row), enemy.m_start)
+	tile_layout.PutObjectAt(tile_layout.GetIndex(info.col, info.row), enemy.m_start)
 
 	enemy.m_can_attach = not type_info.fixed
 
@@ -598,7 +598,7 @@ local events = {
 			local enemy = Enemies[i]
 
 			if enemy.m_can_attach then
-				local start, col, row = enemy.m_start, tile_maps.GetCell(enemy.m_tile)
+				local start, col, row = enemy.m_start, tile_layout.GetCell(enemy.m_tile)
 
 				if col >= cmin and col <= cmax and row >= rmin and row <= rmax then
 					start.m_old_x, start.m_old_y = start.x, start.y

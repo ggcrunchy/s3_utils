@@ -41,7 +41,7 @@ local sort = table.sort
 -- Modules --
 local collision = require("solar2d_utils.collision")
 local shapes = require("s3_utils.shapes")
-local tile_maps = require("s3_utils.tile_maps")
+local tile_layout = require("s3_utils.tile_layout")
 
 -- Solar2D globals --
 local Runtime = Runtime
@@ -114,9 +114,9 @@ local Remaining
 -- @ptable Load parameters.
 -- @see solar2d_utils.collision.GetType, s3_utils.shapes.RemoveAt
 function M.New (info, dot)
-	local index = tile_maps.GetTileIndex(info.col, info.row)
+	local index = tile_layout.GetIndex(info.col, info.row)
 
-	tile_maps.PutObjectAt(index, dot)
+	tile_layout.PutObjectAt(index, dot)
 
 	if TryToAddBody(dot) then
 		collision.SetType(dot, info.type:sub(5)) -- lop off the "dot." part
@@ -305,7 +305,7 @@ for k, v in pairs{
 
 		if Dots then
 			for _, dot in ipairs(Dots) do
-				tile_maps.PutObjectAt(dot.m_index, dot)
+				tile_layout.PutObjectAt(dot.m_index, dot)
 
 				dot.isVisible = true
 				dot.rotation = 0

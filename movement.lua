@@ -28,14 +28,12 @@ local abs = math.abs
 local assert = assert
 local max = math.max
 local min = math.min
-local next = next
 
--- Plugins --
-local bit = require("plugin.bit")
+-- Modules --
+local enums = require("s3_utils.enums")
 
 -- Cached module references --
 local _CanGo_
-local _GetDirectionFlag_
 local _NextDirection_
 
 -- Exports --
@@ -47,10 +45,10 @@ local M = {}
 
 -- Direction lookup --
 local Directions = {
-	left = { to_left = "down", to_right = "up", backward = "right", flag = 0x1 },
-	right = { to_left = "up", to_right = "down", backward = "left", flag = 0x2 },
-	up = { to_left = "left", to_right = "right", backward = "down", flag = 0x4 },
-	down = { to_left = "right", to_right = "left", backward = "up", flag = 0x8 }
+	left = { to_left = "down", to_right = "up", backward = "right" },
+	right = { to_left = "up", to_right = "down", backward = "left" },
+	up = { to_left = "left", to_right = "right", backward = "down" },
+	down = { to_left = "right", to_right = "left", backward = "up" }
 }
 
 ---
@@ -65,27 +63,9 @@ local Directions = {
 -- path from one side to the center.
 -- @see NextDirection
 function M.CanGo (flags, dir)
-	return bit.band(flags or 0, _GetDirectionFlag_(dir)) ~= 0
-end
+	assert(Directions[dir], "Invalid direction")
 
-local function AuxDirectionsFromFlags (flags, dir)
-	for k in next, Directions, dir do
-		if _CanGo_(flags, k) then
-			return k
-		end
-	end
-end
-
---- Iterate over the directions open on a given tile.
--- @int index
--- @treturn iterator Supplies direction.
-function M.DirectionsFromFlags (flags)
-	return AuxDirectionsFromFlags, flags or 0
-end
-
---- DOCME
-function M.GetDirectionFlag (dir)
-	return assert(Directions[dir], "Invalid direction").flag
+	return enums.IsFlagSet(flags, dir)
 end
 
 ---
@@ -132,7 +112,7 @@ function M.MoveFrom (x, y, px, py, flags, dist, dir)
 	-- operator and check whether we can exit the tile in the direction we want.
 	local inc = (dir == "up" or dir == "left") and Sub or Add
 
-	if _CanGo_(flags, dir) then
+	if enums.IsFlagSet(flags, dir) then
 		local adx = abs(x - px)
 
 		-- If we can't make it to the corner / junction yet, close some of the distance.
@@ -167,8 +147,6 @@ end
 -- @string facing One of **"left"**, **"right"**, **"up"**, **"down"**.
 -- @string headed One of **"to_left"**, **"to_right"**, **"backward"**, **"forward"**.
 function M.NextDirection (facing, headed)
-	assert(headed ~= "flags", "Invalid headed option")
-
 	local choice = assert(Directions[facing], "Facing in invalid direction")
 
 	if headed ~= "forward" then
@@ -187,22 +165,12 @@ local Vert = { up = -1, down = 1 }
 -- @treturn string Absolute direction.
 -- @treturn uint Column delta to the next tile...
 -- @treturn uint ...and row delta.
-function M.NextDirection_UnitDeltas (facing, headed)
-	facing = _NextDirection_(facing, headed)
-
-	return facing, Horz[facing] or 0, Vert[facing] or 0
-end
-
---- Convenience function to give turn directions.
--- @bool swap Swap the return values?
--- @treturn string Normally, **"to_left"**.
--- @treturn string Normally, **"to_right"**.
-function M.Turns (swap)
-	if swap then
-		return "to_right", "to_left"
-	else
-		return "to_left", "to_right"
+function M.UnitDeltas (facing, headed)
+	if headed then
+		facing = _NextDirection_(facing, headed)
 	end
+
+	return Horz[facing] or 0, Vert[facing] or 0
 end
 
 --- Choose which direction to follow at a tile, given some preferences.
@@ -235,7 +203,6 @@ function M.WayToGo (flags, dir1, dir2, dir3, facing)
 end
 
 _CanGo_ = M.CanGo
-_GetDirectionFlag_ = M.GetDirectionFlag
 _NextDirection_ = M.NextDirection
 
 return M

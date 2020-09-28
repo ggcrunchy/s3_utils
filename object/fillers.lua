@@ -37,7 +37,7 @@ local audio = require("solar2d_utils.audio")
 local color = require("solar2d_ui.utils.color")
 local directories = require("config.Directories")
 local flood = require("s3_utils.fill.flood")
-local tile_maps = require("s3_utils.tile_maps")
+local tile_layout = require("s3_utils.tile_layout")
 
 -- Effects --
 local caustics_effect = require("s3_utils.effect.caustics")
@@ -120,11 +120,11 @@ function M.End (how)
 	Sounds:Load()
 
 	-- Find the extents of the amalgamated regions.
-	local maxc, maxr, minc, minr = 1, 1, tile_maps.GetCounts()
+	local maxc, maxr, minc, minr = 1, 1, tile_layout.GetCounts()
 
 	for i = 1, n, 2 do
-		local ulc, ulr = tile_maps.GetCell(Batch[i])
-		local lrc, lrr = tile_maps.GetCell(Batch[i + 1])
+		local ulc, ulr = tile_layout.GetCell(Batch[i])
+		local lrc, lrr = tile_layout.GetCell(Batch[i + 1])
 
 		minc, maxc = min(ulc, minc), max(lrc, maxc)
 		minr, maxr = min(ulr, minr), max(lrr, maxr)
@@ -156,8 +156,8 @@ function M.End (how)
 
 	for i = 1, display.isValid(back) and n or 0, 2 do
 		local ul, lr = Batch[i], Batch[i + 1]
-		local ulc, ulr = tile_maps.GetCell(ul)
-		local lrc, lrr = tile_maps.GetCell(lr)
+		local ulc, ulr = tile_layout.GetCell(ul)
+		local lrc, lrr = tile_layout.GetCell(lr)
 
 		for dr = ulr - minr, lrr - minr2 do
 			for dc = ulc - minc, lrc - minc2 do

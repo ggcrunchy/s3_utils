@@ -28,7 +28,7 @@
 local pairs = pairs
 
 -- Modules --
-local tile_maps = require("s3_utils.tile_maps")
+local tile_layout = require("s3_utils.tile_layout")
 
 -- Exports --
 local M = {}
@@ -43,9 +43,9 @@ local Positions
 --- DOCME
 -- @ptable info
 function M.make (info, params)
-	local pos = { m_index = tile_maps.GetTileIndex(info.col, info.row) }
+	local pos = { m_index = tile_layout.GetIndex(info.col, info.row) }
 
-	tile_maps.PutObjectAt(pos.m_index, pos)
+	tile_layout.PutObjectAt(pos.m_index, pos)
 
 	Positions = Positions or {}
 	Positions[info.uid] = pos
@@ -91,7 +91,7 @@ for k, v in pairs{
 	reset_level = function()
 		if Positions then
 			for _, pos in pairs(Positions) do
-				tile_maps.PutObjectAt(pos.m_index, pos)
+				tile_layout.PutObjectAt(pos.m_index, pos)
 			end
 		end
 	end
