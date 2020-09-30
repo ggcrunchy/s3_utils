@@ -255,7 +255,7 @@ function M.VisitGroups (func)
 	func(current)
 end
 
-local function AuxWipeFlags (index)
+local function AuxWipe (index)
 	ResolvedFlags[index], WorkingFlags[index] = nil
 end
 
@@ -266,8 +266,8 @@ end
 -- @int row1 ...row of one corner...
 -- @int col2 ...column of another corner... (Columns will be sorted, and clamped.)
 -- @int row2 ...and row of another corner. (Rows too.)
-function M.WipeFlags (col1, row1, col2, row2)
-	tile_layout.VisitRegion(AuxWipeFlags, col1, row1, col2, row2)
+function M.Wipe (col1, row1, col2, row2)
+	tile_layout.VisitRegion(AuxWipe, col1, row1, col2, row2)
 end
 
 for k, v in pairs{

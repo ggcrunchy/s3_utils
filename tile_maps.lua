@@ -117,7 +117,7 @@ local function AuxSetTilesFromFlags (index, group, new_tile)
 	if flags ~= 0 then
 		local x, y = tile_layout.GetPosition(index)
 
-		Tiles[index] = new_tile(group, --[[tile_flags.GetNameByFlags(flags)]]FlagsToName[flags], x, y, tile_layout.GetSizes())
+		Tiles[index] = new_tile(group, FlagsToName[flags], x, y, tile_layout.GetSizes())
 	else
 		Tiles[index] = nil
 	end

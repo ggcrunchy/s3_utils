@@ -213,9 +213,9 @@ function Block:GetInitialRect (flagged)
 		end
 
 		return cmin, rmin, cmax, rmax
+	else
+		return self.m_cmin_save, self.m_rmin_save, self.m_cmax_save, self.m_rmax_save
 	end
-
-	return self.m_cmin_save, self.m_rmin_save, self.m_cmax_save, self.m_rmax_save
 end
 
 ---
