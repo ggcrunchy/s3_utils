@@ -70,10 +70,20 @@ end
 -- Tile index -> dot map --
 local Dots
 
-local function OnEnterFrame ()
+local PreviousTime
+
+local function OnEnterFrame (event)
+	local now, dt = event.time, 0
+
+	if PreviousTime then
+		dt = (now - PreviousTime) / 1000
+	end
+
+	PreviousTime = now
+
 	for _, dot in ipairs(Dots) do
 		if dot.Update then
-			dot:Update()
+			dot:Update(dt)
 		end
 	end
 end
@@ -295,13 +305,13 @@ for k, v in pairs{
 	end,
 
 	leave_level = function()
-		Dots = nil
+		Dots, PreviousTime = nil
 
 		Runtime:removeEventListener("enterFrame", OnEnterFrame)
 	end,
 
 	reset_level = function()
-		Remaining = 0
+		Remaining, PreviousTime = 0
 
 		if Dots then
 			for _, dot in ipairs(Dots) do
