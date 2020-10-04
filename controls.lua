@@ -121,33 +121,6 @@ local function DoActions ()
 	end
 end
 
--- Number of frames left of "cruise control" movement --
-local FramesLeft = 0
-
-local MovingFunc
-
--- Updates player if any residual input is in effect
-local function UpdatePlayer ()
-	if IsActive() then
-		-- Choose the player's heading: favor movement coming from input; failing that,
-		-- if we still have some residual motion, follow that instead. In any case, wind
-		-- down any leftover motion.
-		local dir = Dir or Was
-
-		if FramesLeft > 0 then
-			FramesLeft = FramesLeft - 1
-		else
-			Was = nil
-		end
-
-		-- Move the player, if we can, and if the player isn't already following a path
-		-- (in which case this is handled elsewhere).
-		if MovingFunc then
-			MovingFunc(dir)
-		end
-	end
-end
-
 -- Key input passed through BeginDir / EndDir, pretending to be a button --
 local PushDir = {}
 
@@ -157,6 +130,9 @@ device.MapButtonsToAction("space", {
 	MFiGamepad = "A",
 	MFiExtendedGamepad = "A"
 })
+
+-- Number of frames left of "cruise control" movement --
+local FramesLeft = 0
 
 -- Processes direction keys or similar input, by pretending to push GUI buttons
 local function KeyEvent (event)
@@ -251,8 +227,6 @@ function M.Init (params)
 	device.MapAxesToKeyEvents(true)
 
 	-- Track events to maintain input.
-	Runtime:addEventListener("enterFrame", UpdatePlayer)
-
 	local handle_key = composer.getVariable("handle_key")
 
 	handle_key:Clear() -- TODO: kludge because we don't go through title screen to wipe quick test
@@ -309,8 +283,33 @@ function M.SetCancelFunc (func)
 	CancelFunc = func
 end
 
+local MovingFunc
+
 function M.SetMovingFunc (func)
 	MovingFunc = func
+end
+
+-- Updates player if any residual input is in effect
+--local 
+function M.UpdatePlayer (dt)
+	if IsActive() then
+		-- Choose the player's heading: favor movement coming from input; failing that,
+		-- if we still have some residual motion, follow that instead. In any case, wind
+		-- down any leftover motion.
+		local dir = Dir or Was
+
+		if FramesLeft > 0 then
+			FramesLeft = FramesLeft - 1
+		else
+			Was = nil
+		end
+
+		-- Move the player, if we can, and if the player isn't already following a path
+		-- (in which case this is handled elsewhere).
+		if MovingFunc then
+			MovingFunc(dir, dt)
+		end
+	end
 end
 
 function M.WipeFlags ()
@@ -322,7 +321,7 @@ Runtime:addEventListener("level_done", function()
 
 	device.MapAxesToKeyEvents(false)
 
-	Runtime:removeEventListener("enterFrame", UpdatePlayer)
+--	Runtime:removeEventListener("enterFrame", UpdatePlayer)
 
 	composer.getVariable("handle_key"):Pop()
 end)

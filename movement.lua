@@ -102,8 +102,8 @@ end
 -- @treturn number Result x-coordinate.
 -- @treturn number Result y-coordinate.
 function M.MoveFrom (x, y, px, py, flags, dist, dir)
-	-- The algorithm is the same aside from the variables, so all movement is treated as
-	-- vertical. We swap coordinates in the horizontal case to maintain this pretense.
+	-- Since the algorithm has the same form either way, we arbitrarily choose the vertical
+	-- axis. We transform the horizontal case by swapping x- and y-components.
 	if dir == "left" or dir == "right" then
 		x, y, px, py = y, x, py, px
 	end
@@ -135,9 +135,8 @@ function M.MoveFrom (x, y, px, py, flags, dist, dir)
 		y = inc(y, dist, py)
 	end
 
-	-- Return the result, reinterpreted horizontally if we switched earlier.
 	if dir == "left" or dir == "right" then
-		return y, x
+		return y, x -- correct for transformation at the beginning
 	else
 		return x, y
 	end

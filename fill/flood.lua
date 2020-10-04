@@ -33,7 +33,6 @@ local remove = table.remove
 -- Modules --
 local bitmap = require("s3_utils.bitmap")
 local embedded_predicate = require("tektite_core.array.embedded_predicate")
-local grid = require("tektite_core.array.grid")
 
 -- Solar2D globals --
 local display = display
@@ -59,11 +58,15 @@ local HalfW, HalfH = CellW / 2, CellH / 2
 -- --
 local FracW, FracH = 1 / CellW, 1 / CellH
 
+local function CellToIndex (x, y, xmax)
+	return (y - 1) * xmax + x
+end
+
 -- Helpers to look at next unit over --
 local Funcs = {
 	-- Left --
 	function(x, y, xoff, _, xmax)
-		local index = x > 1 and grid.CellToIndex(x - 1, y, xmax)
+		local index = x > 1 and CellToIndex(x - 1, y, xmax)
 
 		if xoff > 0 then
 			return index
@@ -74,7 +77,7 @@ local Funcs = {
 
 	-- Right --
 	function(x, y, xoff, _, xmax)
-		local index = x < xmax and grid.CellToIndex(x + 1, y, xmax)
+		local index = x < xmax and CellToIndex(x + 1, y, xmax)
 
 		if xoff < OffsetX then
 			return index
@@ -85,7 +88,7 @@ local Funcs = {
 
 	-- Up --
 	function(x, y, _, yoff, xmax)
-		local index = y > 1 and grid.CellToIndex(x, y - 1, xmax)
+		local index = y > 1 and CellToIndex(x, y - 1, xmax)
 
 		if yoff > 0 then
 			return index
@@ -96,7 +99,7 @@ local Funcs = {
 
 	-- Down --
 	function(x, y, _, yoff, xmax, ymax)
-		local index = y < ymax and grid.CellToIndex(x, y + 1, xmax)
+		local index = y < ymax and CellToIndex(x, y + 1, xmax)
 
 		if yoff < OffsetY then
 			return index
@@ -126,7 +129,7 @@ function M.Add (col, row)
 		Closest, MidCol, MidRow = dist_sq, col, row
 	end
 
-	Cells[grid.CellToIndex(col, row, Nx)] = true
+	Cells[CellToIndex(col, row, Nx)] = true
 end
 
 -- Cache of cell / index arrays --
@@ -151,6 +154,13 @@ end
 
 -- Cache of grid use wrappers --
 local Used = {}
+
+local function IndexToCell (index, xmax)
+	local x = (index - 1) % xmax + 1
+	local y = (index - x) / xmax + 1
+
+	return x, y
+end
 
 --- Runs the effect.
 -- @ptable[opt] opts Fill options. Fields:
@@ -186,7 +196,7 @@ function M.Run (backdrop, opts)
 	-- Kick off the effect, starting at the centermost unit. If the cell list was empty, do
 	-- nothing; the timer will cancel itself on the first go.
 	local midc, midr = MidCol * CellW - (Nx % 2) * HalfW, MidRow * CellH - (Ny % 2) * HalfH
-	local i1, nwork, nidle = grid.CellToIndex(midc, midr, xmax), 0, 0
+	local i1, nwork, nidle = CellToIndex(midc, midr, xmax), 0, 0
 
 	if #cells > 0 then
 		work[1], nwork = i1, 1
@@ -248,7 +258,7 @@ function M.Run (backdrop, opts)
 			for _ = nwork, max(1, nwork - to_process), -1 do
 				-- Choose a random unit and expose it completely.
 				local index = random(nwork)
-				local x, y = grid.IndexToCell(work[index], xmax)
+				local x, y = IndexToCell(work[index], xmax)
 				local xb, yb = floor((x - 1) * FracW), floor((y - 1) * FracH)
 				local xoff, yoff = x - xb * CellW - 1, y - yb * CellH - 1
 				local ci = yb * nx + xb + 1
@@ -267,7 +277,7 @@ function M.Run (backdrop, opts)
 						if neighbor ~= false and used("mark", wi) then
 							idle[nidle + 1], nidle = wi, nidle + 1
 
-							local c, r = grid.IndexToCell(wi, xmax)
+							local c, r = IndexToCell(wi, xmax)
 
 							mtex:setPixel(c + xx, r + yy, .5)
 						end

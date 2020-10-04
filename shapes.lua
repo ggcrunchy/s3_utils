@@ -31,7 +31,6 @@ local sort = table.sort
 
 -- Modules --
 local array_funcs = require("tektite_core.array.funcs")
-local array_preds = require("tektite_core.array.predicates")
 local fillers = require("s3_utils.object.fillers")
 local movement = require("s3_utils.movement")
 local tile_flags = require("s3_utils.tile_flags")
@@ -165,6 +164,16 @@ local function AddFillLayer ()
 	BG:insert(FillLayer)
 end
 
+local function IsMatch (shape1, shape2, n)
+	for i = 1, n do
+		if shape1[i] ~= shape2[i] then
+			return false
+		end
+	end
+
+	return true
+end
+
 -- Indicates whether the shape defined by a group of corners is listed yet
 local function InShapesList (shapes, corners)
 	-- Since the same loop might be found by exploring in different directions, different
@@ -173,8 +182,10 @@ local function InShapesList (shapes, corners)
 	sort(corners)
 
 	-- Report if the loop is in the list anywhere.
+	local n = #corners
+
 	for _, shape in ipairs(shapes) do
-		if array_preds.ShallowEqual(shape, corners) then
+		if #shape == n and IsMatch(shape, corners, n) then
 			return true
 		end
 	end
