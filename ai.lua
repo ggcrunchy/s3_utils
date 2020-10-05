@@ -31,7 +31,7 @@ local min = math.min
 local type = type
 
 -- Modules --
-local flow = require("coroutine_ops.flow")
+local coro_flow = require("solar2d_utils.coro_flow")
 local movement = require("s3_utils.movement")
 local range = require("tektite_core.number.range")
 local tile_flags = require("s3_utils.tile_flags")
@@ -191,7 +191,7 @@ function M.SamplePositions (n, tolerx, tolery, target, dt, update, arg)
 
 	for i = 1, n do
 		--
-		if not flow.Wait(dt, update, arg) then
+		if not coro_flow.Wait(dt, update, arg) then
 			return false
 		end
 
@@ -316,11 +316,11 @@ function M.WipePath (entity)
 	NoMove[entity] = nil
 end
 
-Runtime:addEventListener("things_loaded", function(level)
+Runtime:addEventListener("things_loaded", function()
 	local w, h = tile_layout.GetFullSizes()
 
-	MaxX = max(--[[level.ncols * level.w]]w, display.contentWidth)
-	MaxY = max(--[[level.nrows * level.h]]h, display.contentHeight)
+	MaxX = max(w, display.contentWidth)
+	MaxY = max(h, display.contentHeight)
 end)
 
 _IsClose_ = M.IsClose

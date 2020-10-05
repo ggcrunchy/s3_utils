@@ -36,8 +36,8 @@ local adaptive = require("tektite_core.table.adaptive")
 local call = require("solar2d_utils.call")
 local collision = require("solar2d_utils.collision")
 local component = require("tektite_core.component")
+local coro_flow = require("solar2d_utils.coro_flow")
 local enemy_events = require("annex.EnemyEvents")
-local flow_ops = require("coroutine_ops.flow")
 local object_vars = require("config.ObjectVariables")
 local store = require("s3_utils.state.store")
 local tile_layout = require("s3_utils.tile_layout")
@@ -98,7 +98,7 @@ end
 
 -- Phase-in effect on spawning enemy
 local function PhaseSpawning (_, enemy)
-	enemy.alpha = abs(sin(PhaseFactor * flow_ops.GetIterationTime()))
+	enemy.alpha = abs(sin(PhaseFactor * coro_flow.GetIterationTime()))
 
 	-- Update the position, since the start point might be moving.
 	SetPos(enemy)
@@ -122,13 +122,13 @@ local function PhaseIn (enemy, type_info, is_sleeping)
 	--
 	enemy.m_ready = not is_sleeping
 
-	flow_ops.WaitForSignal(enemy, "m_ready")
+	coro_flow.WaitForSignal(enemy, "m_ready")
 	visibility.Enable(enemy, false)
 
 	--
 	enemy.isVisible = true
 
-	flow_ops.Wait(type_info.spawn_time, PhaseSpawning, enemy)
+	coro_flow.Wait(type_info.spawn_time, PhaseSpawning, enemy)
 
 	enemy.alpha = 1
 
@@ -203,7 +203,7 @@ end
 
 -- Behavior of enemy after its death throes and while waiting to phase in
 local function WaitToRespawn (_, type_info)
-	flow_ops.Wait(type_info.respawn_delay)
+	coro_flow.Wait(type_info.respawn_delay)
 end
 
 -- Coroutine body: Common overall enemy logic
