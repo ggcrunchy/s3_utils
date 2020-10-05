@@ -97,8 +97,8 @@ local function SetPos (enemy)
 end
 
 -- Phase-in effect on spawning enemy
-local function PhaseSpawning (t, _, enemy)
-	enemy.alpha = abs(sin(PhaseFactor * t.time))
+local function PhaseSpawning (_, enemy)
+	enemy.alpha = abs(sin(PhaseFactor * flow_ops.GetIterationTime()))
 
 	-- Update the position, since the start point might be moving.
 	SetPos(enemy)
