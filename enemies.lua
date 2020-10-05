@@ -122,7 +122,7 @@ local function PhaseIn (enemy, type_info, is_sleeping)
 	--
 	enemy.m_ready = not is_sleeping
 
-	coro_flow.WaitForSignal(enemy, "m_ready")
+	coro_flow.WaitUntilPropertyTrue(enemy, "m_ready")
 	visibility.Enable(enemy, false)
 
 	--
