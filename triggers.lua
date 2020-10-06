@@ -114,7 +114,7 @@ function M.make (info, params)
 			local bits = bit.band(detect, BitBoth)
 
 			if bits ~= 0 then
-				flags = flags + collision.FilterBits(name)
+				flags = flags + collision.GetBitmask(name)
 
 				if bits == 0x3 then
 					handles[name] = "both"
