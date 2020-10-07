@@ -1,5 +1,4 @@
---- This module provides operations on path networks, as built up according to tile-based
--- constraints.
+--- Operations on tile-based path networks.
 
 --
 -- Permission is hereby granted, free of charge, to any person obtaining
@@ -25,11 +24,9 @@
 --
 
 -- Standard library imports --
-local insert = table.insert
 local ipairs = ipairs
 
 -- Modules --
-local array_funcs = require("tektite_core.array.funcs")
 local movement = require("s3_utils.movement")
 local tile_flags = require("s3_utils.tile_flags")
 local tile_layout = require("s3_utils.tile_layout")
@@ -54,9 +51,9 @@ local function PatchUp (probe, visited, paths, start)
 	-- regular node).
 	if tile ~= start then
 		for _, prev in ipairs(visited[-tile]) do
-			prev.next = prev.next or { is_branch = true }
+			local pnext = prev.next or { is_branch = true }
 
-			insert(prev.next, probe)
+			pnext[#pnext + 1], prev.next = probe, pnext
 
 			-- Back-propagate the patch.
 			PatchUp(prev, visited, paths, start)
@@ -65,9 +62,7 @@ local function PatchUp (probe, visited, paths, start)
 	-- Otherwise, if it hasn't been added yet, add the probe going in this direction from
 	-- the start as a choice in the initial branch node.
 	elseif not visited[dir] then
-		insert(paths, probe)
-
-		visited[dir] = true
+		paths[#paths + 1], visited[dir] = probe, true
 	end
 end
 
@@ -75,17 +70,17 @@ end
 local Dirs = { {}, {}, {} }
 
 -- How many of those directions show promise? --
-local N
+local OpenCount
 
 -- Tries to head in a given direction from a tile
 local function TryDir (flags, cur_dir, headed)
 	local dir = movement.NextDirection(cur_dir, headed)
 
 	if movement.CanGo(flags, dir) then
-		N = N + 1
+		OpenCount = OpenCount + 1
 
-		Dirs[N].dir = dir
-		Dirs[N].dt = movement.GetTileDelta(dir, tile_layout.GetCounts()) 
+		Dirs[OpenCount].dir = dir
+		Dirs[OpenCount].dt = movement.GetTileDelta(dir, tile_layout.GetCounts()) 
 	end
 end
 
@@ -115,10 +110,10 @@ function M.FindPath (start, goal)
 	end
 
 	-- Launch an expedition in each direction.
-	local probes, ncols = {}, tile_layout.GetCounts()
+	local probes, n, ncols = {}, 0, tile_layout.GetCounts()
 
 	for dir in tile_flags.GetDirections(start) do
-		probes[#probes + 1] = { dt = movement.GetTileDelta(dir, ncols), start, dir }
+		n, probes[n + 1] = n + 1, { dt = movement.GetTileDelta(dir, ncols), start, dir }
 	end
 
 	-- Iterate, updating all probes in progress, until either all probes fail or some goals
@@ -128,10 +123,10 @@ function M.FindPath (start, goal)
 	-- Probes are iterated in reverse, allowing new ones to be added smoothly.
 	local visited, iteration = {}, 0
 
-	while #probes > 0 and #visited == 0 do
+	while n > 0 and #visited == 0 do
 		iteration = iteration + 1
 
-		for i = #probes, 1, -1 do
+		for i = n, 1, -1 do
 			local cur = probes[i]
 
 			-- Remember how many elements this probes began this iteration with, and advance
@@ -141,7 +136,7 @@ function M.FindPath (start, goal)
 
 			-- Goal found: add it to the list.
 			if tile == goal then
-				insert(visited, cur)
+				visited[#visited + 1] = cur
 
 			-- Since we're updating probes in parallel, if we've already found the goal, we
 			-- can cull any probes from there on out which fail to do so, as ipso facto these
@@ -149,7 +144,7 @@ function M.FindPath (start, goal)
 			-- start. Otherwise, the probe may still be worthwhile, so proceed.
 			elseif #visited == 0 and tile ~= start then
 				-- Explore prospective routes, ahead and to each side.
-				N = 0
+				OpenCount = 0
 
 				local cur_dir, flags = cur[ncur], tile_flags.GetFlags(tile)
 
@@ -168,26 +163,24 @@ function M.FindPath (start, goal)
 				-- added to the tile's predecessor list.
 				local jinfo = visited[-tile]
 
-				if N > 1 and (not jinfo or jinfo.iteration == iteration) then
+				if OpenCount > 1 and (not jinfo or jinfo.iteration == iteration) then
 					jinfo = jinfo or { iteration = iteration }
 
-					for j = 1, N do
+					for j = 1, OpenCount do
 						local dir = Dirs[j].dir
 
 						if not jinfo[dir] then
-							insert(probes, { dt = Dirs[j].dt, tile, dir })
+							n, probes[n + 1] = n + 1, { dt = Dirs[j].dt, tile, dir }
 
 							jinfo[dir] = true
 						end
 					end
 
-					insert(jinfo, cur)
-
-					visited[-tile] = jinfo
+					jinfo[#jinfo + 1], visited[-tile] = cur, jinfo
 
 				-- Only one route open:
 				-- Just augment the working probe.
-				elseif N == 1 then
+				elseif OpenCount == 1 then
 					cur.dt = Dirs[1].dt
 
 					cur[ncur + 1] = tile
@@ -200,7 +193,8 @@ function M.FindPath (start, goal)
 			-- at a branch); the goal was found (or a non-goal, see above); or we looped.
 			-- Since we iterate the probes in reverse, we can just backfill the gap.
 			if #cur == ncur then
-				array_funcs.Backfill(probes, i)
+				probes[i] = probes[n]
+				n, probes[n] = n - 1
 			end
 		end
 	end

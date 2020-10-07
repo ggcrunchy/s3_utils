@@ -28,7 +28,6 @@
 -- Standard library imports --
 local ipairs = ipairs
 local pairs = pairs
-local rawequal = rawequal
 
 -- Modules --
 local adaptive = require("tektite_core.table.adaptive")
@@ -54,8 +53,7 @@ local Actions = {}
 -- --
 local OutProperties = config.out_properties
 
--- --
-local Defaults, EventNonce
+local EventNonce
 
 -- Deferred global event <-> event bindings
 local GetEvent = {}
@@ -65,37 +63,27 @@ for _, v in ipairs(config.events) do
 
 	Runtime:addEventListener(v, function()
 		GetEvent[v]:DispatchForObject(EventNonce)
-
-		local def = Defaults and Defaults[v]
-
-		if def then
-			Actions[def]()
-		end
 	end)
 end
 
 --- DOCME
 function M.make--[[AddEvents]] (--[[events]]info, params)
-if info then
 	local psl = params:GetPubSubList()
 
 	for k, v in pairs(GetEvent) do
+		-- could lazily add nonce?
 	--	v.Subscribe(EventNonce, events and events[k], pubsub)
 		psl:Subscribe(--[[events and events]]info[k], v:GetAdder(), EventNonce)
 	end
 
 	for k in adaptive.IterSet(--[[events and events]]info.actions) do
+		if k == "win" then
+			params.win = "custom" -- TODO! this is a lazy hack :P
+		end
 		--[[bind.]]psl:Publish(--[[pubsub, ]]Actions[k], --[[events]]info.uid, k)
 	end
 
 	object_vars.PublishProperties(psl, --[[events and events]]info.props, OutProperties, --[[events and events]]info.uid)
-end
-
-	--
-	if not adaptive.InSet(--[[events and events]]info and info.actions, "win") then
-		Defaults = { all_dots_removed = "win" }
-		-- ^^^ TODO: this is rather ugly!
-	end
 end
 
 --
@@ -132,27 +120,10 @@ function M.editor (_, what, arg1)
 	end
 end
 
---
+
 for _, v in ipairs(config.actions) do
-	local list = {}
-
-	Actions[v] = function(what, func)
-		if rawequal(what, Actions) then -- extend action
-			list[#list + 1] = func
-		else
-			for _, action in ipairs(list) do
-				action()
-			end
-		end
-	end
-end
-
---- DOCME
-function M.ExtendAction (name, func)
-	local actions = Actions[name]
-
-	if actions then
-		actions(Actions, func)
+	Actions[v] = function()
+		-- TODO?
 	end
 end
 
@@ -169,7 +140,7 @@ for k, v in pairs{
 		Runtime:removeEventListener("enterFrame", EnterFrame)
 
 		timer.performWithDelay(0, function()
-			EventNonce, Defaults = nil
+			EventNonce = nil -- timer probably overkill
 		end)
 	end,
 

@@ -30,7 +30,6 @@ local pairs = pairs
 local sort = table.sort
 
 -- Modules --
-local array_funcs = require("tektite_core.array.funcs")
 local fillers = require("s3_utils.object.fillers")
 local movement = require("s3_utils.movement")
 local tile_flags = require("s3_utils.tile_flags")
@@ -69,7 +68,11 @@ local Rows
 local function FillShape (_, tiles)
 	-- We'll process our tiles from top to bottom, starting from the left-hand side of each
 	-- row, since this consists of just iterating the tiles in index order.
-	local indices = array_funcs.GetKeys(tiles)
+	local indices = {}
+
+	for k in pairs(tiles) do
+		indices[#indices + 1] = k
+	end
 
 	sort(indices)
 
@@ -385,8 +388,11 @@ for k, v in pairs{
 	-- Things Loaded --
 	things_loaded = function(level)
 		if Shapes then
-			BG = level.bg_layer
-			Rows = array_funcs.ArrayOfTables(level.nrows)
+			BG, Rows = level.bg_layer, {}
+
+			for i = 1, level.nrows do
+				Rows[i] = {}
+			end
 
 			AddFillLayer()
 		end

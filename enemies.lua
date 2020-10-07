@@ -414,12 +414,6 @@ function M.GetTypes ()
 	return types
 end
 ]=]
---- Kill all enemies on demand.
-function M.KillAll ()
-	for _, enemy in ipairs(Enemies) do
-		Kill(enemy)
-	end
-end
 
 -- Enemy situation <-> events bindings --
 for _, v in ipairs{ "on_die", "on_wake" } do
@@ -609,6 +603,12 @@ local events = {
 					start.m_block = block
 				end
 			end
+		end
+	end,
+
+	DEBUG_kill_all_enemies = function()
+		for i = 1, #(Enemies or "") do
+			Kill(Enemies[i])
 		end
 	end,
 

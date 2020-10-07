@@ -34,16 +34,13 @@ local type = type
 local yield = coroutine.yield
 
 -- Modules --
-local require_ex = require("tektite_core.require_ex")
-local actions = require("s3_utils.state.actions")
+--local actions = require("s3_utils.state.actions")
 local _ = require("config.Directories")
 local directories = require("s3_utils.directories")
-local global_events = require("s3_utils.global_events")
-local loop = require_ex.Lazy("solar2d_boilerplate.game.loop")
 local tile_layout = require("s3_utils.tile_layout")
 local tile_maps = require("s3_utils.tile_maps")
 local tilesets = require("s3_utils.tilesets")
-local values = require("s3_utils.state.values")
+--local values = require("s3_utils.state.values")
 
 -- Solar2D globals --
 local display = display
@@ -62,11 +59,12 @@ local TypeToFactories = {}
 
 local _, NotFoundErr = pcall(require, "%s") -- assumes Lua error like "module 'name' not found: etc", e.g.
 											-- as in https://www.lua.org/source/5.1/loadlib.c.html#ll_require
+local _, last = NotFoundErr:find("not found:")
 
-NotFoundErr = NotFoundErr:sub(1, NotFoundErr:find(":") - 1)
+NotFoundErr = NotFoundErr:sub(1, last - 1)
 
 local function FindModule (ttype)
-	local sep, label, what, nf = ttype:find("%.")
+	local sep, label, what = ttype:find("%.")
 
 	if sep then
 		assert(sep > 1 and sep < #ttype, "Missing prefix or suffix")
@@ -84,15 +82,8 @@ local function FindModule (ttype)
 
 		if ok then
 			return res
-		else
-			if type(res) == "string" then
-				nf = nf or NotFoundErr:format(full_path)
-				ok = res:starts(nf)
-			end
-
-			if not ok then
-				error(res)
-			end
+		elseif type(res) ~= "string" or not res:starts(NotFoundErr:format(full_path)) then -- ignore "not found" errors
+			error(res)
 		end
 	end
 end
@@ -126,11 +117,9 @@ function M.AddThings (current_level, level, params)
 	for i = 1, #(things or "") do
 		AuxAddThing(things[i], params)
 	end
-
-	-- ...and any global events...
---	global_events.AddEvents(level.global_events, params)
-global_events.make(level.global_events, params)
--- ^^^ argh... need to change how "win" is handled... then can divvy this up as specific objects
+--[[
+	-- Ideally these are just are covered by the above loop, but the current
+	-- design might still have some kinks left
 
 	-- ...and actions...
 	for i = 1, #(level.actions or "") do
@@ -141,12 +130,11 @@ global_events.make(level.global_events, params)
 	for i = 1, #(level.values or "") do
 		values.AddValue(level.values[i], params)
 	end
+]]
 end
 
--- Primary display groups --
 local Groups = { "game_group", "canvas_group", "game_group_dynamic", "hud_group" }
 
--- --
 local Canvas
 
 --
@@ -154,27 +142,10 @@ local function InvalidateCanvas ()
 	Canvas:invalidate("cache")
 end
 
--- --
 local CanvasRect
 
---
 local function SetCanvasRectAlpha (event)
 	CanvasRect.alpha = event.alpha
-end
-
---- DOCME
-function M.Cleanup (current_level)
-	for _, name in ipairs(Groups) do
-		if name ~= "game_group" then
-			display.remove(current_level and current_level[name])
-		end
-	end
-
-	Canvas:releaseSelf()
-	Runtime:removeEventListener("enterFrame", InvalidateCanvas)
-	Runtime:removeEventListener("set_canvas_alpha", SetCanvasRectAlpha)
-
-	Canvas, CanvasRect = nil
 end
 
 --- DOCME
@@ -191,7 +162,6 @@ function M.BeforeEntering (w, h)
 		tile_layout.SetCounts(ncols, nrows)
 		tile_layout.SetSizes(w, h)
 
-		-- Add the primary display groups.
 		for _, name in ipairs(Groups) do
 			current_level[name] = display.newGroup()
 
@@ -245,6 +215,21 @@ function M.BeforeEntering (w, h)
 	end
 end
 
+--- DOCME
+function M.Cleanup (current_level)
+	for _, name in ipairs(Groups) do
+		if name ~= "game_group" then
+			display.remove(current_level and current_level[name])
+		end
+	end
+
+	Canvas:releaseSelf()
+	Runtime:removeEventListener("enterFrame", InvalidateCanvas)
+	Runtime:removeEventListener("set_canvas_alpha", SetCanvasRectAlpha)
+
+	Canvas, CanvasRect = nil
+end
+
 -- Tile names, expanded from two-character shorthands --
 local Expansions = tilesets.GetExpansions()
 
@@ -257,14 +242,6 @@ function M.DecodeTileLayout (level)
 	for i, tile in ipairs(level.tiles.values) do
 		level[i] = Expansions[tile] or false
 	end
-end
-
---- DOCME
--- On(win): unload the level and do win-related logic
-function M.ExtendWinEvent ()
-	global_events.ExtendAction("win", function()
-		loop.UnloadLevel("won")
-	end)
 end
 
 --- DOCME
