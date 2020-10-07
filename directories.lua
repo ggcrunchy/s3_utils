@@ -25,6 +25,7 @@
 
 -- Modules --
 local adaptive = require("tektite_core.table.adaptive")
+local strings = require("tektite_core.var.strings")
 
 -- Exports --
 local M = {}
@@ -40,9 +41,40 @@ function M.AddUnderLabel (label, name)
 	LabelToNames[label] = adaptive.Append(LabelToNames[label], name)
 end
 
+local Paths = {}
+
+--- DOCME
+function M.GetNamedPath (name)
+	return Paths[name]
+end
+
 --- DOCME
 function M.IterateForLabel (label)
 	return adaptive.IterArray(LabelToNames[label])
+end
+
+local function AddSlash (str)
+	return strings.EndsWith(str, "/") and str or str .. "/"
+end
+
+--- DOCME
+function M.FromModule (mod, relative)
+	mod = strings.RemoveLastSubstring(mod or "", "%.", "/")
+
+	if #mod > 0 then
+		mod = AddSlash(mod)
+	end
+
+	if relative then
+		mod = AddSlash(mod .. relative)
+	end
+
+	return mod
+end
+
+--- DOCME
+function M.SetNamedPath (name, path)
+	Paths[name] = path
 end
 
 return M

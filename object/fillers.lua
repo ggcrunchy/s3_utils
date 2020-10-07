@@ -35,7 +35,7 @@ local indexOf = table.indexOf
 -- Modules --
 local audio = require("solar2d_utils.audio")
 local color = require("solar2d_ui.utils.color")
-local directories = require("config.Directories")
+local directories = require("s3_utils.directories")
 local flood = require("s3_utils.fill.flood")
 local tile_layout = require("s3_utils.tile_layout")
 
@@ -89,7 +89,7 @@ end
 local Methods = { flood_fill = flood }
 
 -- Sound played when shape is filled --
-local Sounds = audio.NewSoundGroup{ _prefix = directories.sound, shape_filled = { file = "ShapeFilled.mp3", wait = 1000 } }
+local Sounds = audio.NewSoundGroup{ _prefix = directories.GetNamedPath("sound"), shape_filled = { file = "ShapeFilled.mp3", wait = 1000 } }
 
 -- Tile dimensions --
 local TileW, TileH
