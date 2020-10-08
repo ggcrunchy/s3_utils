@@ -31,7 +31,8 @@ local pairs = pairs
 local adaptive = require("tektite_core.table.adaptive")
 local audio = require("solar2d_utils.audio")
 local bind = require("solar2d_utils.bind")
-local call = require("solar2d_utils.call")
+local events = require("solar2d_utils.events")
+local multicall = require("solar2d_utils.multicall")
 
 -- Solar2D globals --
 local system = system
@@ -68,7 +69,7 @@ local Actions = {
 			return PlayNewTrack(music.group)
 		end
 
-		call.Redirect(play, music)
+		events.Redirect(play, music)
 
 		return play
 	end,
@@ -79,7 +80,7 @@ local Actions = {
 			return music.group:PlaySound("track")
 		end
 
-		call.Redirect(play, music)
+		events.Redirect(play, music)
 
 		return play
 	end,
@@ -110,7 +111,7 @@ local Actions = {
 local Events = {}
 
 for _, v in ipairs{ "on_done", "on_stop" } do
-	Events[v] = call.NewDispatcher()--bind.BroadcastBuilder_Helper()
+	Events[v] = multicall.NewDispatcher()--bind.BroadcastBuilder_Helper()
 end
 
 -- --

@@ -29,8 +29,8 @@ local ipairs = ipairs
 
 -- Modules --
 local adaptive = require("tektite_core.table.adaptive")
-local call = require("solar2d_utils.call")
 local collision = require("solar2d_utils.collision")
+local multicall = require("solar2d_utils.multicall")
 local tile_layout = require("s3_utils.tile_layout")
 
 -- Plugins --
@@ -49,7 +49,7 @@ local M = {}
 local Events = {}
 
 for _, v in ipairs{ "on_enter", "on_leave" } do
-	Events[v] = call.NewDispatcher()
+	Events[v] = multicall.NewDispatcher()
 end
 
 --

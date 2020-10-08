@@ -32,8 +32,8 @@ local pairs = pairs
 -- Modules --
 local adaptive = require("tektite_core.table.adaptive")
 local bind = require("solar2d_utils.bind")
-local call = require("solar2d_utils.call")
 local config = require("config.GlobalEvents")
+local multicall = require("solar2d_utils.multicall")
 local object_vars = require("config.ObjectVariables")
 
 -- Solar2D globals --
@@ -59,7 +59,7 @@ local EventNonce
 local GetEvent = {}
 
 for _, v in ipairs(config.events) do
-	GetEvent[v] = call.NewDispatcher()--bind.BroadcastBuilder_Helper()
+	GetEvent[v] = multicall.NewDispatcher()--bind.BroadcastBuilder_Helper()
 
 	Runtime:addEventListener(v, function()
 		GetEvent[v]:DispatchForObject(EventNonce)

@@ -40,9 +40,9 @@ local min = math.min
 local pairs = pairs
 
 -- Modules --
-local call = require("solar2d_utils.call")
 local component = require("tektite_core.component")
 local data_store = require("s3_objects.mixin.data_store")
+local events = require("solar2d_utils.events")
 local meta = require("tektite_core.table.meta")
 local range = require("tektite_core.number.range")
 local rect_iters = require("iterator_ops.grid.rect")
@@ -122,7 +122,7 @@ end
 function Block:AttachEvent (event, info, params)
 	params:GetPubSubList():Publish(event, info.uid, "fire")
 
-	call.Redirect(event, self)
+	events.Redirect(event, self)
 end
 
 --- Check whether a block can occupy a region without overlapping a different block.

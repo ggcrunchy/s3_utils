@@ -33,11 +33,11 @@ local sin = math.sin
 
 -- Modules --
 local adaptive = require("tektite_core.table.adaptive")
-local call = require("solar2d_utils.call")
 local collision = require("solar2d_utils.collision")
 local component = require("tektite_core.component")
 local coro_flow = require("solar2d_utils.coro_flow")
 local enemy_events = require("annex.EnemyEvents")
+local multicall = require("solar2d_utils.multicall")
 local object_vars = require("config.ObjectVariables")
 local store = require("s3_utils.state.store")
 local tile_layout = require("s3_utils.tile_layout")
@@ -417,7 +417,7 @@ end
 
 -- Enemy situation <-> events bindings --
 for _, v in ipairs{ "on_die", "on_wake" } do
-	Events[v] = call.NewDispatcher()
+	Events[v] = multicall.NewDispatcher()
 end
 
 local EnemyComponent = component.RegisterType{ name = "enemy", interfaces = { "harmable", "harmful", "damage" } }
