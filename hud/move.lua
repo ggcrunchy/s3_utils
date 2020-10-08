@@ -83,7 +83,7 @@ local function JoystickTouch (event)
 		stick.m_x, stick.m_y = event.x - stick.x, event.y - stick.y
 		stick.m_update = stick.m_update or timer.performWithDelay(50, StickTimer(stick), 0)
 	elseif not stick.m_x then -- ignore swipes
-		return
+		return true
 	elseif phase == "moved" then
 		local base, x, y = stick.m_base, event.x - stick.m_x, event.y - stick.m_y
 		local bx, by = base.x, base.y
@@ -114,6 +114,8 @@ local function JoystickTouch (event)
 		AuxSendEvent(1, 0)
 		AuxSendEvent(2, 0)
 	end
+
+	return true
 end
 
 --- DOCME

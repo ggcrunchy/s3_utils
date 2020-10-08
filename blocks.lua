@@ -108,16 +108,6 @@ end
 
 local Block = {}
 
---- Add a new group to the block's main group.
--- @treturn DisplayGroup Added group.
-function Block:AddGroup ()
-	local new = display.newGroup()
-
-	self.m_bgroup:insert(new)
-
-	return new
-end
-
 --- DOCME
 function Block:AttachEvent (event, info, params)
 	params:GetPubSubList():Publish(event, info.uid, "fire")
@@ -186,12 +176,6 @@ end
 -- @treturn DisplayGroup The block's main group.
 function Block:GetGroup ()
 	return self.m_bgroup
-end
-
----
--- @treturn DisplayGroup The block's image group.
-function Block:GetImageGroup ()
-	return self.m_igroup
 end
 
 --- Get the rect that was current at block initialization.
@@ -330,8 +314,6 @@ component.AddToObject(Block, data_store)
 --- Add a block to the level and register an event for it.
 -- @ptable info Block info, with at least the following properties:
 --
--- * **name**: **string** The event is registered under this name, which should be unique
--- among blocks.
 -- * **type**: **string** One of the choices reported by @{GetTypes}.
 -- * **col1**, **row1**, **col2**, **row2**: **int** Columns and rows defining the block.
 -- These will be sorted and clamped, as with block operations.
@@ -339,7 +321,8 @@ component.AddToObject(Block, data_store)
 -- @todo Detect null blocks? Mention construction, Block:Reset
 -- @todo this is now out of date!
 -- @ptable params
-function M.New (info, params)
+-- @pgroup[opt] into
+function M.New (info, params, into)
 	if not LoadedBlocks then
 		LoadedBlocks, BlockIDs, OldFlags = {}, {}, {}
 		NCols, NRows = tile_layout.GetCounts()
@@ -368,13 +351,13 @@ function M.New (info, params)
 
 	-- Lift any tile images into the block's own group. Mark the block region as occupied
 	-- and cache the current flags on each tile, for restoration.
-	block.m_id, block.m_igroup = #LoadedBlocks + 1, display.newGroup()
+	block.m_id, into = #LoadedBlocks + 1, into or block.m_bgroup
 
 	for i, index in ipairs(block) do
 		block[i] = GetImage(index) or false
 
 		if block[i] then
-			block.m_igroup:insert(block[i])
+			into:insert(block[i])
 		end
 
 		BlockIDs[index] = block.m_id
@@ -383,7 +366,6 @@ function M.New (info, params)
 
 	local tiles_layer = params.tiles_layer
 
-	block.m_bgroup:insert(block.m_igroup)
 	tiles_layer:insert(block.m_bgroup)
 
 	LoadedBlocks[block.m_id] = block

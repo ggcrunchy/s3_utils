@@ -300,6 +300,8 @@ local function Touch (event)
 
 		button.m_touched = false
 	end
+
+	return true
 end
 
 --- DOCME
