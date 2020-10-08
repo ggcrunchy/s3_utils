@@ -31,10 +31,6 @@ local remove = table.remove
 local setmetatable = setmetatable
 local type = type
 
--- Modules --
-local array_index = require("tektite_core.array.index")
-local touch = require("solar2d_ui.utils.touch")
-
 -- Solar2D globals --
 local display = display
 local easing = easing
@@ -101,7 +97,12 @@ function FadeIconParams.onComplete (icon)
 		local index = IndexOf(icon.prev or icon.name)
 
 		if index then
-			local index = array_index.RotateIndex(index, n)
+		--	local index = array_index.RotateIndex(index, n)
+			if index < n then
+				index = index + 1
+			else
+				index = 1
+			end
 
 			FadeIcon(Sequence[index].icon, 1)
 		end
@@ -183,7 +184,7 @@ local function RemoveIconFromSequence (index, item)
 			-- Since indices are trouble to maintain, get the name of the previous item in
 			-- the sequence: this will be the reference point for the "go to next" logic,
 			-- after the fade out.
-			local prev = array_index.RotateIndex(index, #Sequence, true)
+			local prev = index > 1 and index - 1 or #Sequence -- = array_index.RotateIndex(index, #Sequence, true)
 
 			item.icon.prev = index ~= prev and Sequence[prev].name
 
@@ -278,6 +279,29 @@ local function ShowAction (show)
 	transition.to(ActionGroup, FadeParams)
 end
 
+local function Touch (event)
+	local button, phase = event.target, event.phase
+
+	if phase == "began" then
+		display.getCurrentStage():setFocus(button, event.id)
+
+		button.m_touched = true
+
+	elseif button.m_touched and (phase == "ended" or phase == "cancelled") then
+		display.getCurrentStage():setFocus(button, nil)
+
+		local cx, cy = button:localToContent(0, 0)
+
+		if (event.x - cx)^2 + (event.y - cy)^2 < button.path.radius^2 then
+			button.m_func()
+		end
+		-- ^^ TODO: is the underlying logic robust enough or do we need to guard this too?
+		-- say for instance the player walks off and then lets go
+
+		button.m_touched = false
+	end
+end
+
 --- DOCME
 -- @pgroup group
 -- @callable do_actions
@@ -295,10 +319,10 @@ function M.AddActionButton (group, do_actions)
 	action.alpha = .6
 	action.strokeWidth = 3
 
-	action.m_touches = 0
+	action.m_func, action.m_touches = do_actions, 0
 
 	action:setFillColor(0, 1, 0)
-	action:addEventListener("touch", touch.TouchHelperFunc(do_actions))
+	action:addEventListener("touch", Touch)
 
 	ActionGroup.isVisible = false
 

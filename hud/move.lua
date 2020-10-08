@@ -30,9 +30,6 @@ local sqrt = math.sqrt
 -- Extension imports --
 local round = math.round
 
--- Modules --
-local touch = require("solar2d_ui.utils.touch")
-
 -- Solar2D globals --
 local display = display
 local Runtime = Runtime
@@ -77,37 +74,47 @@ local function StickTimer (stick)
 	end
 end
 
-local JoystickTouch = touch.TouchHelperFunc(function(event, stick)
-	stick.m_x, stick.m_y = event.x - stick.x, event.y - stick.y
-	stick.m_update = stick.m_update or timer.performWithDelay(50, StickTimer(stick), 0)
-end, function(event, stick)
-	local base, x, y = stick.m_base, event.x - stick.m_x, event.y - stick.m_y
-	local bx, by = base.x, base.y
-	local dx, dy = x - bx, y - by
-	local dist_sq = dx^2 + dy^2
+local function JoystickTouch (event)
+	local phase, stick = event.phase, event.target
+	
+	if phase == "began" then
+		display.getCurrentStage():setFocus(stick, event.id)
 
-	if dist_sq > StickRange^2 then
-		local scale = StickRange / sqrt(dist_sq)
+		stick.m_x, stick.m_y = event.x - stick.x, event.y - stick.y
+		stick.m_update = stick.m_update or timer.performWithDelay(50, StickTimer(stick), 0)
+	elseif not stick.m_x then -- ignore swipes
+		return
+	elseif phase == "moved" then
+		local base, x, y = stick.m_base, event.x - stick.m_x, event.y - stick.m_y
+		local bx, by = base.x, base.y
+		local dx, dy = x - bx, y - by
+		local dist_sq = dx^2 + dy^2
 
-		dx, dy = dx * scale, dy * scale
+		if dist_sq > StickRange^2 then
+			local scale = StickRange / sqrt(dist_sq)
+
+			dx, dy = dx * scale, dy * scale
+		end
+
+		stick.x, stick.y = bx + dx, by + dy
+
+		if abs(dx) > abs(dy) then
+			dy = 0
+		else
+			dx = 0
+		end
+
+		AuxSendEvent(1, dx)
+		AuxSendEvent(2, dy)
+	elseif phase == "ended" or phase == "cancelled" then
+		display.getCurrentStage():setFocus(stick, nil)
+
+		stick.m_x, stick.m_y = nil
+
+		AuxSendEvent(1, 0)
+		AuxSendEvent(2, 0)
 	end
-
-	stick.x, stick.y = bx + dx, by + dy
-
-	if abs(dx) > abs(dy) then
-		dy = 0
-	else
-		dx = 0
-	end
-
-	AuxSendEvent(1, dx)
-	AuxSendEvent(2, dy)
-end, function(_, stick)
-	stick.m_x, stick.m_y = nil
-
-	AuxSendEvent(1, 0)
-	AuxSendEvent(2, 0)
-end)
+end
 
 --- DOCME
 -- @pgroup group

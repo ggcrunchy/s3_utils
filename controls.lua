@@ -67,7 +67,6 @@ local ChangeTo
 
 local CancelFunc
 
--- Begins input in a given direction
 local function BeginDir (target)
 	local dir = target.m_dir
 
@@ -86,7 +85,6 @@ local function BeginDir (target)
 	return true
 end
 
--- Ends input in a given direction
 local function EndDir (target)
 	local dir = target.m_dir
 
@@ -121,9 +119,6 @@ local function DoActions ()
 	end
 end
 
--- Key input passed through BeginDir / EndDir, pretending to be a button --
-local PushDir = {}
-
 -- Map known controller buttons to keys.
 device.MapButtonsToAction("space", {
 	Xbox360 = "A",
@@ -133,6 +128,9 @@ device.MapButtonsToAction("space", {
 
 -- Number of frames left of "cruise control" movement --
 local FramesLeft = 0
+
+-- Key input passed through BeginDir / EndDir, pretending to be a button --
+local PushDir = {}
 
 -- Processes direction keys or similar input, by pretending to push GUI buttons
 local function KeyEvent (event)
@@ -275,16 +273,19 @@ function M.NewFlag ()
 	return setmetatable({ m_flag = flag }, ControlFlag)
 end
 
+--- DOCME
 function M.SetActionsFunc (func)
 	ActionsFunc = func
 end
 
+--- DOCME
 function M.SetCancelFunc (func)
 	CancelFunc = func
 end
 
 local MovingFunc
 
+--- DOCME
 function M.SetMovingFunc (func)
 	MovingFunc = func
 end
@@ -320,9 +321,6 @@ Runtime:addEventListener("level_done", function()
 	AssignFlags(BlockedFlags)
 
 	device.MapAxesToKeyEvents(false)
-
---	Runtime:removeEventListener("enterFrame", UpdatePlayer)
-
 	composer.getVariable("handle_key"):Pop()
 end)
 

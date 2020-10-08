@@ -390,7 +390,9 @@ for k, v in pairs{
 		if Shapes then
 			BG, Rows = level.bg_layer, {}
 
-			for i = 1, level.nrows do
+			local _, nrows = tile_layout.GetCounts()
+
+			for i = 1, nrows do
 				Rows[i] = {}
 			end
 

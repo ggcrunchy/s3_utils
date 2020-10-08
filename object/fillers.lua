@@ -35,7 +35,6 @@ local indexOf = table.indexOf
 -- Modules --
 local audio = require("solar2d_utils.audio")
 local color = require("solar2d_ui.utils.color")
-local directories = require("s3_utils.directories")
 local flood = require("s3_utils.fill.flood")
 local tile_layout = require("s3_utils.tile_layout")
 
@@ -53,7 +52,6 @@ local M = {}
 --
 --
 
--- Work-in-progress batch --
 local Batch
 
 --- Begins a fill batch in color mode.
@@ -85,26 +83,22 @@ function M.AddRegion (ul, lr)
 	Batch[n + 1], Batch[n + 2], Batch.n = ul, lr, n + 2
 end
 
--- Available fill methods --
 local Methods = { flood_fill = flood }
 
--- Sound played when shape is filled --
-local Sounds = audio.NewSoundGroup{ _prefix = directories.GetNamedPath("sound"), shape_filled = { file = "ShapeFilled.mp3", wait = 1000 } }
+local Sounds = audio.NewSoundGroup{
+	path = "sound",
+	shape_filled = { file = "ShapeFilled.mp3", wait = 1000 }
+}
 
--- Tile dimensions --
-local TileW, TileH
-
--- Running fill effect timers --
 local Running
 
--- Fill options --
 local FillOpts = {
 	on_done = function(timer)
 		Sounds:PlaySound("shape_filled")
 
-		local index, n = indexOf(Running, timer), #Running
+		local i, n = indexOf(Running, timer), #Running
 
-		Running[index] = Running[n]
+		Running[i] = Running[n]
 		Running[n] = nil
 	end
 }
@@ -137,8 +131,10 @@ function M.End (how)
 	method.Prepare(nx, ny)
 
 	-- Turn each region into cells and submit them to the effect.
-	local x, y = (minc + maxc - 1) * TileW / 2, (minr + maxr - 1) * TileH / 2
-	local w, h = (maxc - minc) * TileW, (maxr - minr) * TileH
+	local w, h = tile_layout.GetSizes()
+	local x, y = (minc + maxc - 1) * w / 2, (minr + maxr - 1) * h / 2
+
+	w, h = (maxc - minc) * w, (maxr - minr) * h
 
 	if rgba then
 		back = display.newRect(Batch.group, x, y, w, h)
@@ -172,7 +168,6 @@ function M.End (how)
 	Batch.n, Batch.group, Batch.name, Batch.rgba = 0
 end
 
--- --
 local function CancelRunning ()
 	for i = 1, #Running do
 		timer.cancel(Running[i])
@@ -192,10 +187,8 @@ for k, v in pairs{
 		Batch, Running = {}, {}
 	end,
 
-	things_loaded = function(level)
+	things_loaded = function()
 		Batch, Running = {}, {}
-		TileW = level.w
-		TileH = level.h
 	end
 } do
 	Runtime:addEventListener(k, v)

@@ -28,6 +28,9 @@ local ipairs = ipairs
 local max = math.max
 local min = math.min
 
+-- Modules --
+local tile_layout = require("s3_utils.tile_layout")
+
 -- Solar2D globals --
 local display = display
 local Runtime = Runtime
@@ -174,9 +177,8 @@ function M.GetState (group, x, y, w, h)
 end
 
 --- DOCME
-function M.Init (params)
-	Width = params.ncols * params.w
-	Height = params.nrows * params.h
+function M.Init ()
+	Width, Height = tile_layout.GetFullSizes()
 end
 
 --- Define the left and right screen extents; while the followed object is between these,

@@ -173,10 +173,7 @@ end
 -- @uint index Tile index (see the caveat for @{GetTilePos}).
 -- @param object The tile center is assigned to this object's **x** and **y** fields.
 function M.PutObjectAt (index, object)
-	local x, y = _GetPosition_(index)
-
-	object.x = x
-	object.y = y
+	object.x, object.y = _GetPosition_(index)
 end
 
 --- DOCME
@@ -184,7 +181,7 @@ function M.SetCounts (column_count, row_count)
 	Area, ColumnCount, RowCount = column_count * row_count, column_count, row_count
 end
 
---
+--- DOCME
 function M.SetSizes (width, height)
 	Width, Height = width, height
 end

@@ -26,11 +26,7 @@
 -- Standard library imports --
 local assert = assert
 local ceil = math.ceil
-local error = error
 local ipairs = ipairs
-local pcall = pcall
-local require = require
-local type = type
 local yield = coroutine.yield
 
 -- Modules --
@@ -57,12 +53,6 @@ local M = {}
 
 local TypeToFactories = {}
 
-local _, NotFoundErr = pcall(require, "%s") -- assumes Lua error like "module 'name' not found: etc", e.g.
-											-- as in https://www.lua.org/source/5.1/loadlib.c.html#ll_require
-local _, last = NotFoundErr:find("not found:")
-
-NotFoundErr = NotFoundErr:sub(1, last - 1)
-
 local function FindModule (ttype)
 	local sep, label, what = ttype:find("%.")
 
@@ -77,13 +67,10 @@ local function FindModule (ttype)
 	end
 
 	for _, dir in directories.IterateForLabel(label) do
-		local full_path = dir .. what
-		local ok, res = pcall(require, full_path)
+		local res = directories.TryRequire(dir .. what)
 
-		if ok then
+		if res then
 			return res
-		elseif type(res) ~= "string" or not res:starts(NotFoundErr:format(full_path)) then -- ignore "not found" errors
-			error(res)
 		end
 	end
 end
@@ -103,9 +90,8 @@ end
 
 --- DOCME
 function M.AddThings (current_level, level, params)
-	tilesets.UseTileset(level.tileset or "tree")
+	tilesets.UseTileset(level.tileset or "Tree")
 
-	-- Add the tiles to the level...
 	local tgroup = display.newGroup()
 
 	current_level.tiles_layer:insert(tgroup)
@@ -118,8 +104,8 @@ function M.AddThings (current_level, level, params)
 		AuxAddThing(things[i], params)
 	end
 --[[
-	-- Ideally these are just are covered by the above loop, but the current
-	-- design might still have some kinks left
+	TODO? ideally these are just are covered by the above loop, but the
+	current design might still have some kinks left
 
 	-- ...and actions...
 	for i = 1, #(level.actions or "") do
@@ -152,12 +138,6 @@ end
 function M.BeforeEntering (w, h)
 	return function(view, current_level, level, level_list)
 		local ncols, nrows = level.ncols, ceil(#level / level.ncols)
-
-		-- Record some information to pass along via dispatch.
-		current_level.ncols = level.ncols
-		current_level.nrows = ceil(#level / level.ncols)
-		current_level.w = w
-		current_level.h = h
 
 		tile_layout.SetCounts(ncols, nrows)
 		tile_layout.SetSizes(w, h)

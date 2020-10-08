@@ -36,7 +36,7 @@ local sqrt = math.sqrt
 
 -- Modules --
 local glow = require("s3_utils.object.glow")
-local length = require("tektite_core.number.length")
+local numeric = require("s3_utils.numeric")
 
 -- Solar2D globals --
 local display = display
@@ -221,6 +221,8 @@ end
 
 -- Common logic to build arrow group constructors
 local function ArrowGroupMaker (sep, dfunc)
+	local DistanceToCount = numeric.MakeLengthQuantizer{ unit = sep, bias = 1 }
+
 	return function(group, dir, x1, y1, x2, y2, width, offset)
 		local arrow_group = display.newGroup()
 
@@ -229,7 +231,7 @@ local function ArrowGroupMaker (sep, dfunc)
 		--
 		local dx, dy = x2 - x1, y2 - y1
 
-		for _ = 1, length.ToBin(dx, dy, sep, 1) do
+		for _ = 1, DistanceToCount(dx, dy) do
 			_StraightArrow_(arrow_group, dir, 0, 0)
 		end
 
@@ -420,7 +422,7 @@ local MakeColumn = ArrowGroupMaker(75, function(i, n, dx, dy, offset, agroup)
 
 		agroup.m_dir = dir
 
-		local len = length.Deltas(dx, dy) / 20
+		local len = sqrt(dx^2 + dy^2) / 20
 		local nx, ny = dx / len, dy / len
 
 		if dir == "backward" then

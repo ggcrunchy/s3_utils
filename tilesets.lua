@@ -34,10 +34,10 @@ local type = type
 local unpack = unpack
 
 -- Modules --
+local directories = require("s3_utils.directories")
 local includer = require("solar2d_utils.includer")
 local orange_duck = require("s3_utils.snippets.operations.orange_duck")
 local pi = require("s3_utils.snippets.constants.pi")
-local require_ex = require("tektite_core.require_ex")
 
 -- Solar2D globals --
 local display = display
@@ -133,7 +133,7 @@ end
 function M.GetShorthands ()
 	return copy(Shorthand)
 end
-
+--[[
 --  Tileset lookup table --
 local TilesetList
 
@@ -147,7 +147,7 @@ function M.GetTypes ()
 
 	return list
 end
-
+]]
 -- --
 local VertexDataNames
 
@@ -166,7 +166,9 @@ local function SetShader (tile, name, index)
 	local set_vdata = TileShader.set_vdata
 
 	if set_vdata then
-		set_vdata(tile, name, index)
+		set_vdata(tile, name, index, TileShader.is_unset)
+
+		TileShader.is_unset = false
 	end
 end
 
@@ -565,9 +567,23 @@ end
 
 local TextureRects = {}
 
+local function FindTileset (name)
+	name = "." .. name
+
+	local res
+
+	for _, dir in directories.IterateForLabel("tilesets") do
+		res = directories.TryRequire(dir .. name)
+
+		if res then
+			return res
+		end
+	end
+end
+
 --
 function M.UseTileset (name, prefer_raw)
-	local ts = assert(TilesetList[name], "Invalid tileset")
+	local ts = assert(FindTileset(name), "Invalid tileset" .. name)
 	local effects = GetEffects(ts)
 	local sname = not prefer_raw and effects.tile_shader
 
@@ -592,7 +608,7 @@ function M.UseTileset (name, prefer_raw)
 
 		if sname then
 			TileShader, list = {
-				name = effects.tile_shader, set_vdata = ts.set_vdata
+				name = effects.tile_shader, is_unset = true, set_vdata = ts.set_vdata
 			}, effects.with_shader
 
 			VertexDataNames = {}
@@ -668,7 +684,7 @@ end)
 	end
 end
 
-TilesetList = require_ex.DoList("config.TileSets")
+--TilesetList = require_ex.DoList("config.TileSets")
 
 --
 local function Clear ()
