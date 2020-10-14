@@ -1,8 +1,8 @@
 --- Functionality for in-game controls.
 --
--- Various elements are added to the GUI, and where possible device input is used as well.
+-- Various elements are added to the GUI; where possible, device input is used as well.
 --
--- In the case of screen taps, the **"tapped_at** event is dispatched with the screen x- and
+-- In the case of screen taps, the **"tapped_at"** event is dispatched with the screen x- and
 -- y-coordinates under keys **x** and **y** respectively.
 
 -- FIXLISTENER above stuff

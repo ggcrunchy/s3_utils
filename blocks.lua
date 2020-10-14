@@ -5,9 +5,11 @@
 -- returning either an editor event function or **nil**, cf. @{EditorEvent}.
 --
 -- **N.B.**: In each of the functions below that take columns and rows as input, the
--- operation will transparently sort the columns and rows, and clamp them against the
--- level boundaries. A rect completely outside the level is null and the operation
--- will be a no-op.
+-- operation will transparently sort the columns and rows, clamping the results
+-- against the level boundaries. Rects completely outside are null and the
+-- operations will be no-ops.
+
+-- TODO: is that last statement actually true, at the moment?
 
 --
 -- Permission is hereby granted, free of charge, to any person obtaining
