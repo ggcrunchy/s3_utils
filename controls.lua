@@ -313,6 +313,7 @@ function M.UpdatePlayer (dt)
 	end
 end
 
+--- DOCME
 function M.WipeFlags ()
 	AssignFlags(0)
 end

@@ -337,7 +337,9 @@ for k, v in pairs{
 	leave_level = function()
 		transition.cancel("action_fading")
 
-		ActionGroup, Current, Images, Sequence = nil
+		Cancel(Scaling)
+
+		ActionGroup, Current, Images, Scaling, Sequence = nil
 	end,
 
 	touching_dot = function(event)

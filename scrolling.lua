@@ -24,6 +24,7 @@
 --
 
 -- Standard library imports --
+local assert = assert
 local ipairs = ipairs
 local max = math.max
 local min = math.min
@@ -63,14 +64,24 @@ local Object, Groups
 
 local Width, Height
 
+local function EnsureSizes ()
+	if not Width then
+		Width, Height = tile_layout.GetFullSizes()
+	end
+end
+
 local function FollowObject ()
-	local x, y = Object.x, Object.y
+	if display.isValid(Object) then
+		local x, y = Object.x, Object.y
 
-	for _, group in ipairs(Groups) do
-		local gx, gy, scale = _GetState_(group, x, y, Width, Height)
+		for _, group in ipairs(Groups) do
+			local gx, gy, scale = _GetState_(group, x, y, Width, Height)
 
-		group.x, group.xScale = gx, scale
-		group.y, group.yScale = gy, scale
+			group.x, group.xScale = gx, scale
+			group.y, group.yScale = gy, scale
+		end
+	else
+		_Follow_()
 	end
 end
 
@@ -96,6 +107,8 @@ function M.Follow (object, group, ...)
 	-- Add or remove the follow listener if we changed between following some object and
 	-- following no object (or vice versa).
 	if (old_object == nil) ~= (object == nil) then
+		EnsureSizes()
+
 		if old_object then
 			Runtime:removeEventListener("enterFrame", FollowObject)
 		else
@@ -108,18 +121,12 @@ end
 
 local CW, CH = display.contentWidth, display.contentHeight
 
-local function GetMinScale (w, h)
-	if w and h then
-		return min(max(CW / w, CH / h), 1)
-	else
-		return 1
-	end
-end
-
 --- DOCME
 -- when does one smaller scaled dimension fill the view?
 function M.GetMinScale (w, h)
-	return GetMinScale(w or Width, h or Height)
+	EnsureSizes()
+
+	return min(max(CW / (w or Width), CH / (h or Height)), 1)
 end
 
 local Scale = 1
@@ -130,12 +137,12 @@ function M.GetScale ()
 end
 
 local function AuxGetScale (w, h)
-	return max(Scale, GetMinScale(w, h))
+	return max(Scale, _GetMinScale_(w, h))
 end
 
 --- DOCME
 function M.GetScreenPosition (group, x, y, w, h)
-	local scale = AuxGetScale(w or Width, h or Height)
+	local scale = AuxGetScale(w, h)--w or Width, h or Height)
 
 	return (x - group.x) / scale, (y - group.y) / scale
 end
@@ -154,6 +161,9 @@ local XOffset, YOffset = 0, 0
 
 --- DOCME
 function M.GetState (group, x, y, w, h)
+	assert(w, "Expected width")
+	assert(h, "Expected height")
+
 	local gx, gy, scale = group.x, group.y, AuxGetScale(w, h)
 	local px, py = gx + x * scale, gy + y * scale
 
@@ -174,11 +184,6 @@ function M.GetState (group, x, y, w, h)
 	gy = max(gy, min(0, CH - h * scale)) -- as with x
 
 	return gx, gy, scale
-end
-
---- DOCME
-function M.Init ()
-	Width, Height = tile_layout.GetFullSizes()
 end
 
 --- Define the left and right screen extents; while the followed object is between these,
@@ -225,10 +230,6 @@ end
 function M.SetYOffset (offset)
 	YOffset = offset or 0
 end
-
-Runtime:addEventListener("leave_level", function()
-	_Follow_(nil)
-end)
 
 _Follow_ = M.Follow
 _GetMinScale_ = M.GetMinScale
