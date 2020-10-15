@@ -33,10 +33,6 @@ local M = {}
 --
 --
 
--- Ping-pong params used to make things glow --
-local GlowParams = { time = 1100, t = 1, transition = easing.inOutQuad, iterations = 0 }
-
--- Common glow interpolation factor --
 local Glow = {}
 
 --- Factory.
@@ -64,18 +60,28 @@ function M.GetGlowTime ()
 	return Glow.t
 end
 
-for k, v in pairs{
-	leave_level = function()
-		transition.cancel(Glow)
-	end,
+--
+--
+--
 
-	things_loaded = function()
-		Glow.t = 0
+Runtime:addEventListener("leave_level", function()
+	transition.cancel(Glow)
+end)
 
-		transition.to(Glow, GlowParams)
-	end
-} do
-	Runtime:addEventListener(k, v)
-end
+--
+--
+--
+
+local GlowParams = { time = 1100, t = 1, transition = easing.inOutQuad, iterations = 0 }
+
+Runtime:addEventListener("things_loaded", function()
+	Glow.t = 0
+
+	transition.to(Glow, GlowParams)
+end)
+
+--
+--
+--
 
 return M

@@ -231,12 +231,28 @@ function M.Init (params)
 	handle_key:Push(KeyEvent)
 end
 
+--
+--
+--
+
 --- DOCME
 function M.Flush ()
 	FramesLeft = 0
 	Dir, Was = nil
 	ChangeTo = nil
 end
+
+--
+--
+--
+
+local ControlFlag = {}
+
+ControlFlag.__index = ControlFlag
+
+--
+--
+--
 
 local function AssignFlags (flags)
 	local was_active = InUseFlags == 0
@@ -248,19 +264,23 @@ local function AssignFlags (flags)
 	end
 end
 
-local ControlFlag = {}
-
-ControlFlag.__index = ControlFlag
-
 --- DOCME
 function ControlFlag:Clear ()
 	AssignFlags(bit.band(InUseFlags, bit.bnot(self.m_flag)))
 end
 
+--
+--
+--
+
 --- DOCME
 function ControlFlag:Set ()
 	AssignFlags(bit.bor(InUseFlags, self.m_flag))
 end
+
+--
+--
+--
 
 local NextInUseFlag = 2 * BlockedFlags
 
@@ -273,15 +293,27 @@ function M.NewFlag ()
 	return setmetatable({ m_flag = flag }, ControlFlag)
 end
 
+--
+--
+--
+
 --- DOCME
 function M.SetActionsFunc (func)
 	ActionsFunc = func
 end
 
+--
+--
+--
+
 --- DOCME
 function M.SetCancelFunc (func)
 	CancelFunc = func
 end
+
+--
+--
+--
 
 local MovingFunc
 
@@ -290,8 +322,12 @@ function M.SetMovingFunc (func)
 	MovingFunc = func
 end
 
--- Updates player if any residual input is in effect
---local 
+--
+--
+--
+
+-- Update player if any residual input is in effect
+-- @number dt 
 function M.UpdatePlayer (dt)
 	if IsActive() then
 		-- Choose the player's heading: favor movement coming from input; failing that,
@@ -313,10 +349,18 @@ function M.UpdatePlayer (dt)
 	end
 end
 
+--
+--
+--
+
 --- DOCME
 function M.WipeFlags ()
 	AssignFlags(0)
 end
+
+--
+--
+--
 
 Runtime:addEventListener("level_done", function()
 	AssignFlags(BlockedFlags)
@@ -324,6 +368,10 @@ Runtime:addEventListener("level_done", function()
 	device.MapAxesToKeyEvents(false)
 	composer.getVariable("handle_key"):Pop()
 end)
+
+--
+--
+--
 
 _Flush_ = M.Flush
 

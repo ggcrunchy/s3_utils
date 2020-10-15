@@ -120,6 +120,11 @@ function M.Stretch (mpath, interior, used, x, y, radius, depth)
 	end
 end
 
+--
+--
+--
+
+--- DOCME
 function M.Release (mpath, indices, used)
 	for i = 1, #(indices or ""), 3 do
 		local index = indices[i]
@@ -129,5 +134,9 @@ function M.Release (mpath, indices, used)
 		used[index] = nil
 	end
 end
+
+--
+--
+--
 
 return M

@@ -163,16 +163,15 @@ function M.CurvedArrow (group, how, x, y, radius, thickness)
 	return MakePolygon(group, x, y)
 end
 
--- --
-local Arrows = {
-	down = function(x, y) return x, y end,
-	left = function(x, y) return -y, x end,
-	right = function(x, y) return y, x end,
-	up = function(x, y) return x, -y end
-}
+--
+--
+--
 
--- Arrow group methods --
 local ArrowGroup = {}
+
+--
+--
+--
 
 --- DOCME
 -- @byte r
@@ -183,6 +182,10 @@ function ArrowGroup:SetColor (r, g, b)
 		self[i]:setFillColor(r, g, b)
 	end
 end
+
+--
+--
+--
 
 --- DOCME
 -- @number x1
@@ -219,11 +222,15 @@ function ArrowGroup:SetEndPoints (x1, y1, x2, y2, offset)
 	end
 end
 
+--
+--
+--
+
 -- Common logic to build arrow group constructors
 local function ArrowGroupMaker (sep, dfunc)
 	local DistanceToCount = numeric.MakeLengthQuantizer{ unit = sep, bias = 1 }
 
-	return function(group, dir, x1, y1, x2, y2, width, offset)
+	return function(group, dir, x1, y1, x2, y2, _, offset)
 		local arrow_group = display.newGroup()
 
 		group:insert(arrow_group)
@@ -273,6 +280,10 @@ function M.LineOfArrows (group, x1, y1, x2, y2, width, offset)
 	return arrow_group
 end
 
+--
+--
+--
+
 -- Current arrow glow color --
 local ArrowRGB = glow.ColorInterpolator(1, 0, 0, 0, 0, 1)
 
@@ -315,102 +326,119 @@ function M.PointFromTo (group, from, to, width, alpha, dir)
 	return aline
 end
 
-do
-	-- Curvature radius of tail --
-	local Radius = 5
+--
+--
+--
 
-	-- Tail-to-head length --
-	local Stem = 10
+local Arrows = {
+	down = function(x, y) return x, y end,
+	left = function(x, y) return -y, x end,
+	right = function(x, y) return y, x end,
+	up = function(x, y) return x, -y end
+}
 
-	-- Length from head vertex to center of nub --
-	local Head = 3
+-- Curvature radius of tail --
+local Radius = 5
 
-	-- Curved nub on head wing --
-	local WingNub = 4
+-- Tail-to-head length --
+local Stem = 10
 
-	-- Number of curve segments per quadrant --
-	local N = 5
+-- Length from head vertex to center of nub --
+local Head = 3
 
-	--
-	local function BuildArrow ()
-		Index = 0
+-- Curved nub on head wing --
+local WingNub = 4
 
-		-- Write the points directly into our arrows buffer.
-		Arrows, Points = Points, Arrows
+-- Number of curve segments per quadrant --
+local N = 5
 
-		-- Start with the tail point...
-		AddPoint(0, 0)
+--
+local function BuildArrow ()
+	Index = 0
 
-		-- ...then do half of its curve...
-		local half_pi = pi / 2
+	-- Write the points directly into our arrows buffer.
+	Arrows, Points = Points, Arrows
 
-		for i = 1, N do
-			local angle = half_pi * (1 + i / N)
+	-- Start with the tail point...
+	AddPoint(0, 0)
 
-			AddPoint(cos(angle) * Radius, (1 - sin(angle)) * Radius)
-		end
+	-- ...then do half of its curve...
+	local half_pi = pi / 2
 
-		-- ...then proceed along the edge down to the head...
-		local ystem = Radius + Stem
+	for i = 1, N do
+		local angle = half_pi * (1 + i / N)
 
-		AddPoint(-Radius, ystem)
-
-		-- ...now go 45 degrees off to make the shorter side of one of the "wings" that
-		-- make up the head...
-		local x2, y2 = -(Radius + Head), ystem - Head
-
-		AddPoint(x2, y2)
-
-		-- ...traverse 180 degrees around the nub at the end...
-		local ncx, ncy, dn = x2 - WingNub, y2 + WingNub, 2 * N
-
-		for i = 1, dn do
-			local angle = pi * i / dn
-			local ca, sa = cos(angle), sin(angle)
-
-			AddPoint(ncx + (ca - sa) * WingNub, ncy - (ca + sa) * WingNub)
-		end
-
-		-- ...and finally land on the point. (This last stretch is the hypotenuse of a
-		-- 45 degree isoceles triangle, so -x will be our increment along y.)
-		AddPoint(0, Points[Index] - Points[Index - 1])
-
-		-- Restore the buffers' original roles. The arrow is symmetric, so read back all but
-		-- the first and last points in reverse, appending flipped copies of them.
-		Arrows, Points = Points, Arrows
-
-		for i = Index - 3, 3, -2 do
-			Arrows[#Arrows + 1] = -Arrows[i]
-			Arrows[#Arrows + 1] = Arrows[i + 1]
-		end
+		AddPoint(cos(angle) * Radius, (1 - sin(angle)) * Radius)
 	end
 
-	--- DOCME
-	-- @pgroup group Group to which arrow will be inserted.
-	-- @string dir
-	-- @number x
-	-- @number y
-	-- @treturn DisplayGroup I
-	function M.StraightArrow (group, dir, x, y)
-		-- Lazily build the arrow geometry on first use.
-		local n, xform = #Arrows, Arrows[dir]
+	-- ...then proceed along the edge down to the head...
+	local ystem = Radius + Stem
 
-		if n == 0 then
-			BuildArrow()
+	AddPoint(-Radius, ystem)
 
-			n = #Arrows
-		end
+	-- ...now go 45 degrees off to make the shorter side of one of the "wings" that
+	-- make up the head...
+	local x2, y2 = -(Radius + Head), ystem - Head
 
-		--
-		Index = 0
+	AddPoint(x2, y2)
 
-		for i = 1, #Arrows, 2 do
-			AddPoint(xform(Arrows[i], Arrows[i + 1]))
-		end
+	-- ...traverse 180 degrees around the nub at the end...
+	local ncx, ncy, dn = x2 - WingNub, y2 + WingNub, 2 * N
 
-		return MakePolygon(group, x, y)
+	for i = 1, dn do
+		local angle = pi * i / dn
+		local ca, sa = cos(angle), sin(angle)
+
+		AddPoint(ncx + (ca - sa) * WingNub, ncy - (ca + sa) * WingNub)
+	end
+
+	-- ...and finally land on the point. (This last stretch is the hypotenuse of a
+	-- 45 degree isoceles triangle, so -x will be our increment along y.)
+	AddPoint(0, Points[Index] - Points[Index - 1])
+
+	-- Restore the buffers' original roles. The arrow is symmetric, so read back all but
+	-- the first and last points in reverse, appending flipped copies of them.
+	Arrows, Points = Points, Arrows
+
+	for i = Index - 3, 3, -2 do
+		Arrows[#Arrows + 1] = -Arrows[i]
+		Arrows[#Arrows + 1] = Arrows[i + 1]
 	end
 end
+
+--
+--
+--
+
+--- DOCME
+-- @pgroup group Group to which arrow will be inserted.
+-- @string dir
+-- @number x
+-- @number y
+-- @treturn DisplayGroup I
+function M.StraightArrow (group, dir, x, y)
+	-- Lazily build the arrow geometry on first use.
+	local n, xform = #Arrows, Arrows[dir]
+
+	if n == 0 then
+		BuildArrow()
+
+		n = #Arrows
+	end
+
+	--
+	Index = 0
+
+	for i = 1, #Arrows, 2 do
+		AddPoint(xform(Arrows[i], Arrows[i + 1]))
+	end
+
+	return MakePolygon(group, x, y)
+end
+
+--
+--
+--
 
 -- Direction to feed to MakeColumn (since not available through ArrowGroupMaker) --
 local Dir
@@ -452,6 +480,10 @@ function M.WallOfArrows (group, dir, x1, y1, x2, y2, width, offset)
 
 	return MakeColumn(group, dir == "backward" and "down" or "up", x1, y1, x2, y2, width, offset)
 end
+
+--
+--
+--
 
 _LineOfArrows_ = M.LineOfArrows
 _StraightArrow_ = M.StraightArrow

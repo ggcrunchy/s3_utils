@@ -68,6 +68,10 @@ function M.PullCircle (what, into, new)
 	return Pull(Circles, what, into) or (new or NewCircle)(into)
 end
 
+--
+--
+--
+
 local function NewRect (into)
 	return display.newRect(into, 0, 0, 1, 1)
 end
@@ -86,6 +90,10 @@ function M.PullRect (what, into, new)
 
 	return Pull(Rects, what, into) or (new or NewRect)(into)
 end
+
+--
+--
+--
 
 local Stash
 
@@ -143,7 +151,7 @@ local function Push (list, what, object, how)
 	end
 end
 
---- Stashes one or more circles for later retrieval by @{PullCircle}.
+--- Stash one or more circles for later retrieval by @{PullCircle}.
 -- @param what Name of a cache (will be created if absent).
 -- @pobject circle A group or circle, pushed according to _how_.
 -- @string how As per @{PushRect}, _mutatis mutandis_.
@@ -151,7 +159,11 @@ function M.PushCircle (what, circle, how)
 	Push(Circles, what, circle, how)
 end
 
---- Stashes one or more rects for later retrieval by @{PullRect}.
+--
+--
+--
+
+--- Stash one or more rects for later retrieval by @{PullRect}.
 -- @param what Name of a cache (will be created if absent).
 -- @pobject rect A group or rect, pushed according to _how_.
 -- @string[opt] how If this is **"is\_group"**, _rect_ must be a display group containing
@@ -165,35 +177,43 @@ function M.PushRect (what, rect, how)
 	Push(Rects, what, rect, how)
 end
 
-for k, v in pairs{
-	leave_level = function()
-		local stash = Stash
+--
+--
+--
 
-		timer.performWithDelay(200, function(event)
-			local n = stash.numChildren
+Runtime:addEventListener("leave_level", function()
+	local stash = Stash
 
-			if n > 0 then
-				for i = n, max(n - 15, 1), -1 do
-					stash:remove(i)
-				end
-			else
-				timer.cancel(event.source)
+	timer.performWithDelay(200, function(event)
+		local n = stash.numChildren
 
-				stash:removeSelf()
+		if n > 0 then
+			for i = n, max(n - 15, 1), -1 do
+				stash:remove(i)
 			end
-		end, 0)
+		else
+			timer.cancel(event.source)
 
-		Circles, Rects, Stash = nil
-	end,
+			stash:removeSelf()
+		end
+	end, 0)
 
-	things_loaded = function()
-		Circles, Rects = {}, {}
-		Stash = display.newGroup()
+	Circles, Rects, Stash = nil
+end)
 
-		Stash.isVisible = false
-	end
-} do
-	Runtime:addEventListener(k, v)
-end
+--
+--
+--
+
+Runtime:addEventListener("things_loaded", function()
+	Circles, Rects = {}, {}
+	Stash = display.newGroup()
+
+	Stash.isVisible = false
+end)
+
+--
+--
+--
 
 return M

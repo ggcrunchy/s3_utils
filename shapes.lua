@@ -55,6 +55,25 @@ function M.AddPoint (index)
 	Shapes[index] = Shapes[index] or {}
 end
 
+--
+--
+--
+
+--- DOCME
+-- @uint index
+function M.RemoveAt (index)
+	local shapes = Shapes and Shapes[index]
+
+	for i = #(shapes or ""), 1, -1 do
+		shapes[i]:RemoveDot()
+
+		shapes[i] = nil
+	end
+end
+
+--
+--
+--
 -- Background layer --
 local BG
 
@@ -63,6 +82,14 @@ local FillLayer
 
 -- Per-row lists of spans --
 local Rows
+
+Runtime:addEventListener("leave_level", function()
+	BG, FillLayer, Rows, Shapes = nil
+end)
+
+--
+--
+--
 
 -- Helper to fill a shape, processing its tile structure
 local function FillShape (_, tiles)
@@ -146,25 +173,6 @@ local function FillShape (_, tiles)
 
 	-- Commit the fill.
 	fillers.End("flood_fill")
-end
-
---- DOCME
--- @uint index
-function M.RemoveAt (index)
-	local shapes = Shapes and Shapes[index]
-
-	for i = #(shapes or ""), 1, -1 do
-		shapes[i]:RemoveDot()
-
-		shapes[i] = nil
-	end
-end
-
--- Helper to add intermediate fill layer
-local function AddFillLayer ()
-	FillLayer = display.newGroup()
-
-	BG:insert(FillLayer)
 end
 
 local function IsMatch (shape1, shape2, n)
@@ -358,51 +366,64 @@ local function BakeShapes ()
 	end
 end
 
-for k, v in pairs{
-	leave_level = function()
-		BG, FillLayer, Rows, Shapes = nil
-	end,
+Runtime:addEventListener("post_reset", BakeShapes)
 
-	post_reset = BakeShapes,
+--
+--
+--
 
-	reset_level = function()
-		if Shapes then
-			for i in pairs(Shapes) do
-				Shapes[i] = {}
-			end
+local function AddFillLayer ()
+	FillLayer = display.newGroup()
 
-			FillLayer:removeSelf()
+	BG:insert(FillLayer)
+end
 
-			AddFillLayer()
-		end
-	end,
-
-	tiles_changed = function(event)
+Runtime:addEventListener("reset_level", function()
+	if Shapes then
 		for i in pairs(Shapes) do
 			Shapes[i] = {}
 		end
 
-		BakeShapes(event)
-	end,
+		FillLayer:removeSelf()
 
-	-- Things Loaded --
-	things_loaded = function(level)
-		if Shapes then
-			BG, Rows = level.bg_layer, {}
+		AddFillLayer()
+	end
+end)
 
-			local _, nrows = tile_layout.GetCounts()
+--
+--
+--
 
-			for i = 1, nrows do
-				Rows[i] = {}
-			end
+Runtime:addEventListener("tiles_changed", function(event)
+	for i in pairs(Shapes) do
+		Shapes[i] = {}
+	end
 
-			AddFillLayer()
+	BakeShapes(event)
+end)
+
+--
+--
+--
+
+Runtime:addEventListener("things_loaded", function(level)
+	if Shapes then
+		BG, Rows = level.bg_layer, {}
+
+		local _, nrows = tile_layout.GetCounts()
+
+		for i = 1, nrows do
+			Rows[i] = {}
 		end
 
-		BakeShapes()
+		AddFillLayer()
 	end
-} do
-	Runtime:addEventListener(k, v)
-end
+
+	BakeShapes()
+end)
+
+--
+--
+--
 
 return M

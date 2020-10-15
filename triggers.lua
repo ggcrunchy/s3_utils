@@ -237,22 +237,30 @@ function M.editor (_, what, arg1, arg2)
 	end
 end
 
-for k, v in pairs{
-	leave_level = function()
-		Triggers = nil
-	end,
+--
+--
+--
 
-	reset_level = function()
-		for i = 1, #(Triggers or "") do
-			local trigger = Triggers[i]
+Runtime:addEventListener("leave_level", function()
+	Triggers = nil
+end)
 
-			if trigger.restore then
-				trigger.off = false
-			end
+--
+--
+--
+
+Runtime:addEventListener("reset_level", function()
+	for i = 1, #(Triggers or "") do
+		local trigger = Triggers[i]
+
+		if trigger.restore then
+			trigger.off = false
 		end
 	end
-} do
-	Runtime:addEventListener(k, v)
-end
+end)
+
+--
+--
+--
 
 return M

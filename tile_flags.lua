@@ -57,12 +57,20 @@ function M.GetCurrentGroup ()
 	return Current
 end
 
+--
+--
+--
+
 --- Iterate over the directions open on a given tile.
 -- @int index
 -- @treturn iterator Supplies direction.
 function M.GetDirections (index)
 	return tile_layout.GetDirectionsFromFlags(_GetFlags_(index))
 end
+
+--
+--
+--
 
 -- The "true" value of flags, as used outside the module --
 local ResolvedFlags
@@ -76,6 +84,10 @@ local ResolvedFlags
 function M.GetFlags (index)
 	return ResolvedFlags[index] or 0
 end
+
+--
+--
+--
 
 local NilNonce = {}
 
@@ -96,12 +108,20 @@ function M.GetFlags_FromGroup (name, index)
 	return fgroup and fgroup.resolved[index] or 0 -- n.b. fallthrough when resolved[index] nil
 end
 
+--
+--
+--
+
 local WorkingFlags
 
 --- DOCME
 function M.GetWorkingFlags (index)
 	return WorkingFlags[index] or 0
 end
+
+--
+--
+--
 
 ---
 -- @int index Tile index.
@@ -110,6 +130,10 @@ end
 function M.IsWorkingFlagSet (index, name)
 	return enums.IsFlagSet(WorkingFlags[index], name)
 end
+
+--
+--
+--
 
 local Deltas = { left = -1, right = 1 }
 
@@ -163,6 +187,10 @@ function M.Resolve (update)
 	end
 end
 
+--
+--
+--
+
 local RotateCW, RotateCCW = { left = "up", right = "down", down = "left", up = "right" }, {}
 
 for k, v in pairs(RotateCW) do
@@ -190,6 +218,10 @@ function M.Rotate (flags, how)
 	return rflags
 end
 
+--
+--
+--
+
 --- Set a tile's working flags.
 --
 -- @{Resolve} can later be called to establish inter-tile connections.
@@ -207,6 +239,10 @@ function M.SetFlags (index, flags)
 
 	return old or 0
 end
+
+--
+--
+--
 
 local function AuxBindGroup (fgroup)
 	ResolvedFlags, WorkingFlags = fgroup.resolved, fgroup.working
@@ -237,6 +273,10 @@ function M.UseGroup (name)
 	return current
 end
 
+--
+--
+--
+
 --- Visit all flag groups, namely the default one and anything instantiated by @{UseGroup}.
 -- For each one, _func_ is called with the group name after making the given flags current.
 --
@@ -255,6 +295,10 @@ function M.VisitGroups (func)
 	func(current)
 end
 
+--
+--
+--
+
 local function AuxWipe (index)
 	ResolvedFlags[index], WorkingFlags[index] = nil
 end
@@ -270,27 +314,43 @@ function M.Wipe (col1, row1, col2, row2)
 	tile_layout.VisitRegion(AuxWipe, col1, row1, col2, row2)
 end
 
-for k, v in pairs{
-	enter_level = function()
-		FlagGroups, Current = {}
+--
+--
+--
 
-		AuxUseGroup(nil)
-	end,
+Runtime:addEventListener("enter_level", function()
+	FlagGroups, Current = {}
 
-	leave_level = function()
-		FlagGroups, WorkingFlags, ResolvedFlags = nil
-	end,
+	AuxUseGroup(nil)
+end)
 
-	reset_level = function()
-		_Resolve_()
-	end,
+--
+--
+--
 
-	tiles_changed = function()
-		_Resolve_(true)
-	end
-} do
-	Runtime:addEventListener(k, v)
-end
+Runtime:addEventListener("leave_level", function()
+	FlagGroups, WorkingFlags, ResolvedFlags = nil
+end)
+
+--
+--
+--
+
+Runtime:addEventListener("reset_level", function()
+	_Resolve_()
+end)
+
+--
+--
+--
+
+Runtime:addEventListener("tiles_changed", function()
+	_Resolve_(true)
+end)
+
+--
+--
+--
 
 _GetDirections_ = M.GetDirections
 _GetFlags_ = M.GetFlags

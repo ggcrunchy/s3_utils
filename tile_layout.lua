@@ -43,14 +43,20 @@ local M = {}
 --
 --
 
-local Area, ColumnCount, RowCount
+local Area
 
 --- DOCME
 function M.GetArea ()
 	return Area
 end
 
---- Getter.
+--
+--
+--
+
+local ColumnCount, RowCount
+
+---
 -- @int index Tile index, assumed to be inside the level.
 -- @treturn int Column corresponding to _index_...
 -- @treturn int ...and row.
@@ -61,9 +67,13 @@ function M.GetCell (index)
 	return col, row
 end
 
+--
+--
+--
+
 local Width, Height
 
---- Getter.
+---
 -- @number x Position x-coordinate...
 -- @number y ...and y-coordinate.
 -- @treturn int Column of position's cell... (May be outside level.)
@@ -72,12 +82,20 @@ function M.GetCell_XY (x, y)
 	return floor(x / Width) + 1, floor(y / Height) + 1
 end
 
---- Getter.
+--
+--
+--
+
+---
 -- @treturn uint How many columns wide is each row...
 -- @treturn uint ...and how many rows tall is each column?
 function M.GetCounts ()
 	return ColumnCount, RowCount
 end
+
+--
+--
+--
 
 local Directions = { left = true, right = true, up = true, down = true }
 
@@ -96,12 +114,20 @@ function M.GetDirectionsFromFlags (flags)
 	return AuxDirectionsFromFlags, flags or 0
 end
 
+--
+--
+--
+
 --- DOCME
 function M.GetFullSizes ()
 	return ColumnCount * Width, RowCount * Height
 end
 
---- Getter.
+--
+--
+--
+
+---
 -- @int col Tile column...
 -- @int row ...and row.
 -- @treturn int Tile index, or -1 if outside the level.
@@ -113,7 +139,11 @@ function M.GetIndex (col, row)
 	end
 end
 
---- Getter.
+--
+--
+--
+
+---
 -- @number x Position x-coordinate...
 -- @number y ...and y-coordinate.
 -- @treturn int Tile index, or -1 if outside the level.
@@ -121,8 +151,12 @@ function M.GetIndex_XY (x, y)
 	return _GetIndex_(_GetCell_XY_(x, y))
 end
 
---- Getter.
--- @uint index Tile index.
+--
+--
+--
+
+---
+-- @uint index
 --
 -- If the index is invalid or outside the level, falls back to the upper-left tile.
 -- @treturn number Tile center x-coordinate...
@@ -138,9 +172,17 @@ function M.GetPosition (index)
 end
 
 --
+--
+--
+
+-- DOCME
 function M.GetSizes ()
 	return Width, Height
 end
+
+--
+--
+--
 
 --- DOCME
 function M.IsJunction (flags)
@@ -161,6 +203,10 @@ function M.IsJunction (flags)
 	return n + flags > 2 -- flags now 0 or 1
 end
 
+--
+--
+--
+
 local Horizontal = enums.GetFlagByName("left") + enums.GetFlagByName("right")
 local Vertical = enums.GetFlagByName("up") + enums.GetFlagByName("down")
 
@@ -169,22 +215,38 @@ function M.IsStraight (flags)
 	return flags == Horizontal or flags == Vertical
 end
 
---- Utility.
+--
+--
+--
+
+---
 -- @uint index Tile index (see the caveat for @{GetTilePos}).
 -- @param object The tile center is assigned to this object's **x** and **y** fields.
 function M.PutObjectAt (index, object)
 	object.x, object.y = _GetPosition_(index)
 end
 
+--
+--
+--
+
 --- DOCME
 function M.SetCounts (column_count, row_count)
 	Area, ColumnCount, RowCount = column_count * row_count, column_count, row_count
 end
 
+--
+--
+--
+
 --- DOCME
 function M.SetSizes (width, height)
 	Width, Height = width, height
 end
+
+--
+--
+--
 
 local function MinMaxN (a, b, n)
 	if b < a then
@@ -220,6 +282,10 @@ function M.VisitRegion (func, col1, row1, col2, row2, arg1, arg2)
 		index = index + ColumnCount
 	end
 end
+
+--
+--
+--
 
 _GetCell_ = M.GetCell
 _GetCell_XY_ = M.GetCell_XY

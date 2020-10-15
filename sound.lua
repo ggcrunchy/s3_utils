@@ -137,6 +137,9 @@ function M.make (info, params)
 end
 
 --
+--
+--
+
 local function LinkSound (sound, other, ssub, osub)
 	local helper = bind.PrepLink(sound, other, ssub, osub)
 
@@ -212,35 +215,46 @@ end
 -- Any useful flags? (Ongoing vs. cut off? Singleton or instantiable? Looping, already playing...)
 -- Perhaps impose that sound is singleton (or give warning...) if certain actions are linked
 
-for k, v in pairs{
-	leave_level = function()
-		for i = 1, #(Sounds or "") do
-			Sounds[i].group:Remove()
-		end
+--
+--
+--
 
-		Sounds = nil
-	end,
+Runtime:addEventListener("leave_level", function()
+	for i = 1, #(Sounds or "") do
+		Sounds[i].group:Remove()
+	end
 
-	reset_level = function()
-		for i = 1, #(Sounds or "") do
-			local sound = Sounds[i]
+	Sounds = nil
+end)
 
-			if sound.stop_on_reset then
-				sound.group:StopAll()
-			end
-		end
-	end,
+--
+--
+--
 
-	things_loaded = function()
-		for i = 1, #(Sounds or "") do
-			Sounds[i].group:Load()
+Runtime:addEventListener("reset_level", function()
+	for i = 1, #(Sounds or "") do
+		local sound = Sounds[i]
+
+		if sound.stop_on_reset then
+			sound.group:StopAll()
 		end
 	end
+end)
+
+--
+--
+--
+
+Runtime:addEventListener("things_loaded", function()
+	for i = 1, #(Sounds or "") do
+		Sounds[i].group:Load()
+	end
+end)
 	-- ??
 	-- reset_level, leave_level: cancel / fade / etc. long-running (relatively speaking, sometimes) sounds,
 	-- e.g. voice, background audio (wind, rain, ...)
-} do
-	Runtime:addEventListener(k, v)
-end
+--
+--
+--
 
 return M

@@ -97,10 +97,18 @@ function M.GetExpansions ()
 	return expansions
 end
 
+--
+--
+--
+
 --- DOCME
 function M.GetFrameFromName (name)
 	return NameToIndex[name]
 end
+
+--
+--
+--
 
 --- DOCME
 function M.GetNames ()
@@ -113,7 +121,10 @@ function M.GetNames ()
 	return names
 end
 
--- --
+--
+--
+--
+
 local TileShader
 
 --- DOCME
@@ -121,7 +132,10 @@ function M.GetShader ()
 	return TileShader and TileShader.name
 end
 
--- --
+--
+--
+--
+
 local Sheet
 
 --- DOCME
@@ -129,11 +143,19 @@ function M.GetSheet ()
 	return Sheet
 end
 
+--
+--
+--
+
 --- DOCME
 function M.GetShorthands ()
 	return copy(Shorthand)
 end
 --[[
+--
+--
+--
+
 --  Tileset lookup table --
 local TilesetList
 
@@ -148,7 +170,11 @@ function M.GetTypes ()
 	return list
 end
 ]]
--- --
+
+--
+--
+--
+
 local VertexDataNames
 
 --- DOCME
@@ -186,6 +212,10 @@ function M.NewTile (group, name, x, y, w, h)
 	return tile
 end
 
+--
+--
+--
+
 --- DOCME
 function M.SetTileShader (tile, name)
 	local index = NameToIndex[name]
@@ -195,7 +225,10 @@ function M.SetTileShader (tile, name)
 	end
 end
 
--- --
+--
+--
+--
+
 local TileCore = [[
 	#ifndef INNER_RADIUS
 		#error Inner radius must be specified
@@ -686,25 +719,30 @@ end
 
 --TilesetList = require_ex.DoList("config.TileSets")
 
+---
+---
 --
-local function Clear ()
+
+Runtime:addEventListener("leave_level", function()
 	if Image then
 		Image:releaseSelf()
 	end
 
 	Image, Sheet, TextureRects, TileShader, VertexDataNames = nil
-end
+end)
 
-for k, v in pairs{
-	leave_level = Clear,
+--
+--
+--
 
-	system = function(event)
-		if event.type == "applicationResume" and Image then
-			Image:invalidate("cache")
-		end
+Runtime:addEventListener("system", function(event)
+	if event.type == "applicationResume" and Image then
+		Image:invalidate("cache")
 	end
-} do
-	Runtime:addEventListener(k, v)
-end
+end)
+
+--
+--
+--
 
 return M

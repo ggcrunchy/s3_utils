@@ -168,30 +168,42 @@ function M.End (how)
 	Batch.n, Batch.group, Batch.name, Batch.rgba = 0
 end
 
+--
+--
+--
+
 local function CancelRunning ()
 	for i = 1, #Running do
 		timer.cancel(Running[i])
 	end
 end
 
-for k, v in pairs{
-	leave_level = function()
-		CancelRunning()
+Runtime:addEventListener("leave_level", function()
+	CancelRunning()
 
-		Batch, Running = nil
-	end,
+	Batch, Running = nil
+end)
 
-	reset_level = function()
-		CancelRunning()
+--
+--
+--
 
-		Batch, Running = {}, {}
-	end,
+Runtime:addEventListener("reset_level", function()
+	CancelRunning()
 
-	things_loaded = function()
-		Batch, Running = {}, {}
-	end
-} do
-	Runtime:addEventListener(k, v)
-end
+	Batch, Running = {}, {}
+end)
+
+--
+--
+--
+
+Runtime:addEventListener("things_loaded", function()
+	Batch, Running = {}, {}
+end)
+
+--
+--
+--
 
 return M

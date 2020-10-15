@@ -49,7 +49,10 @@ function M.AddMenuMusic (info)
 	-- How much can actually be done here? (probably a config file thing...)
 end
 
--- --
+--
+--
+--
+
 local Music
 
 --
@@ -169,6 +172,9 @@ function M.make (info, params)
 end
 
 --
+--
+--
+
 local function LinkMusic (music, other, msub, osub)
 	local helper = bind.PrepLink(music, other, msub, osub)
 
@@ -239,34 +245,46 @@ end
 
 -- Some default score (perhaps in LevelMap, if not here), if one not present?
 
-for k, v in pairs{
-	leave_level = function()
-		for i = 1, #(Music or "") do
-			Music[i].group:Remove()
+--
+--
+--
+
+Runtime:addEventListener("leave_level", function()
+	for i = 1, #(Music or "") do
+		Music[i].group:Remove()
+	end
+
+	Music, PlayOnEnter, PlayOnReset = nil
+end)
+
+--
+--
+--
+
+Runtime:addEventListener("reset_level", function()
+	if PlayOnReset then
+		PlayNewTrack(PlayOnReset)
+	end
+end)
+
+--
+--
+--
+
+Runtime:addEventListener("things_loaded", function()
+	if Music then
+		for _, music in ipairs(Music) do
+			music.group:Load()
 		end
 
-		Music, PlayOnEnter, PlayOnReset = nil
-	end,
-
-	reset_level = function()
-		if PlayOnReset then
-			PlayNewTrack(PlayOnReset)
-		end
-	end,
-
-	things_loaded = function()
-		if Music then
-			for _, music in ipairs(Music) do
-				music.group:Load()
-			end
-
-			if PlayOnEnter then -- TODO: could also be in ready_to_go, etc.
-				PlayOnEnter:PlaySound("track")
-			end
+		if PlayOnEnter then -- TODO: could also be in ready_to_go, etc.
+			PlayOnEnter:PlaySound("track")
 		end
 	end
-} do
-	Runtime:addEventListener(k, v)
-end
+end)
+
+--
+--
+--
 
 return M

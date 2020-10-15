@@ -44,6 +44,91 @@ local M = {}
 --
 --
 
+local ActionGroup
+
+-- Lazily add images to the action sequence --
+local ImagesMT = {
+	__index = function(t, name)
+		local action, ai = ActionGroup[1]
+
+		if type(name) == "string" then
+			ai = display.newImage(ActionGroup, name, action.x, action.y)
+		else
+			ai = name
+
+			ActionGroup:insert(ai)
+
+			ai.x, ai.y = action.x, action.y
+		end
+
+		ai.width, ai.height, ai.alpha = 96, 96, 0
+
+		t[name], ai.name = ai, name
+
+		return ai
+	end
+}
+
+local function Touch (event)
+	local button, phase = event.target, event.phase
+
+	if phase == "began" then
+		display.getCurrentStage():setFocus(button, event.id)
+
+		button.m_touched = true
+
+	elseif button.m_touched and (phase == "ended" or phase == "cancelled") then
+		display.getCurrentStage():setFocus(button, nil)
+
+		local cx, cy = button:localToContent(0, 0)
+
+		if (event.x - cx)^2 + (event.y - cy)^2 < button.path.radius^2 then
+			button.m_func()
+		end
+		-- ^^ TODO: is the underlying logic robust enough or do we need to guard this too?
+		-- say for instance the player walks off and then lets go
+
+		button.m_touched = false
+	end
+
+	return true
+end
+
+local Images, Sequence
+
+--- DOCME
+-- @pgroup group
+-- @callable do_actions
+function M.AddActionButton (group, do_actions)
+	local w, h = display.contentWidth, display.contentHeight
+
+	-- Add a "do actions" button.
+	ActionGroup = display.newGroup()
+
+	group:insert(ActionGroup)
+
+	local bradius = .06 * (w + h)
+	local action = display.newCircle(ActionGroup, w * .95 - bradius, h * .85 - bradius, bradius)
+
+	action.alpha = .6
+	action.strokeWidth = 3
+
+	action.m_func, action.m_touches = do_actions, 0
+
+	action:setFillColor(0, 1, 0)
+	action:addEventListener("touch", Touch)
+
+	ActionGroup.isVisible = false
+
+	-- Create a fresh action sequence.
+	Images = setmetatable({}, ImagesMT)
+	Sequence = {}
+end
+
+--
+--
+--
+
 local function Cancel (trans)
 	if trans then
 		transition.cancel(trans)
@@ -52,7 +137,19 @@ local function Cancel (trans)
 	end
 end
 
-local Sequence
+local Current, Scaling
+
+Runtime:addEventListener("leave_level", function()
+	transition.cancel("action_fading")
+
+	Cancel(Scaling)
+
+	ActionGroup, Current, Images, Scaling, Sequence = nil
+end)
+
+--
+--
+--
 
 local function IndexOf (name)
 	for i, v in ipairs(Sequence) do
@@ -61,8 +158,6 @@ local function IndexOf (name)
 		end
 	end
 end
-
-local Current
 
 local FadeIconParams = { tag = "action_fading" }
 
@@ -97,7 +192,6 @@ function FadeIconParams.onComplete (icon)
 		local index = IndexOf(icon.prev or icon.name)
 
 		if index then
-		--	local index = array_index.RotateIndex(index, n)
 			if index < n then
 				index = index + 1
 			else
@@ -115,33 +209,6 @@ function FadeIconParams.onComplete (icon)
 	-- The previous name was either of no use or has served its purpose.
 	icon.is_fading, icon.prev = nil
 end
-
-local ActionGroup
-
--- Lazily add images to the action sequence --
-local ImagesMT = {
-	__index = function(t, name)
-		local action, ai = ActionGroup[1]
-
-		if type(name) == "string" then
-			ai = display.newImage(ActionGroup, name, action.x, action.y)
-		else
-			ai = name
-
-			ActionGroup:insert(ai)
-
-			ai.x, ai.y = action.x, action.y
-		end
-
-		ai.width, ai.height, ai.alpha = 96, 96, 0
-
-		t[name], ai.name = ai, name
-
-		return ai
-	end
-}
-
-local Images
 
 local function AddIconToSequence (item, name, is_text)
 	--  Do any instances of the icon exist?
@@ -184,7 +251,7 @@ local function RemoveIconFromSequence (index, item)
 			-- Since indices are trouble to maintain, get the name of the previous item in
 			-- the sequence: this will be the reference point for the "go to next" logic,
 			-- after the fade out.
-			local prev = index > 1 and index - 1 or #Sequence -- = array_index.RotateIndex(index, #Sequence, true)
+			local prev = index > 1 and index - 1 or #Sequence
 
 			item.icon.prev = index ~= prev and Sequence[prev].name
 
@@ -216,7 +283,7 @@ local function MergeDotIntoSequence (dot, touch)
 	end
 end
 
-local ScaleInOut, Scaling = { time = 250, transition = easing.outQuad }
+local ScaleInOut = { time = 250, transition = easing.outQuad }
 
 local function ScaleActionButton (button, delta)
 	Cancel(Scaling)
@@ -279,90 +346,28 @@ local function ShowAction (show)
 	transition.to(ActionGroup, FadeParams)
 end
 
-local function Touch (event)
-	local button, phase = event.target, event.phase
+Runtime:addEventListener("touching_dot", function(event)
+	local action = ActionGroup[1]
+	local ntouch = action.m_touches
 
-	if phase == "began" then
-		display.getCurrentStage():setFocus(button, event.id)
-
-		button.m_touched = true
-
-	elseif button.m_touched and (phase == "ended" or phase == "cancelled") then
-		display.getCurrentStage():setFocus(button, nil)
-
-		local cx, cy = button:localToContent(0, 0)
-
-		if (event.x - cx)^2 + (event.y - cy)^2 < button.path.radius^2 then
-			button.m_func()
-		end
-		-- ^^ TODO: is the underlying logic robust enough or do we need to guard this too?
-		-- say for instance the player walks off and then lets go
-
-		button.m_touched = false
+	if event.is_touching and ntouch == 0 then -- no others also being touched?
+		ScaleActionButton(action, .1)
+		ShowAction(true)
 	end
 
-	return true
-end
+	MergeDotIntoSequence(event.dot, event.is_touching)
 
---- DOCME
--- @pgroup group
--- @callable do_actions
-function M.AddActionButton (group, do_actions)
-	local w, h = display.contentWidth, display.contentHeight
+	ntouch = ntouch + (event.is_touching and 1 or -1)
 
-	-- Add a "do actions" button.
-	ActionGroup = display.newGroup()
-
-	group:insert(ActionGroup)
-
-	local bradius = .06 * (w + h)
-	local action = display.newCircle(ActionGroup, w * .95 - bradius, h * .85 - bradius, bradius)
-
-	action.alpha = .6
-	action.strokeWidth = 3
-
-	action.m_func, action.m_touches = do_actions, 0
-
-	action:setFillColor(0, 1, 0)
-	action:addEventListener("touch", Touch)
-
-	ActionGroup.isVisible = false
-
-	-- Create a fresh action sequence.
-	Images = setmetatable({}, ImagesMT)
-	Sequence = {}
-end
-
-for k, v in pairs{
-	leave_level = function()
-		transition.cancel("action_fading")
-
-		Cancel(Scaling)
-
-		ActionGroup, Current, Images, Scaling, Sequence = nil
-	end,
-
-	touching_dot = function(event)
-		local action = ActionGroup[1]
-		local ntouch = action.m_touches
-
-		if event.is_touching and ntouch == 0 then -- no others also being touched?
-			ScaleActionButton(action, .1)
-			ShowAction(true)
-		end
-
-		MergeDotIntoSequence(event.dot, event.is_touching)
-
-		ntouch = ntouch + (event.is_touching and 1 or -1)
-
-		if ntouch == 0 then
-			ShowAction(false)
-		end
-
-		action.m_touches = ntouch
+	if ntouch == 0 then
+		ShowAction(false)
 	end
-} do
-	Runtime:addEventListener(k, v)
-end
+
+	action.m_touches = ntouch
+end)
+
+--
+--
+--
 
 return M

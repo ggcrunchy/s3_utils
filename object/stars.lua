@@ -62,7 +62,7 @@ local function Point (x, y, angle, radius, i)
 	return x + radius * ca, y + radius * sa
 end
 
---- Makes a 5-pointed star.
+--- Make a 5-pointed star.
 -- @pgroup group Group to which the star will be inserted.
 -- @number x Center x-coordinate.
 -- @number y As per _x_.
@@ -85,7 +85,10 @@ function M.Star (group, x, y, radius, angle)
 	return star
 end
 
--- --
+--
+--
+--
+
 local StarFuncs = {
 	-- Mild rocking --
 	mild_rocking = function(star, t, i)
@@ -99,7 +102,6 @@ local StarFuncs = {
 	end
 }
 
--- --
 local StarSets = {
 	default = { "T1", "T5", "T7" }
 }
@@ -110,7 +112,6 @@ for _, set in pairs(StarSets) do
 	end
 end
 
--- --
 local RotateSpeed = 1.5 * _2pi
 
 --- DOCME
@@ -216,6 +217,10 @@ function M.RingOfStars (group, nstars, x, y, dx, dy, opts)
 
 	return front, back
 end
+
+--
+--
+--
 
 _Star_ = M.Star
 

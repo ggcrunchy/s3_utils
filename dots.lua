@@ -35,7 +35,6 @@
 
 -- Standard library imports --
 local ipairs = ipairs
-local pairs = pairs
 local sort = table.sort
 
 -- Modules --
@@ -156,6 +155,10 @@ function M.New (info, dot)
 	Dots[#Dots + 1] = dot
 end
 
+--
+--
+--
+
 --- Deduct a remaining dot, firing off an event if it was the last one.
 function M.DeductDot ()
 	Remaining = Remaining - 1
@@ -164,6 +167,10 @@ function M.DeductDot ()
 		Runtime:dispatchEvent{ name = "all_dots_removed" }
 	end
 end
+
+--
+--
+--
 
 --- Handler for dot-related events sent by the editor.
 -- @string type Dot type, as listed by @{GetTypes}.
@@ -216,6 +223,10 @@ function M.EditorEvent (type, what, arg1, arg2, arg3)
 	end
 end
 
+--
+--
+--
+
 ---
 -- @treturn {string,...} Unordered list of dot type names.
 --[=[
@@ -229,6 +240,32 @@ function M.GetTypes ()
 	return types
 end
 ]=]
+
+
+--
+--
+--
+
+Runtime:addEventListener("act_on_dot", function(event)
+	local dot = event.dot
+
+	-- Remove the dot from any shapes that contain it.
+	shapes.RemoveAt(dot.m_index)
+
+	-- If this dot counts toward the "dots remaining", deduct it.
+	if dot.m_count > 0 then
+		_DeductDot_()
+	end
+
+	-- Do dot-specific logic.
+	if dot.ActOn then
+		dot:ActOn(event.actor, event.body)
+	end
+end)
+
+--
+--
+--
 
 local function DotLess (a, b)
 	return a.m_index < b.m_index
@@ -253,92 +290,83 @@ local function BlockFunc (event)
 	end
 end
 
-for k, v in pairs{
-	act_on_dot = function(event)
-		local dot = event.dot
+Runtime:addEventListener("block_setup", function(event)
+	-- Sort the dots for incremental traversal as we iterate the block.
+	if not Dots.sorted then
+		sort(Dots, DotLess)
 
-		-- Remove the dot from any shapes that contain it.
-		shapes.RemoveAt(dot.m_index)
+		Dots.sorted = true
+	end
 
-		-- If this dot counts toward the "dots remaining", deduct it.
-		if dot.m_count > 0 then
-			_DeductDot_()
+	-- Accumulate any non-omitted dot inside the block region into its list.
+	local block = event.block
+	local slot, n = 1, #Dots
+
+	for index in block:IterSelf() do
+		while slot <= n and Dots[slot].m_index < index do
+			slot = slot + 1
 		end
 
-		-- Do dot-specific logic.
-		if dot.ActOn then
-			dot:ActOn(event.actor, event.body)
-		end
-	end,
+		local dot = Dots[slot]
 
-	block_setup = function(event)
-		-- Sort the dots for incremental traversal as we iterate the block.
-		if not Dots.sorted then
-			sort(Dots, DotLess)
+		if dot and dot.m_index == index and not dot.omit_from_blocks_P then
+			dot.m_old_x, dot.m_old_y = dot.x, dot.y
 
-			Dots.sorted = true
-		end
-
-		-- Accumulate any non-omitted dot inside the block region into its list.
-		local block = event.block
-		local slot, n = 1, #Dots
-
-		for index in block:IterSelf() do
-			while slot <= n and Dots[slot].m_index < index do
-				slot = slot + 1
+			if dot.addEventListener then
+				dot:addEventListener("with_block_update", BlockFunc)
+			else
+				dot.with_block_update = BlockFunc
 			end
 
-			local dot = Dots[slot]
-
-			if dot and dot.m_index == index and not dot.omit_from_blocks_P then
-				dot.m_old_x, dot.m_old_y = dot.x, dot.y
-
-				if dot.addEventListener then
-					dot:addEventListener("with_block_update", BlockFunc)
-				else
-					dot.with_block_update = BlockFunc
-				end
-
-				block:DataStore_Append(dot)
-			end
-		end
-	end,
-
-	leave_level = function()
-		Dots, PreviousTime = nil
-
-		Runtime:removeEventListener("enterFrame", OnEnterFrame)
-	end,
-
-	reset_level = function()
-		Remaining, PreviousTime = 0
-
-		if Dots then
-			for _, dot in ipairs(Dots) do
-				tile_layout.PutObjectAt(dot.m_index, dot)
-
-				dot.isVisible = true
-				dot.rotation = 0
-
-				if dot.Reset then
-					dot:Reset()
-				end
-
-				Remaining = Remaining + dot.m_count
-			end
-
-			timer.performWithDelay(0, function()
-				for _, dot in ipairs(Dots) do
-					if collision.RemoveBody(dot) then
-						TryToAddBody(dot)
-					end
-				end
-			end)
+			block:DataStore_Append(dot)
 		end
 	end
-} do
-	Runtime:addEventListener(k, v)
-end
+end)
+
+--
+--
+--
+
+Runtime:addEventListener("leave_level", function()
+	Dots, PreviousTime = nil
+
+	Runtime:removeEventListener("enterFrame", OnEnterFrame)
+end)
+
+--
+--
+--
+
+Runtime:addEventListener("reset_level", function()
+	Remaining, PreviousTime = 0
+
+	if Dots then
+		for _, dot in ipairs(Dots) do
+			tile_layout.PutObjectAt(dot.m_index, dot)
+
+			dot.isVisible = true
+			dot.rotation = 0
+
+			if dot.Reset then
+				dot:Reset()
+			end
+
+			Remaining = Remaining + dot.m_count
+		end
+
+		timer.performWithDelay(0, function()
+			for _, dot in ipairs(Dots) do
+				if collision.RemoveBody(dot) then
+					TryToAddBody(dot)
+				end
+			end
+		end)
+	end
+end)
+
+--
+--
+--
 
 _DeductDot_ = M.DeductDot
 

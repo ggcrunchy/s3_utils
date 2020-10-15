@@ -96,12 +96,20 @@ function M.AddTiles (group, new_tile, names)
 	tile_flags.Resolve()
 end
 
---- Getter.
--- @int index Tile index.
+--
+--
+--
+
+---
+-- @int index
 -- @treturn DisplayObject Tile image, or **nil** if _index_ is invalid or the tile is blank.
 function M.GetImage (index)
 	return Tiles[index]
 end
+
+--
+--
+--
 
 local FlagsToName = {}
 
@@ -135,16 +143,24 @@ function M.SetTilesFromFlags (group, new_tile, col1, row1, col2, row2)
 	tile_layout.VisitRegion(AuxSetTilesFromFlags, col1, row1, col2, row2, group, new_tile)
 end
 
-for k, v in pairs{
-	enter_level = function()
-		Tiles = {}
-	end,
+--
+--
+--
 
-	leave_level = function()
-		Tiles = nil
-	end
-} do
-	Runtime:addEventListener(k, v)
-end
+Runtime:addEventListener("enter_level", function()
+	Tiles = {}
+end)
+
+--
+--
+--
+
+Runtime:addEventListener("leave_level", function()
+	Tiles = nil
+end)
+
+--
+--
+--
 
 return M

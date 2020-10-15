@@ -132,6 +132,10 @@ function M.Add (col, row)
 	Cells[CellToIndex(col, row, Nx)] = true
 end
 
+--
+--
+--
+
 -- Cache of cell / index arrays --
 local Arrays = {}
 
@@ -151,6 +155,10 @@ function M.Prepare (nx, ny)
 	-- Save the cell counts. Initialize state used to incrementally find the center cell.
 	Nx, Ny, Closest, CX, CY = nx, ny, 1 / 0, (nx + 1) / 2, (ny + 1) / 2
 end
+
+--
+--
+--
 
 -- Cache of grid use wrappers --
 local Used = {}
@@ -296,5 +304,9 @@ function M.Run (backdrop, opts)
 		end
 	end, 0)
 end
+
+--
+--
+--
 
 return M

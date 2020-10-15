@@ -55,6 +55,10 @@ function M.make (info, params)
 	psl:Publish(pos, info.uid, "pos")
 end
 
+--
+--
+--
+
 --- DOCME
 function M.editor (_, what, arg1, arg2)
 	-- Enumerate Properties --
@@ -78,25 +82,37 @@ function M.editor (_, what, arg1, arg2)
 	end
 end
 
+--
+--
+--
+
 --- DOCME
 function M.GetPosition (id)
 	return Positions and Positions[id]
 end
 
-for k, v in pairs{
-	leave_level = function()
-		Positions = nil
-	end,
+--
+--
+--
 
-	reset_level = function()
-		if Positions then
-			for _, pos in pairs(Positions) do
-				tile_layout.PutObjectAt(pos.m_index, pos)
-			end
+Runtime:addEventListener("leave_level", function()
+	Positions = nil
+end)
+
+--
+--
+--
+
+Runtime:addEventListener("reset_level", function()
+	if Positions then
+		for _, pos in pairs(Positions) do
+			tile_layout.PutObjectAt(pos.m_index, pos)
 		end
 	end
-} do
-	Runtime:addEventListener(k, v)
-end
+end)
+
+--
+--
+--
 
 return M

@@ -87,6 +87,9 @@ function M.make--[[AddEvents]] (--[[events]]info, params)
 end
 
 --
+--
+--
+
 local function LinkGlobal (global, other, gsub, osub)
 	local helper = bind.PrepLink(global, other, gsub, osub)
 
@@ -120,39 +123,50 @@ function M.editor (_, what, arg1)
 	end
 end
 
-
 for _, v in ipairs(config.actions) do
 	Actions[v] = function()
 		-- TODO?
 	end
 end
 
+--
+--
+--
+
+Runtime:addEventListener("enter_level", function()
+	EventNonce = {}
+end)
+
+--
+--
+--
+
 local function EnterFrame ()
 	GetEvent.enter_frame:DispatchForObject(EventNonce)
 end
 
-for k, v in pairs{
-	enter_level = function()
-		EventNonce = {}
-	end,
+Runtime:addEventListener("leave_level", function()
+	Runtime:removeEventListener("enterFrame", EnterFrame)
 
-	leave_level = function()
-		Runtime:removeEventListener("enterFrame", EnterFrame)
+	timer.performWithDelay(0, function()
+		EventNonce = nil -- timer probably overkill
+	end)
+end)
 
-		timer.performWithDelay(0, function()
-			EventNonce = nil -- timer probably overkill
-		end)
-	end,
+--
+--
+--
 
-	ready_to_go = function()
-		for _ in GetEvent.enter_frame:IterateFunctionsForObject--[[.Iter]](EventNonce) do
-			Runtime:addEventListener("enterFrame", EnterFrame)
+Runtime:addEventListener("ready_to_go", function()
+	for _ in GetEvent.enter_frame:IterateFunctionsForObject--[[.Iter]](EventNonce) do
+		Runtime:addEventListener("enterFrame", EnterFrame)
 
-			break
-		end
+		break
 	end
-} do
-	Runtime:addEventListener(k, v)
-end
+end)
+
+--
+--
+--
 
 return M

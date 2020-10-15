@@ -108,7 +108,15 @@ local function Wipe (index)
 	SetFlags(index, 0)
 end
 
+--
+--
+--
+
 local Block = {}
+
+--
+--
+--
 
 --- DOCME
 function Block:AttachEvent (event, info, params)
@@ -116,6 +124,10 @@ function Block:AttachEvent (event, info, params)
 
 	events.Redirect(event, self)
 end
+
+--
+--
+--
 
 --- Check whether a block can occupy a region without overlapping a different block.
 -- The block will ignore itself, since this test will often be used to determine if a
@@ -144,6 +156,10 @@ function Block:CanOccupy (col1, row1, col2, row2)
 	return count == 0, count
 end
 
+--
+--
+--
+
 --- Fill a region with occupancy information matching this block.
 -- @int col1 A column...
 -- @int row1 ... and row.
@@ -157,6 +173,10 @@ function Block:FillRect (col1, row1, col2, row2)
 	end
 end
 
+--
+--
+--
+
 --- Variant of @{Block:FillRect} that fills the current rect.
 -- @see Block:SetRect
 function Block:FillSelf ()
@@ -167,6 +187,10 @@ function Block:FillSelf ()
 	end
 end
 
+--
+--
+--
+
 ---
 -- @treturn int Minimum column...
 -- @treturn int ...and maximum.
@@ -174,11 +198,19 @@ function Block:GetColumns ()
 	return self.m_cmin, self.m_cmax
 end
 
+--
+--
+--
+
 ---
 -- @treturn DisplayGroup The block's main group.
 function Block:GetGroup ()
 	return self.m_bgroup
 end
+
+--
+--
+--
 
 --- Get the rect that was current at block initialization.
 -- @bool flagged If true, cull any unflagged outer rows and columns.
@@ -204,6 +236,10 @@ function Block:GetInitialRect (flagged)
 	end
 end
 
+--
+--
+--
+
 ---
 -- @int index Tile index.
 -- @treturn uint Tile flags at block creation time.
@@ -212,12 +248,20 @@ function Block:GetOldFlags (index)
 	return OldFlags[index] or 0
 end
 
+--
+--
+--
+
 ---
 -- @treturn int Minimum row...
 -- @treturn int ...and maximum.
 function Block:GetRows ()
 	return self.m_rmin, self.m_rmax
 end
+
+--
+--
+--
 
 --- Iterate over a given region.
 -- @int col1 A column...
@@ -229,12 +273,20 @@ function Block:Iter (col1, row1, col2, row2)
 	return BlockIter(col1, row1, col2, row2)
 end
 
+--
+--
+--
+
 --- Variant of @{Block:Iter} that iterates over the current rect.
 -- @treturn iterator Supplies tile index, column, row.
 -- @see Block:SetRect
 function Block:IterSelf ()
 	return BlockSelf(self)
 end
+
+--
+--
+--
 
 local function ZeroSpan (block, col1, row1, col2, row2)
 	for index in block:Iter(col1, row1, col2, row2) do
@@ -275,6 +327,10 @@ function Block:MakeIsland (name, from)
 	tile_flags.UseGroup(cur)
 end
 
+--
+--
+--
+
 --- Set the block's current rect, as used by the ***Self** methods.
 --
 -- Until this call, the current rect will be equivalent to @{Block:GetInitialRect}'s
@@ -292,6 +348,10 @@ function Block:SetRect (col1, row1, col2, row2)
 	self.m_rmin, self.m_rmax = row1, row2
 end
 
+--
+--
+--
+
 --- Wipe block state (flags, occupancy) in a given region.
 -- @int col1 A column...
 -- @int row1 ... and row.
@@ -303,6 +363,10 @@ function Block:WipeRect (col1, row1, col2, row2)
 	end
 end
 
+--
+--
+--
+
 --- Variant of @{Block:WipeRect} that wipes the current rect.
 -- @see Block:SetRect
 function Block:WipeSelf ()
@@ -311,7 +375,15 @@ function Block:WipeSelf ()
 	end
 end
 
+--
+--
+--
+
 component.AddToObject(Block, data_store)
+
+--
+--
+--
 
 --- Add a block to the level and register an event for it.
 -- @ptable info Block info, with at least the following properties:
@@ -376,6 +448,10 @@ function M.New (info, params, into)
 
 	return block
 end
+
+--
+--
+--
 
 local BlockKeys = { "type", "col1", "row1", "col2", "row2" }
 
@@ -455,6 +531,10 @@ function M.EditorEvent (type, what, arg1, arg2, arg3)
 	end
 end
 
+--
+--
+--
+
 ---
 -- @treturn {string,...} Unordered list of block type names.
 --[=[
@@ -469,51 +549,63 @@ function M.GetTypes ()
 end
 --]=]
 
-for k, v in pairs{
-	leave_level = function()
-		LoadedBlocks, BlockIDs, OldFlags = nil
-	end,
+--
+--
+--
 
-	pre_reset = function()
-		if LoadedBlocks then
-			BlockIDs = {}
+Runtime:addEventListener("leave_level", function()
+	LoadedBlocks, BlockIDs, OldFlags = nil
+end)
 
-			-- Restore any flags that may have been altered by a block.
-			for i, flags in pairs(OldFlags) do
-	--[[
-				local image = GetImage(i) -- Relevant?...
+--
+--
+--
 
-				if image then
-					PutObjectAt(i, image)
-				end
-	]]
-	-- Physics...
-				SetFlags(i, flags)
+Runtime:addEventListener("pre_reset", function()
+	if LoadedBlocks then
+		BlockIDs = {}
+
+		-- Restore any flags that may have been altered by a block.
+		for i, flags in pairs(OldFlags) do
+--[[
+			local image = GetImage(i) -- Relevant?...
+
+			if image then
+				PutObjectAt(i, image)
 			end
-
-			-- Reset any block state and refill initial block regions with IDs.
-			for _, block in ipairs(LoadedBlocks) do
-				if block.Reset then
-					block:Reset()
-				end
-
-				block:SetRect(block:GetInitialRect()) -- TODO: Make responsibilty of event?
-				block:FillSelf()
-			end
+]]
+-- Physics...
+			SetFlags(i, flags)
 		end
-	end,
 
-	things_loaded = function()
-		local event = { name = "block_setup" }
+		-- Reset any block state and refill initial block regions with IDs.
+		for _, block in ipairs(LoadedBlocks) do
+			if block.Reset then
+				block:Reset()
+			end
 
-		for i = 1, #(LoadedBlocks or "") do
-			event.block = LoadedBlocks[i]
-
-			Runtime:dispatchEvent(event)
+			block:SetRect(block:GetInitialRect()) -- TODO: Make responsibilty of event?
+			block:FillSelf()
 		end
 	end
-} do
-	Runtime:addEventListener(k, v)
-end
+end)
+
+--
+--
+--
+
+Runtime:addEventListener("things_loaded", function()
+	local event = { name = "block_setup" }
+
+	for i = 1, #(LoadedBlocks or "") do
+		event.block = LoadedBlocks[i]
+
+		Runtime:dispatchEvent(event)
+	end
+end)
+
+--
+--
+--
 
 return M
