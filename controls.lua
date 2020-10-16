@@ -59,13 +59,13 @@ local M = {}
 --
 --
 
+local CancelEvent = { name = "controls:cancel" }
+
 -- Which way are we trying to move?; which way were we moving? --
 local Dir, Was
 
 -- A second held direction, to change to if Dir is released (seems to smooth out key input) --
 local ChangeTo
-
-local CancelFunc
 
 local function BeginDir (target)
 	local dir = target.m_dir
@@ -73,9 +73,7 @@ local function BeginDir (target)
 	if not Dir then
 		Dir, Was = dir, dir
 
-		if CancelFunc then
-			CancelFunc()
-		end
+		Runtime:dispatchEvent(CancelEvent)
 	elseif Dir ~= dir and not ChangeTo then
 		ChangeTo = dir
 	else
@@ -111,11 +109,11 @@ local function IsActive ()
 	return InUseFlags == 0
 end
 
-local ActionsFunc
+local ActionEvent = { name = "controls:action" }
 
 local function DoActions ()
-	if IsActive() and ActionsFunc then
-		ActionsFunc()
+	if IsActive() then
+		Runtime:dispatchEvent(ActionEvent)
 	end
 end
 
@@ -297,34 +295,7 @@ end
 --
 --
 
---- DOCME
-function M.SetActionsFunc (func)
-	ActionsFunc = func
-end
-
---
---
---
-
---- DOCME
-function M.SetCancelFunc (func)
-	CancelFunc = func
-end
-
---
---
---
-
-local MovingFunc
-
---- DOCME
-function M.SetMovingFunc (func)
-	MovingFunc = func
-end
-
---
---
---
+local MoveEvent = { name = "controls:move" }
 
 -- Update player if any residual input is in effect
 -- @number dt 
@@ -343,9 +314,9 @@ function M.UpdatePlayer (dt)
 
 		-- Move the player, if we can, and if the player isn't already following a path
 		-- (in which case this is handled elsewhere).
-		if MovingFunc then
-			MovingFunc(dir, dt)
-		end
+		MoveEvent.dir, MoveEvent.dt = dir, dt
+
+		Runtime:dispatchEvent(MoveEvent)
 	end
 end
 
