@@ -25,9 +25,10 @@
 
 -- Standard library imports --
 local assert = assert
-local ipairs = ipairs
 local max = math.max
 local min = math.min
+local next = next
+local pairs = pairs
 
 -- Modules --
 local tile_layout = require("s3_utils.tile_layout")
@@ -60,7 +61,26 @@ timer.performWithDelay(25, function(event)
 end, 0)
 --]]
 
-local Object, Groups
+local Groups = {}
+
+local function RemoveTarget (event)
+	Groups[event.target] = nil
+end
+
+--- DOCME
+function M.AddTarget (group)
+	if group.addEventListener then
+		group:addEventListener("finalize", RemoveTarget)
+
+		Groups[group] = true
+	end
+end
+
+--
+--
+--
+
+local Object
 
 local Width, Height
 
@@ -74,7 +94,7 @@ local function FollowObject ()
 	if display.isValid(Object) then
 		local x, y = Object.x, Object.y
 
-		for _, group in ipairs(Groups) do
+		for group in pairs(Groups) do
 			local gx, gy, scale = _GetState_(group, x, y, Width, Height)
 
 			group.x, group.xScale = gx, scale
@@ -92,17 +112,11 @@ end
 -- group to be scrolled; if **nil**, uses _object_'s parent.
 -- @param ... Additional groups.
 -- @treturn DisplayObject Object that was being followed, or **nil** if absent.
-function M.Follow (object, group, ...)
+-- TODO: revise!
+function M.Follow (object)
 	local old_object = Object
 
 	Object = object
-
-	-- If we are trying to follow an object, choose some groups to scroll.
-	if object == nil then
-		Groups = nil
-	elseif group ~= "keep" then
-		Groups = { group or object.parent, ... }
-	end
 
 	-- Add or remove the follow listener if we changed between following some object and
 	-- following no object (or vice versa).
@@ -119,6 +133,10 @@ function M.Follow (object, group, ...)
 	return old_object
 end
 
+--
+--
+--
+
 local CW, CH = display.contentWidth, display.contentHeight
 
 --- DOCME
@@ -129,6 +147,19 @@ function M.GetMinScale (w, h)
 	return min(max(CW / (w or Width), CH / (h or Height)), 1)
 end
 
+--
+--
+--
+
+--- DOCME
+function M.GetNextTarget (prev)
+	return next(Groups, prev)
+end
+
+--
+--
+--
+
 local Scale = 1
 
 --- DOCME
@@ -136,16 +167,24 @@ function M.GetScale ()
 	return Scale
 end
 
+--
+--
+--
+
 local function AuxGetScale (w, h)
 	return max(Scale, _GetMinScale_(w, h))
 end
 
 --- DOCME
 function M.GetScreenPosition (group, x, y, w, h)
-	local scale = AuxGetScale(w, h)--w or Width, h or Height)
+	local scale = AuxGetScale(w, h)
 
 	return (x - group.x) / scale, (y - group.y) / scale
 end
+
+--
+--
+--
 
 local function Clamp (n)
 	return n - n % 2 -- fix to prevent tile seams
@@ -186,6 +225,10 @@ function M.GetState (group, x, y, w, h)
 	return gx, gy, scale
 end
 
+--
+--
+--
+
 --- Define the left and right screen extents; while the followed object is between these,
 -- no horizontal scrolling will occur. If the object moves outside of them, the associated
 -- group will be scrolled in an attempt to put it back inside.
@@ -197,6 +240,10 @@ end
 function M.SetRangeX (left, right)
 	Left, Right = CW * left, CW * right
 end
+
+--
+--
+--
 
 --- Define the top and bottom screen extents; while the followed object is between these,
 -- no vertical scrolling will occur. If the object moves outside of them, the associated
@@ -210,14 +257,26 @@ function M.SetRangeY (top, bottom)
 	Top, Bottom = CH * top, CH * bottom
 end
 
+--
+--
+--
+
 -- Set some decent defaults.
 M.SetRangeX(.3, .7)
 M.SetRangeY(.3, .7)
+
+--
+--
+--
 
 --- DOCME
 function M.SetScale (scale)
 	Scale = scale
 end
+
+--
+--
+--
 
 ---
 -- @number offset Horizontal screen offset of the world; if **nil**, 0.
@@ -225,11 +284,19 @@ function M.SetXOffset (offset)
 	XOffset = offset or 0
 end
 
+--
+--
+--
+
 ---
 -- @number offset Vertical screen offset of the world; if **nil**, 0.
 function M.SetYOffset (offset)
 	YOffset = offset or 0
 end
+
+--
+--
+--
 
 _Follow_ = M.Follow
 _GetMinScale_ = M.GetMinScale

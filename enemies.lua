@@ -256,6 +256,39 @@ end
 --
 --
 
+local Target
+
+--- DOCME
+function M.GetTargetPos ()
+	if Target then
+		return Target.x, Target.y
+	else
+		return 0, 0
+	end
+end
+
+--
+--
+--
+
+---
+-- @treturn {string,...} Unordered list of enemy type names.
+--[=[
+function M.GetTypes ()
+	local types = {}
+
+	for k in pairs(EnemyList) do
+		types[#types + 1] = k
+	end
+
+	return types
+end
+]=]
+
+--
+--
+--
+
 local function ClearLocalVars (enemy)
 	store.RemoveFamily(enemy.m_local_vars)
 
@@ -397,28 +430,6 @@ local function EnemyFunc (event, index, type_info, info)
 		PutInPlace(enemy)
 	end
 end
-
---
---
---
-
----
--- @treturn {string,...} Unordered list of enemy type names.
---[=[
-function M.GetTypes ()
-	local types = {}
-
-	for k in pairs(EnemyList) do
-		types[#types + 1] = k
-	end
-
-	return types
-end
-]=]
-
---
---
---
 
 function Actions.do_kill(enemy)
 	return function()
@@ -595,6 +606,14 @@ end)
 --
 --
 
+Runtime:addEventListener("became_subject", function(event)
+	Target = event.target
+end)
+
+--
+--
+--
+
 Runtime:addEventListener("block", BroadcastEvent)
 
 --
@@ -664,7 +683,7 @@ Runtime:addEventListener("leave_level", function()
 		timer.cancel(enemy.m_func)
 	end
 
-	EventToBroadcast, Enemies = nil
+	EventToBroadcast, Enemies, Target = nil
 end)
 
 --

@@ -54,17 +54,14 @@ local M = {}
 --
 --
 
--- --
 local BestT, Nx, Ny
 
---
 local function TryNormal (t, nx, ny, compx, compy)
 	if t > 0 and t < BestT and (nx ~= compx or ny ~= compy) then
 		BestT, Nx, Ny = t, nx, ny
 	end
 end
 
--- --
 local MaxX, MaxY
 
 --- DOCME
@@ -93,12 +90,20 @@ function M.FindNearestBorder (px, py, vx, vy, nx, ny)
 	return BestT, Nx, Ny
 end
 
+--
+--
+--
+
 --- DOCME
 -- @treturn number X
 -- @treturn number Y
 function M.GetExtents ()
 	return MaxX, MaxY
 end
+
+--
+--
+--
 
 --- DOCME
 -- @uint start
@@ -122,6 +127,9 @@ function M.GetTileNeighbor (start, halfx, halfy, gen)
 end
 
 --
+--
+--
+
 local function TSign (n, bias)
 	return n + (n < 0 and -bias or bias)
 end
@@ -156,6 +164,10 @@ function M.GetTileNeighbor_Biased (start, halfx, halfy, gen, biasx, biasy)
 	return tile
 end
 
+--
+--
+--
+
 --- DOCME
 -- @number dx
 -- @number dy
@@ -167,12 +179,20 @@ function M.IsClose (dx, dy, tolerx, tolery)
 	return abs(dx) <= tolerx and abs(dy) <= tolery
 end
 
+--
+--
+--
+
 --- DOCME
 -- @number value
 -- @treturn boolean X
 function M.NotZero (value)
 	return abs(value) > 1e-5
 end
+
+--
+--
+--
 
 --- DOCME
 -- @uint n
@@ -216,6 +236,10 @@ function M.SamplePositions (n, tolerx, tolery, target, dt, update, arg)
 	return true, sumx / n, sumy / n
 end
 
+--
+--
+--
+
 --- DOCME
 -- @pobject enemy
 -- @treturn boolean X
@@ -228,6 +252,10 @@ function M.StartWithGenerator (enemy)
 	return life == nil
 end
 
+--
+--
+--
+
 -- Count of frames without movement --
 local NoMove = setmetatable({}, {
 	__mode = "k",
@@ -236,7 +264,6 @@ local NoMove = setmetatable({}, {
 	end
 })
 
--- --
 local TooManyMoves = 2
 
 local function GetTileInfo (x, y)
@@ -250,15 +277,13 @@ end
 -- @param entity
 -- @number dist
 -- @string dir
--- @number near
--- @ptable path_funcs
--- @callable update
+-- @ptable[opts] path_opts
 -- @treturn boolean M
 -- @treturn number X
 -- @treturn number Y
 -- @treturn string D
-function M.TryToMove (entity, dist, dir, near, path_funcs, update)
-	local acc, step, x, y = 0, min(near or dist, dist), entity.x, entity.y
+function M.TryToMove (entity, dist, dir, path_opts)
+	local acc, step, x, y = 0, min(path_opts.NearGoal or dist, dist), entity.x, entity.y
 	local x0, y0, tilew, tileh = x, y, tile_layout.GetSizes()
 	local tx, ty, tile = GetTileInfo(x, y)
 
@@ -272,8 +297,8 @@ function M.TryToMove (entity, dist, dir, near, path_funcs, update)
 		-- problems, so we instead check the before and after projections of the goal onto
 		-- the path. If the position on the path switched sides, it passed the goal; if the
 		-- goal is also within cell range, we consider it reached.
-		if path_funcs and path_funcs.IsFollowingPath(entity) then
-			local switch, gx, gy, gtile = false, path_funcs.GoalPos(entity)
+		if path_opts and path_opts.IsFollowingPath(entity) then
+			local switch, gx, gy, gtile = false, path_opts.GoalPos(entity)
 
 			if dir == "left" or dir == "right" then
 				switch = (gx - prevx) * (gx - x) <= 0 and abs(gy - y) <= tileh / 2
@@ -282,7 +307,7 @@ function M.TryToMove (entity, dist, dir, near, path_funcs, update)
 			end
 
 			if switch or NoMove[entity] >= TooManyMoves then
-				path_funcs.CancelPath(entity)
+				path_opts.CancelPath(entity)
 
 				break
 			end
@@ -291,8 +316,8 @@ function M.TryToMove (entity, dist, dir, near, path_funcs, update)
 			-- first time during a path, update the pathing state.
 			tx, ty, tile = GetTileInfo(x, y)
 
-			if not tile_layout.IsStraight(flags) and gtile ~= tile and _IsClose_(tx - x, ty - y, near) then
-				dir = update(dir, tile, entity)
+			if not tile_layout.IsStraight(flags) and gtile ~= tile and _IsClose_(tx - x, ty - y, path_opts.NearGoal) then
+				dir = path_opts.UpdateOnMove(dir, tile, entity)
 			end
 		end
 	end
@@ -301,7 +326,7 @@ function M.TryToMove (entity, dist, dir, near, path_funcs, update)
 	-- CONSIDER: What if 'dist' happened to be low?
 	local no_move = _IsClose_(x - x0, y - y0, 1e-3)
 
-	if no_move and path_funcs and path_funcs.IsFollowingPath(entity) then
+	if no_move and path_opts and path_opts.IsFollowingPath(entity) then
 		NoMove[entity] = min(NoMove[entity] + 1, TooManyMoves)
 	else
 		NoMove[entity] = 0
@@ -310,11 +335,19 @@ function M.TryToMove (entity, dist, dir, near, path_funcs, update)
 	return not no_move, x, y, dir
 end
 
+--
+--
+--
+
 --- DOCME
 -- @param entity
 function M.WipePath (entity)
 	NoMove[entity] = nil
 end
+
+--
+--
+--
 
 Runtime:addEventListener("things_loaded", function()
 	local w, h = tile_layout.GetFullSizes()
@@ -322,6 +355,10 @@ Runtime:addEventListener("things_loaded", function()
 	MaxX = max(w, display.contentWidth)
 	MaxY = max(h, display.contentHeight)
 end)
+
+--
+--
+--
 
 _IsClose_ = M.IsClose
 _NotZero_ = M.NotZero

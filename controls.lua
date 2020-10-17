@@ -50,7 +50,7 @@ local system = system
 local composer = require("composer")
 
 -- Cached module references --
-local _Flush_
+local _Clear_
 
 -- Exports --
 local M = {}
@@ -59,13 +59,27 @@ local M = {}
 --
 --
 
-local CancelEvent = { name = "controls:cancel" }
-
 -- Which way are we trying to move?; which way were we moving? --
 local Dir, Was
 
 -- A second held direction, to change to if Dir is released (seems to smooth out key input) --
 local ChangeTo
+
+-- Number of frames left of "cruise control" movement --
+local FramesLeft = 0
+
+--- DOCME
+function M.Clear ()
+	FramesLeft = 0
+	Dir, Was = nil
+	ChangeTo = nil
+end
+
+--
+--
+--
+
+local MovementBeganEvent = { name = "movement_began" }
 
 local function BeginDir (target)
 	local dir = target.m_dir
@@ -73,7 +87,7 @@ local function BeginDir (target)
 	if not Dir then
 		Dir, Was = dir, dir
 
-		Runtime:dispatchEvent(CancelEvent)
+		Runtime:dispatchEvent(MovementBeganEvent)
 	elseif Dir ~= dir and not ChangeTo then
 		ChangeTo = dir
 	else
@@ -124,9 +138,6 @@ device.MapButtonsToAction("space", {
 	MFiExtendedGamepad = "A"
 })
 
--- Number of frames left of "cruise control" movement --
-local FramesLeft = 0
-
 -- Key input passed through BeginDir / EndDir, pretending to be a button --
 local PushDir = {}
 
@@ -152,7 +163,7 @@ local function KeyEvent (event)
 	-- Confirm key or trackball press: attempt to perform player actions.
 	-- TODO: Add bindings
 	elseif key == "center" or key == "space" then
-		if IsActive() and event.phase == "down" then
+		if event.phase == "down" then
 			DoActions()
 		end
 
@@ -233,17 +244,6 @@ end
 --
 --
 
---- DOCME
-function M.Flush ()
-	FramesLeft = 0
-	Dir, Was = nil
-	ChangeTo = nil
-end
-
---
---
---
-
 local ControlFlag = {}
 
 ControlFlag.__index = ControlFlag
@@ -258,7 +258,7 @@ local function AssignFlags (flags)
 	InUseFlags = flags
 
 	if was_active and flags ~= 0 then
-		_Flush_()
+		_Clear_()
 	end
 end
 
@@ -301,19 +301,14 @@ local MoveEvent = { name = "controls:move" }
 -- @number dt 
 function M.UpdatePlayer (dt)
 	if IsActive() then
-		-- Choose the player's heading: favor movement coming from input; failing that,
-		-- if we still have some residual motion, follow that instead. In any case, wind
-		-- down any leftover motion.
-		local dir = Dir or Was
+		local dir = Dir or Was -- favor input direction, else last heading
 
 		if FramesLeft > 0 then
-			FramesLeft = FramesLeft - 1
+			FramesLeft = FramesLeft - 1 -- wind down any residual motion
 		else
 			Was = nil
 		end
 
-		-- Move the player, if we can, and if the player isn't already following a path
-		-- (in which case this is handled elsewhere).
 		MoveEvent.dir, MoveEvent.dt = dir, dt
 
 		Runtime:dispatchEvent(MoveEvent)
@@ -344,6 +339,6 @@ end)
 --
 --
 
-_Flush_ = M.Flush
+_Clear_ = M.Clear
 
 return M
