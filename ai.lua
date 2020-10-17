@@ -32,6 +32,7 @@ local type = type
 
 -- Modules --
 local coro_flow = require("solar2d_utils.coro_flow")
+local meta = require("tektite_core.table.meta")
 local movement = require("s3_utils.movement")
 local range = require("tektite_core.number.range")
 local tile_flags = require("s3_utils.tile_flags")
@@ -240,6 +241,17 @@ end
 --
 --
 
+local PathOpts = meta.WeakKeyed()
+
+--- DOCME
+function M.SetPathingOpts (entity, path_opts)
+	PathOpts[entity] = path_opts
+end
+
+--
+--
+--
+
 --- DOCME
 -- @pobject enemy
 -- @treturn boolean X
@@ -257,12 +269,7 @@ end
 --
 
 -- Count of frames without movement --
-local NoMove = setmetatable({}, {
-	__mode = "k",
-	__index = function()
-		return 0
-	end
-})
+local NoMove = meta.WeakKeyed()
 
 local TooManyMoves = 2
 
@@ -277,13 +284,13 @@ end
 -- @param entity
 -- @number dist
 -- @string dir
--- @ptable[opts] path_opts
 -- @treturn boolean M
 -- @treturn number X
 -- @treturn number Y
 -- @treturn string D
-function M.TryToMove (entity, dist, dir, path_opts)
-	local acc, step, x, y = 0, min(path_opts.NearGoal or dist, dist), entity.x, entity.y
+function M.TryToMove (entity, dist, dir)
+	local path_opts = PathOpts[entity]
+	local acc, step, x, y = 0, min(path_opts and path_opts.NearGoal or dist, dist), entity.x, entity.y
 	local x0, y0, tilew, tileh = x, y, tile_layout.GetSizes()
 	local tx, ty, tile = GetTileInfo(x, y)
 
@@ -306,7 +313,7 @@ function M.TryToMove (entity, dist, dir, path_opts)
 				switch = (gy - prevy) * (gy - y) <= 0 and abs(gx - x) <= tilew / 2
 			end
 
-			if switch or NoMove[entity] >= TooManyMoves then
+			if switch or NoMove[entity] == TooManyMoves then
 				path_opts.CancelPath(entity)
 
 				break
@@ -327,9 +334,13 @@ function M.TryToMove (entity, dist, dir, path_opts)
 	local no_move = _IsClose_(x - x0, y - y0, 1e-3)
 
 	if no_move and path_opts and path_opts.IsFollowingPath(entity) then
-		NoMove[entity] = min(NoMove[entity] + 1, TooManyMoves)
+		local count = NoMove[entity] or 0
+
+		if count < TooManyMoves then
+			NoMove[entity] = count + 1
+		end
 	else
-		NoMove[entity] = 0
+		NoMove[entity] = nil
 	end
 
 	return not no_move, x, y, dir

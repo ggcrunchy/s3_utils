@@ -30,16 +30,10 @@
 -- [ MIT license: http://www.opensource.org/licenses/mit-license.php ]
 --
 
--- Standard library imports --
-local setmetatable = setmetatable
-
 -- Modules --
 local action = require("s3_utils.hud.action")
 local device = require("solar2d_utils.device")
 local move = require("s3_utils.hud.move")
-
--- Plugins --
-local bit = require("plugin.bit")
 
 -- Solar2D globals --
 local display = display
@@ -70,9 +64,9 @@ local FramesLeft = 0
 
 --- DOCME
 function M.Clear ()
-	FramesLeft = 0
 	Dir, Was = nil
 	ChangeTo = nil
+	FramesLeft = 0
 end
 
 --
@@ -110,33 +104,15 @@ local function EndDir (target)
 	end
 end
 
--- Use a joystick? --
-local platform = system.getInfo("platform")
-
-local UseJoystick = system.getInfo("environment") == "device" and (platform == "android" or platform == "ios")
-
-local BlockedFlags = 0x1
-
-local InUseFlags = BlockedFlags
-
-local function IsActive ()
-	return InUseFlags == 0
-end
+local IsActive
 
 local ActionEvent = { name = "controls:action" }
 
 local function DoActions ()
-	if IsActive() then
+	if IsActive then
 		Runtime:dispatchEvent(ActionEvent)
 	end
 end
-
--- Map known controller buttons to keys.
-device.MapButtonsToAction("space", {
-	Xbox360 = "A",
-	MFiGamepad = "A",
-	MFiExtendedGamepad = "A"
-})
 
 -- Key input passed through BeginDir / EndDir, pretending to be a button --
 local PushDir = {}
@@ -150,7 +126,7 @@ local function KeyEvent (event)
 	-- so we let the player coast along for a few frames unless interrupted.
 	-- TODO: Secure a Play or at least a tester, try out the D-pad (add bindings)
 	if key == "up" or key == "down" or key == "left" or key == "right" then
-		if IsActive() then
+		if IsActive then
 			PushDir.m_dir = key
 
 			if event.phase == "up" then
@@ -179,7 +155,7 @@ local TappedAtEvent = { name = "tapped_at" }
 
 -- Traps touches to the screen and interprets any taps
 local function TrapTaps (event)
-	if IsActive() then
+	if IsActive then
 		local trap = event.target
 
 		-- Began: Did another touch release recently, or is this the first in a while?
@@ -208,6 +184,8 @@ local function TrapTaps (event)
 	return true
 end
 
+local Platform = system.getInfo("environment") == "device" and system.getInfo("platform")
+
 --- DOCME
 function M.Init (params)
 	local hg = params.hud_group
@@ -226,7 +204,7 @@ function M.Init (params)
 	-- Add input UI elements.
 	action.AddActionButton(hg, DoActions)
 
-	if UseJoystick then
+	if Platform == "android" or Platform == "ios" then
 		move.AddJoystick(hg)
 	end
 
@@ -244,51 +222,11 @@ end
 --
 --
 
-local ControlFlag = {}
-
-ControlFlag.__index = ControlFlag
-
---
---
---
-
-local function AssignFlags (flags)
-	local was_active = InUseFlags == 0
-
-	InUseFlags = flags
-
-	if was_active and flags ~= 0 then
-		_Clear_()
-	end
-end
+local Source
 
 --- DOCME
-function ControlFlag:Clear ()
-	AssignFlags(bit.band(InUseFlags, bit.bnot(self.m_flag)))
-end
-
---
---
---
-
---- DOCME
-function ControlFlag:Set ()
-	AssignFlags(bit.bor(InUseFlags, self.m_flag))
-end
-
---
---
---
-
-local NextInUseFlag = 2 * BlockedFlags
-
---- DOCME
-function M.NewFlag ()
-	local flag = NextInUseFlag
-
-	NextInUseFlag = 2 * NextInUseFlag
-
-	return setmetatable({ m_flag = flag }, ControlFlag)
+function M.SetDirectionSource (func)
+	Source = func
 end
 
 --
@@ -300,8 +238,12 @@ local MoveEvent = { name = "controls:move" }
 -- Update player if any residual input is in effect
 -- @number dt 
 function M.UpdatePlayer (dt)
-	if IsActive() then
-		local dir = Dir or Was -- favor input direction, else last heading
+	if IsActive then
+		if Source then
+			MoveEvent.dir = Source()
+		else
+			MoveEvent.dir = Dir or Was -- favor input direction, else last heading
+		end
 
 		if FramesLeft > 0 then
 			FramesLeft = FramesLeft - 1 -- wind down any residual motion
@@ -309,7 +251,7 @@ function M.UpdatePlayer (dt)
 			Was = nil
 		end
 
-		MoveEvent.dir, MoveEvent.dt = dir, dt
+		MoveEvent.dt = dt
 
 		Runtime:dispatchEvent(MoveEvent)
 	end
@@ -319,21 +261,38 @@ end
 --
 --
 
---- DOCME
-function M.WipeFlags ()
-	AssignFlags(0)
-end
+Runtime:addEventListener("disable_input", function()
+	IsActive = false
+
+	_Clear_()
+end)
+
+--
+--
+--
+
+Runtime:addEventListener("enable_input", function()
+	IsActive = true
+end)
 
 --
 --
 --
 
 Runtime:addEventListener("level_done", function()
-	AssignFlags(BlockedFlags)
-
 	device.MapAxesToKeyEvents(false)
 	composer.getVariable("handle_key"):Pop()
 end)
+
+--
+--
+--
+
+device.MapButtonsToAction("space", {
+	Xbox360 = "A",
+	MFiGamepad = "A",
+	MFiExtendedGamepad = "A"
+})
 
 --
 --

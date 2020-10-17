@@ -160,6 +160,15 @@ end
 --
 --
 
+--- DOCME
+function M.GetObject ()
+	return Object
+end
+
+--
+--
+--
+
 local Scale = 1
 
 --- DOCME
