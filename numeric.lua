@@ -24,6 +24,7 @@
 --
 
 -- Standard library imports --
+local abs = math.abs
 local assert = assert
 local ceil = math.ceil
 local floor = math.floor
@@ -33,6 +34,21 @@ local type = type
 
 -- Exports --
 local M = {}
+
+--
+--
+--
+
+--- DOCME
+-- @number dx
+-- @number dy
+-- @number tolerx
+-- @number tolery
+function M.IsClose (dx, dy, tolerx, tolery)
+	tolerx, tolery = tolerx or 1e-5, tolery or tolerx or 1e-5
+
+	return abs(dx) <= tolerx and abs(dy) <= tolery
+end
 
 --
 --
@@ -64,6 +80,21 @@ function M.MakeLengthQuantizer (params)
         return max(minimum, step_func(sqrt(dx^2 + dy^2) / unit + bias)) * rescale + offset
     end
 end
+
+--
+--
+--
+
+--- DOCME
+-- @number value
+-- @treturn boolean X
+function M.NotZero (value)
+	return abs(value) > 1e-5
+end
+
+--
+--
+--
 
 -- An implementation of Ken Perlin's simplex noise.
 --
@@ -168,5 +199,9 @@ function M.SampleNoise (x, y)
     -- The result is scaled to return values in the interval [-1,1].
     return 70.1480580019 * (n0 + n1 + n2)
 end
+
+--
+--
+--
 
 return M

@@ -24,18 +24,13 @@
 --
 
 -- Standard library imports --
-local abs = math.abs
-local huge = math.huge
 local max = math.max
 local min = math.min
 local type = type
 
 -- Modules --
 local coro_flow = require("solar2d_utils.coro_flow")
-local meta = require("tektite_core.table.meta")
-local movement = require("s3_utils.movement")
-local range = require("tektite_core.number.range")
-local tile_flags = require("s3_utils.tile_flags")
+local numeric = require("s3_utils.numeric")
 local tile_layout = require("s3_utils.tile_layout")
 
 -- Plugins --
@@ -43,10 +38,6 @@ local mwc = require("plugin.mwc")
 
 -- Solar2D globals --
 local display = display
-
--- Cached module references --
-local _IsClose_
-local _NotZero_
 
 -- Exports --
 local M = {}
@@ -76,14 +67,14 @@ local MaxX, MaxY
 -- @treturn number
 -- @treturn number
 function M.FindNearestBorder (px, py, vx, vy, nx, ny)
-	BestT = huge
+	BestT = 1 / 0
 
-	if _NotZero_(vx) then
+	if numeric.NotZero(vx) then
 		TryNormal(-px / vx, 1, 0, nx, ny)
 		TryNormal((MaxX - px) / vx, -1, 0, nx, ny)
 	end
 
-	if _NotZero_(vy) then
+	if numeric.NotZero(vy) then
 		TryNormal(-py / vy, 0, 1, nx, ny)
 		TryNormal((MaxY - py) / vy, 0, -1, nx, ny)
 	end
@@ -155,40 +146,13 @@ function M.GetTileNeighbor_Biased (start, halfx, halfy, gen, biasx, biasy)
 		local gh = halfy - gen() % h + 1
 
 		if gw ~= 0 and gh ~= 0 then
-			col = range.ClampIn(col + TSign(gw, biasx), 1, ncols)
-			row = range.ClampIn(row + TSign(gh, biasy), 1, nrows)
-
+			col = max(1, min(col + TSign(gw, biasx), ncols))
+			row = max(1, min(row + TSign(gh, biasy), nrows))
 			tile = tile_layout.GetIndex(col, row)
 		end
 	until tile ~= start
 
 	return tile
-end
-
---
---
---
-
---- DOCME
--- @number dx
--- @number dy
--- @number tolerx
--- @number tolery
-function M.IsClose (dx, dy, tolerx, tolery)
-	tolerx, tolery = tolerx or 1e-5, tolery or tolerx or 1e-5
-
-	return abs(dx) <= tolerx and abs(dy) <= tolery
-end
-
---
---
---
-
---- DOCME
--- @number value
--- @treturn boolean X
-function M.NotZero (value)
-	return abs(value) > 1e-5
 end
 
 --
@@ -226,7 +190,7 @@ function M.SamplePositions (n, tolerx, tolery, target, dt, update, arg)
 		end
 
 		--
-		if i > 1 and not _IsClose_(x - prevx, y - prevy, tolerx, tolery) then
+		if i > 1 and not numeric.IsClose(x - prevx, y - prevy, tolerx, tolery) then
 			return false
 		end		
 
@@ -235,17 +199,6 @@ function M.SamplePositions (n, tolerx, tolery, target, dt, update, arg)
 	end
 
 	return true, sumx / n, sumy / n
-end
-
---
---
---
-
-local PathOpts = meta.WeakKeyed()
-
---- DOCME
-function M.SetPathingOpts (entity, path_opts)
-	PathOpts[entity] = path_opts
 end
 
 --
@@ -268,98 +221,6 @@ end
 --
 --
 
--- Count of frames without movement --
-local NoMove = meta.WeakKeyed()
-
-local TooManyMoves = 2
-
-local function GetTileInfo (x, y)
-	local tile = tile_layout.GetIndex_XY(x, y)
-	local tx, ty = tile_layout.GetPosition(tile)
-
-	return tx, ty, tile
-end
-
---- DOCME
--- @param entity
--- @number dist
--- @string dir
--- @treturn boolean M
--- @treturn number X
--- @treturn number Y
--- @treturn string D
-function M.TryToMove (entity, dist, dir)
-	local path_opts = PathOpts[entity]
-	local acc, step, x, y = 0, min(path_opts and path_opts.NearGoal or dist, dist), entity.x, entity.y
-	local x0, y0, tilew, tileh = x, y, tile_layout.GetSizes()
-	local tx, ty, tile = GetTileInfo(x, y)
-
-	while acc < dist do
-		local prevx, prevy, flags = x, y, tile_flags.GetFlags(tile)
-
-		acc, x, y = acc + step, movement.MoveFrom(x, y, tx, ty, flags, min(step, dist - acc), dir)
-
-		-- If the entity is following a path, stop if it reaches the goal (or gets impeded).
-		-- Because the goal can be on the fringe of the rectangular cell, radius checks have
-		-- problems, so we instead check the before and after projections of the goal onto
-		-- the path. If the position on the path switched sides, it passed the goal; if the
-		-- goal is also within cell range, we consider it reached.
-		if path_opts and path_opts.IsFollowingPath(entity) then
-			local switch, gx, gy, gtile = false, path_opts.GoalPos(entity)
-
-			if dir == "left" or dir == "right" then
-				switch = (gx - prevx) * (gx - x) <= 0 and abs(gy - y) <= tileh / 2
-			else
-				switch = (gy - prevy) * (gy - y) <= 0 and abs(gx - x) <= tilew / 2
-			end
-
-			if switch or NoMove[entity] == TooManyMoves then
-				path_opts.CancelPath(entity)
-
-				break
-			end
-
-			-- If the entity steps onto the center of a non-corner / junction tile for the
-			-- first time during a path, update the pathing state.
-			tx, ty, tile = GetTileInfo(x, y)
-
-			if not tile_layout.IsStraight(flags) and gtile ~= tile and _IsClose_(tx - x, ty - y, path_opts.NearGoal) then
-				dir = path_opts.UpdateOnMove(dir, tile, entity)
-			end
-		end
-	end
-
-	--
-	-- CONSIDER: What if 'dist' happened to be low?
-	local no_move = _IsClose_(x - x0, y - y0, 1e-3)
-
-	if no_move and path_opts and path_opts.IsFollowingPath(entity) then
-		local count = NoMove[entity] or 0
-
-		if count < TooManyMoves then
-			NoMove[entity] = count + 1
-		end
-	else
-		NoMove[entity] = nil
-	end
-
-	return not no_move, x, y, dir
-end
-
---
---
---
-
---- DOCME
--- @param entity
-function M.WipePath (entity)
-	NoMove[entity] = nil
-end
-
---
---
---
-
 Runtime:addEventListener("things_loaded", function()
 	local w, h = tile_layout.GetFullSizes()
 
@@ -370,8 +231,5 @@ end)
 --
 --
 --
-
-_IsClose_ = M.IsClose
-_NotZero_ = M.NotZero
 
 return M

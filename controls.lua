@@ -36,7 +36,6 @@ local device = require("solar2d_utils.device")
 local move = require("s3_utils.hud.move")
 
 -- Solar2D globals --
-local display = display
 local Runtime = Runtime
 local system = system
 
@@ -151,61 +150,15 @@ local function KeyEvent (event)
 	return true
 end
 
-local TappedAtEvent = { name = "tapped_at" }
-
--- Traps touches to the screen and interprets any taps
-local function TrapTaps (event)
-	if IsActive then
-		local trap = event.target
-
-		-- Began: Did another touch release recently, or is this the first in a while?
-		if event.phase == "began" then
-			local now = event.time
-
-			if trap.m_last and now - trap.m_last < 550 then
-				trap.m_tapped_when, trap.m_last = now
-			else
-				trap.m_last = now
-			end
-
-		-- Released: If this follows a second touch, was it within a certain interval?
-		-- (Doesn't feel like a good fit for a tap if the press lingered for too long.)
-		elseif event.phase == "ended" then
-			if trap.m_tapped_when and event.time - trap.m_tapped_when < 300 then
-				TappedAtEvent.x, TappedAtEvent.y = event.x, event.y
-
-				Runtime:dispatchEvent(TappedAtEvent)
-			end
-
-			trap.m_tapped_when = nil
-		end
-	end
-
-	return true
-end
-
 local Platform = system.getInfo("environment") == "device" and system.getInfo("platform")
 
 --- DOCME
 function M.Init (params)
-	local hg = params.hud_group
-
-	-- Add an invisible full-screen rect beneath the rest of the HUD to trap taps
-	-- ("tap" events don't seem to play nice with the rest of the GUI).
-	local trap = display.newRect(hg, 0, 0, display.contentWidth, display.contentHeight)
-
-	trap:translate(display.contentCenterX, display.contentCenterY)
-
-	trap.isHitTestable = true
-	trap.isVisible = false
-
-	trap:addEventListener("touch", TrapTaps)
-
 	-- Add input UI elements.
-	action.AddActionButton(hg, DoActions)
+	action.AddActionButton(params.hud_group, DoActions)
 
 	if Platform == "android" or Platform == "ios" then
-		move.AddJoystick(hg)
+		move.AddJoystick(params.hud_group)
 	end
 
 	-- Bind controller input.
@@ -254,6 +207,21 @@ function M.UpdatePlayer (dt)
 		MoveEvent.dt = dt
 
 		Runtime:dispatchEvent(MoveEvent)
+	end
+end
+
+--
+--
+--
+
+--- DOCME
+function M.WrapActiveAction (func, def)
+	return function(...)
+		if IsActive then
+			return func(...)
+		else
+			return def
+		end
 	end
 end
 
