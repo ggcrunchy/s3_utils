@@ -105,7 +105,7 @@ end
 
 local IsActive
 
-local ActionEvent = { name = "controls:action" }
+local ActionEvent = { name = "do_action" }
 
 local function DoActions ()
 	if IsActive then
@@ -186,7 +186,7 @@ end
 --
 --
 
-local MoveEvent = { name = "controls:move" }
+local MoveEvent = { name = "move_subject" }
 
 -- Update player if any residual input is in effect
 -- @number dt 
