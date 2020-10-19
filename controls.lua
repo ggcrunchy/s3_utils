@@ -30,17 +30,8 @@
 -- [ MIT license: http://www.opensource.org/licenses/mit-license.php ]
 --
 
--- Modules --
-local action = require("s3_utils.hud.action")
-local device = require("solar2d_utils.device")
-local move = require("s3_utils.hud.move")
-
 -- Solar2D globals --
 local Runtime = Runtime
-local system = system
-
--- Solar2D modules --
-local composer = require("composer")
 
 -- Cached module references --
 local _Clear_
@@ -74,9 +65,7 @@ end
 
 local MovementBeganEvent = { name = "movement_began" }
 
-local function BeginDir (target)
-	local dir = target.m_dir
-
+local function BeginDir (dir)
 	if not Dir then
 		Dir, Was = dir, dir
 
@@ -90,9 +79,7 @@ local function BeginDir (target)
 	return true
 end
 
-local function EndDir (target)
-	local dir = target.m_dir
-
+local function EndDir (dir)
 	if Dir == dir or ChangeTo == dir then
 		if Dir == dir then
 			Dir = ChangeTo
@@ -103,72 +90,13 @@ local function EndDir (target)
 	end
 end
 
-local IsActive
-
-local ActionEvent = { name = "do_action" }
-
-local function DoActions ()
-	if IsActive then
-		Runtime:dispatchEvent(ActionEvent)
-	end
-end
-
--- Key input passed through BeginDir / EndDir, pretending to be a button --
-local PushDir = {}
-
--- Processes direction keys or similar input, by pretending to push GUI buttons
-local function KeyEvent (event)
-	local key = device.TranslateButton(event) or event.keyName
-
-	-- Directional keys from D-pad or trackball: move in the corresponding direction.
-	-- The trackball seems to produce the "down" phase followed immediately by "up",
-	-- so we let the player coast along for a few frames unless interrupted.
-	-- TODO: Secure a Play or at least a tester, try out the D-pad (add bindings)
-	if key == "up" or key == "down" or key == "left" or key == "right" then
-		if IsActive then
-			PushDir.m_dir = key
-
-			if event.phase == "up" then
-				EndDir(PushDir)
-			elseif BeginDir(PushDir) then
-				FramesLeft = 6
-			end
-		end
-
-	-- Confirm key or trackball press: attempt to perform player actions.
-	-- TODO: Add bindings
-	elseif key == "center" or key == "space" then
-		if event.phase == "down" then
-			DoActions()
-		end
-
-	-- Propagate other / unknown keys; otherwise, indicate that we consumed the input.
-	else
-		return "call_next_handler"
-	end
-
-	return true
-end
-
-local Platform = system.getInfo("environment") == "device" and system.getInfo("platform")
-
 --- DOCME
-function M.Init (params)
-	-- Add input UI elements.
-	action.AddActionButton(params.hud_group, DoActions)
-
-	if Platform == "android" or Platform == "ios" then
-		move.AddJoystick(params.hud_group)
+function M.SetDirection (dir, release)
+	if release then
+		EndDir(dir)
+	elseif BeginDir(dir) then
+		FramesLeft = 6
 	end
-
-	-- Bind controller input.
-	device.MapAxesToKeyEvents(true)
-
-	-- Track events to maintain input.
-	local handle_key = composer.getVariable("handle_key")
-
-	handle_key:Clear() -- TODO: kludge because we don't go through title screen to wipe quick test
-	handle_key:Push(KeyEvent)
 end
 
 --
@@ -185,6 +113,8 @@ end
 --
 --
 --
+
+local IsActive
 
 local MoveEvent = { name = "move_subject" }
 
@@ -242,25 +172,6 @@ end)
 Runtime:addEventListener("enable_input", function()
 	IsActive = true
 end)
-
---
---
---
-
-Runtime:addEventListener("level_done", function()
-	device.MapAxesToKeyEvents(false)
-	composer.getVariable("handle_key"):Pop()
-end)
-
---
---
---
-
-device.MapButtonsToAction("space", {
-	Xbox360 = "A",
-	MFiGamepad = "A",
-	MFiExtendedGamepad = "A"
-})
 
 --
 --
