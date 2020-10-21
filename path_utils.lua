@@ -62,6 +62,10 @@ function M.Advance (cur, how, arg)
 	return cur
 end
 
+--
+--
+--
+
 --- Branch choice algorithm which favors the facing direction, other things being equal.
 -- @param branch Branch node of path.
 -- @string facing Direction being faced.
@@ -101,12 +105,20 @@ function M.ChooseBranch_Facing (branch, facing)
 	return cur
 end
 
+--
+--
+--
+
 ---
 -- @param cur Current regular node.
 -- @treturn string Current direction, or **nil** if unavailable.
 function M.CurrentDir (cur)
 	return cur[cur.index + 1]
 end
+
+--
+--
+--
 
 _ChooseBranch_Facing_ = M.ChooseBranch_Facing
 

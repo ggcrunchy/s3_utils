@@ -85,6 +85,20 @@ end
 --
 --
 
+--- Rounds a number to the nearest multiple of some increment.
+-- @number n Number to round.
+-- @number[opt=1] inc Increment.
+-- @treturn number Rounded result.
+function M.RoundTo (n, inc)
+	inc = inc or 1
+
+	return floor(n / inc + .5) * inc
+end
+
+--
+--
+--
+
 --- DOCME
 -- @number value
 -- @treturn boolean X

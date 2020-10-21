@@ -44,9 +44,9 @@ local M = {}
 --
 
 local function RoundUpMask (x)
-	local xx = x + 13 -- 3 black pixels per side, for mask, plus 7 to round
-					  -- all but multiples of 8 past the next such multiple
-	return xx - xx % 8 -- Remove the overshot to land on a multiple
+	local xx = x + 9 -- 3 black pixels per side, for mask, plus 3 to round
+					 -- all but multiples of 4 past the next such multiple
+	return xx - xx % 4 -- Remove the overshot to land on a multiple
 end
 
 if ok then
@@ -86,9 +86,17 @@ else -- minimal shim
         self.m_canvas:invalidate("cache")
     end
 
+	--
+	--
+	--
+
     function Bitmap:releaseSelf ()
         self.m_canvas:releaseSelf()
     end
+
+	--
+	--
+	--
 
     function Bitmap:setPixel (x, y, ...)
         local canvas = self.m_canvas
@@ -100,6 +108,10 @@ else -- minimal shim
             self.m_group[index]:setFillColor(...)
         end
     end
+
+	--
+	--
+	--
 
     local function GetTextureType (ptype)
         if ptype == "mask" then
@@ -152,5 +164,9 @@ else -- minimal shim
         return texture
     end
 end
+
+--
+--
+--
 
 return M

@@ -53,6 +53,10 @@ function M.AddUnderLabel (label, name)
 	LabelToNames[label] = adaptive.Append(LabelToNames[label], name)
 end
 
+--
+--
+--
+
 local Paths = {}
 
 --- DOCME
@@ -60,10 +64,18 @@ function M.GetNamedPath (name)
 	return Paths[name]
 end
 
+--
+--
+--
+
 --- DOCME
 function M.IterateForLabel (label)
 	return adaptive.IterArray(LabelToNames[label])
 end
+
+--
+--
+--
 
 local ProxyToInfo = setmetatable({}, { __mode = "k" })
 
@@ -102,6 +114,10 @@ function M.LazyRequire (name)
 	return proxy
 end
 
+--
+--
+--
+
 local function AddSlash (str)
 	return strings.EndsWith(str, "/") and str or str .. "/"
 end
@@ -121,10 +137,18 @@ function M.FromModule (mod, relative)
 	return mod
 end
 
+--
+--
+--
+
 --- DOCME
 function M.SetNamedPath (name, path)
 	Paths[name] = path
 end
+
+--
+--
+--
 
 local _, NotFoundErr = pcall(require, "%s") -- assumes Lua error like "module 'name' not found: etc", e.g.
 											-- as in https://www.lua.org/source/5.1/loadlib.c.html#ll_require
@@ -151,6 +175,10 @@ function M.TryRequire (path, opts)
 
 	return nil
 end
+
+--
+--
+--
 
 _LazyRequire_ = M.LazyRequire
 

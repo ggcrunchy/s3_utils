@@ -207,6 +207,10 @@ function M.DefineGrammar (params)
 	return grammar
 end
 
+--
+--
+--
+
 local function AreParensBalanced (expr)
 	local depth = 0
 
@@ -687,6 +691,10 @@ function M.Process (grammar_def, expr)
 	end
 end
 
+--
+--
+--
+
 local function SplicePair (out, grammar1, grammar2, name)
 	local list1, list2 = grammar1[name], grammar2[name]
 
@@ -736,5 +744,9 @@ function M.Splice (grammar1, grammar2)
 
 	return new
 end
+
+--
+--
+--
 
 return M

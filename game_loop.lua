@@ -119,11 +119,14 @@ function M.AddThings (current_level, level, params)
 ]]
 end
 
+--
+--
+--
+
 local Groups = { "game_group", "canvas_group", "game_group_dynamic", "hud_group" }
 
 local Canvas
 
---
 local function InvalidateCanvas ()
 	Canvas:invalidate("cache")
 end
@@ -195,6 +198,10 @@ function M.BeforeEntering (w, h)
 	end
 end
 
+--
+--
+--
+
 --- DOCME
 function M.Cleanup (current_level)
 	for _, name in ipairs(Groups) do
@@ -210,6 +217,10 @@ function M.Cleanup (current_level)
 	Canvas, CanvasRect = nil
 end
 
+--
+--
+--
+
 -- Tile names, expanded from two-character shorthands --
 local Expansions = tilesets.GetExpansions()
 
@@ -224,6 +235,10 @@ function M.DecodeTileLayout (level)
 	end
 end
 
+--
+--
+--
+
 --- DOCME
 function M.ReturnTo_Win (win_scene, alt_scene)
 	return function(info)
@@ -234,5 +249,9 @@ function M.ReturnTo_Win (win_scene, alt_scene)
 		end
 	end
 end
+
+--
+--
+--
 
 return M
