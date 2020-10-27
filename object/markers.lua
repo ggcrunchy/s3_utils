@@ -295,6 +295,7 @@ local ArrowRGB = glow.ColorInterpolator(1, 0, 0, 0, 0, 1)
 -- @number alpha
 -- @string dir
 -- @treturn DisplayGroup H
+-- @treturn TimerHandle TH
 function M.PointFromTo (group, from, to, width, alpha, dir)
 	--
 	local sep, aline
@@ -312,7 +313,7 @@ function M.PointFromTo (group, from, to, width, alpha, dir)
 
 	local delay = 25
 
-	timer.performWithDelay(delay, function(event)
+	local atimer = timer.performWithDelay(delay, function(event)
 		if display.isValid(aline) then
 			local dt = (event.count * delay) % sep
 
@@ -323,7 +324,7 @@ function M.PointFromTo (group, from, to, width, alpha, dir)
 		end
 	end, 0)
 
-	return aline
+	return aline, atimer
 end
 
 --
