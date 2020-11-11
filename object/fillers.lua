@@ -28,13 +28,14 @@ local assert = assert
 local max = math.max
 local min = math.min
 local random = math.random
+local select = select
+local unpack = unpack
 
 -- Extension imports --
 local indexOf = table.indexOf
 
 -- Modules --
 local audio = require("solar2d_utils.audio")
-local color = require("solar2d_ui.utils.color")
 local flood = require("s3_utils.fill.flood")
 local tile_layout = require("s3_utils.tile_layout")
 
@@ -54,25 +55,7 @@ local M = {}
 
 local Batch
 
---- Begins a fill batch in color mode.
--- @pgroup group Group which will receive fill components.
--- @param ... Color components, as per **object:setFillColor**.
-function M.Begin_Color (group, ...)
-	assert(not Batch.group, "Batch already in progress")
-
-	Batch.group, Batch.rgba = group, color.PackColor_Number(...)
-end
-
---- Begins a fill batch in image mode.
--- @pgroup group Group which will receive fill components.
--- @string name Filename of image.
-function M.Begin_Image (group, name)
-	assert(not Batch.group, "Batch already in progress")
-
-	Batch.group, Batch.name = group, name
-end
-
---- Adds a region of tiles to the batch, to be filled in by the effect.
+--- Add a region of tiles to the batch, to be filled in by the effect.
 -- @uint ul Index of upper-left tile in region...
 -- @uint lr ...and lower-left tile.
 function M.AddRegion (ul, lr)
@@ -82,6 +65,38 @@ function M.AddRegion (ul, lr)
 
 	Batch[n + 1], Batch[n + 2], Batch.n = ul, lr, n + 2
 end
+
+--
+--
+--
+
+local Color = {}
+
+--- Begin a fill batch in color mode.
+-- @pgroup group Group which will receive fill components.
+-- @param ... Color components, as per **object:setFillColor**.
+function M.Begin_Color (group, ...)
+	assert(not Batch.group, "Batch already in progress")
+
+	Batch.group, Batch.ncomps, Color[1], Color[2], Color[3], Color[4] = group, select("#", ...), ...
+end
+
+--
+--
+--
+
+--- Begin a fill batch in image mode.
+-- @pgroup group Group which will receive fill components.
+-- @string name Filename of image.
+function M.Begin_Image (group, name)
+	assert(not Batch.group, "Batch already in progress")
+
+	Batch.group, Batch.name = group, name
+end
+
+--
+--
+--
 
 local Methods = { flood_fill = flood }
 
@@ -103,7 +118,7 @@ local FillOpts = {
 	end
 }
 
---- Commits the batch, launching an effect.
+--- Commit the batch, launching an effect.
 -- @string[opt="flood_fill"] how Fill method applied to added regions.
 function M.End (how)
 	local n, method = Batch.n, assert(Methods[how or "flood_fill"], "Invalid fill method")
@@ -125,21 +140,21 @@ function M.End (how)
 	end
 
 	-- Get the cell-wise dimensions and prepare the effect.
-	local nx, ny, rgba, back = maxc - minc, maxr - minr, Batch.rgba
+	local nx, ny, back = maxc - minc, maxr - minr
 	local minc2, minr2 = minc + 1, minr + 1
 
 	method.Prepare(nx, ny)
 
 	-- Turn each region into cells and submit them to the effect.
-	local w, h = tile_layout.GetSizes()
+	local ncomps, w, h = Batch.ncomps, tile_layout.GetSizes()
 	local x, y = (minc + maxc - 1) * w / 2, (minr + maxr - 1) * h / 2
 
 	w, h = (maxc - minc) * w, (maxr - minr) * h
 
-	if rgba then
+	if ncomps then
 		back = display.newRect(Batch.group, x, y, w, h)
 
-		back:setFillColor(color.UnpackNumber(rgba))
+		back:setFillColor(unpack(Color, 1, ncomps))
 	else
 		back = display.newImageRect(Batch.group, Batch.name, w, h)
 
@@ -165,7 +180,7 @@ function M.End (how)
 	-- Launch the effect and clear all temporary state.
 	Running[#Running + 1] = method.Run(back, FillOpts)
 
-	Batch.n, Batch.group, Batch.name, Batch.rgba = 0
+	Batch.n, Batch.group, Batch.name, Batch.ncomps = 0
 end
 
 --

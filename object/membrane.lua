@@ -32,8 +32,8 @@ local sort = table.sort
 local sqrt = math.sqrt
 
 -- Modules --
-local cubic = require("spline_ops.cubic")
 local integrators = require("tektite_core.number.integrators")
+local polynomial = require("spline_ops.cubic.polynomial")
 
 -- Exports --
 local M = {}
@@ -48,7 +48,7 @@ end
 
 local N = 20
 
-local Integrand, Poly = cubic.LineIntegrand{}
+local Integrand, Poly = polynomial.LineIntegrand()
 
 local Heap, Stash = {}, {}
 
@@ -77,7 +77,7 @@ function M.Stretch (mpath, interior, used, x, y, radius, depth)
 			local ax, ay = 2 * (1 - dx), 2 * dy
 			local bx, by = -1.5 * ax, -1.5 * ay
 
-			cubic.SetPolyFromCoeffs(Poly, ax, ay, bx, by, 1, 0)
+			polynomial.SetFromCoefficients(Poly, ax, ay, bx, by, 1, 0)
 
 			local s, sfrac, t, dt = integrators.Romberg(Integrand, 0, 1), 1 / 0, 1, 1 / N
 			local group, ir, sl, sr = {}, 1 / radius
