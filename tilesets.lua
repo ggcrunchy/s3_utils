@@ -40,6 +40,7 @@ local tile_layout = require("s3_utils.tile_layout")
 local display = display
 local graphics = graphics
 local Runtime = Runtime
+local timer = timer
 
 -- Exports --
 local M = {}
@@ -188,7 +189,7 @@ function M.UseTileset (name)
 
 	if not Image or Image.m_name ~= name then
 		local cellw, cellh = tile_layout.GetSizes()
-		local w, h, old_w, old_h = 4 * cellw, 4 * cellh, -1, -1
+		local w, h, old_w, old_h, update = 4 * cellw, 4 * cellh, -1, -1
 
 		if Image then
 			old_w, old_h = Image.width, Image.height
@@ -196,17 +197,25 @@ function M.UseTileset (name)
 			if w > old_w or h > old_h then
 				Image:releaseSelf()
 
-				Image = nil
+				update, Image = Image.m_update
 			end
 		end
 
-		Image = Image or graphics.newTexture{ type = "canvas", width = w, height = h }
+		if not Image then
+			Image = graphics.newTexture{ type = "canvas", width = w, height = h }
 
-		-- local mesh = MakeMesh{ indices = ts.indices, uvs = ts.uvs, vertices = ts.vertices }
-		-- do any ts.with_mesh(mesh), e.g. encode normals into fill vertex colors
-		-- clear any old timer, start a new one, e.g. for lights shining on metal, scrolling pattern or texture, etc.
+			if ts.update then
+				update = timer.performWithDelay(ts.update_delay or 100, ts.update, 0)
+			elseif ts.delay then
+				update = timer.performWithDelay(ts.delay, function()
+					if Image then
+						Image:invalidate("cache")
+					end
+				end, 0)
+			end
+		end
 
-		Image.m_name, w, h = name, Image.width, Image.height
+		Image.m_name, Image.m_update, w, h = name, update, Image.width, Image.height
 
 		local cache = Image.cache
 
@@ -266,6 +275,12 @@ end
 
 Runtime:addEventListener("leave_level", function()
 	if Image then
+		local update = Image.m_update
+
+		if update then
+			timer.cancel(update)
+		end
+
 		Image:releaseSelf()
 	end
 
