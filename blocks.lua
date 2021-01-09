@@ -9,7 +9,7 @@
 -- against the level boundaries. Rects completely outside are null and the
 -- operations will be no-ops.
 
--- TODO: is that last statement actually true, at the moment?
+-- TODO: is that last statement actually true, at the moment? (or stuff above that...)
 
 --
 -- Permission is hereby granted, free of charge, to any person obtaining
@@ -46,7 +46,6 @@ local component = require("tektite_core.component")
 local data_store = require("s3_objects.mixin.data_store")
 local events = require("solar2d_utils.events")
 local meta = require("tektite_core.table.meta")
-local range = require("tektite_core.number.range")
 local rect_iters = require("iterator_ops.grid.rect")
 local tile_flags = require("s3_utils.tile_flags")
 local tile_layout = require("s3_utils.tile_layout")
@@ -69,15 +68,38 @@ local M = {}
 --
 --
 
+--- DOCME
+function M.EditorEvent ()
+	return {
+		inputs = {
+			string = { type = "" },
+			uint = { col1 = 1, row1 = 1, col2 = 1, row2 = 1 }
+		}
+	}
+	-- ^^ TODO: this is to be inherited somehow...
+end
+
+--
+--
+--
+
 local NCols, NRows
 
 local function AuxBlock (col1, row1, col2, row2)
 	return rect_iters.GridIter(col1, row1, col2, row2, NCols)
 end
 
+local function MinMax_N (a, b, n)
+	if b < a then
+		a, b = b, a
+	end
+
+	return max(1, a), min(b, n)
+end
+
 local function GetExtents (col1, row1, col2, row2)
-	col1, col2 = range.MinMax_N(col1, col2, NCols)
-	row1, row2 = range.MinMax_N(row1, row2, NRows)
+	col1, col2 = MinMax_N(col1, col2, NCols)
+	row1, row2 = MinMax_N(row1, row2, NRows)
 
 	return col1, row1, col2, row2
 end
@@ -93,13 +115,8 @@ local function BlockSelf (block)
 	return AuxBlock(col1, row1, col2, row2)
 end
 
-local LoadedBlocks
-
 -- Tile -> ID map indicating which block, if any, occupies a given tile --
 local BlockIDs
-
--- Creation-time values of flags within the block region, for restoration --
-local OldFlags
 
 -- Wipes block state at a given tile index
 local function Wipe (index)
@@ -239,6 +256,9 @@ end
 --
 --
 --
+
+-- Creation-time values of flags within the block region, for restoration --
+local OldFlags
 
 ---
 -- @int index Tile index.
@@ -385,6 +405,8 @@ component.AddToObject(Block, data_store)
 --
 --
 
+local LoadedBlocks
+
 --- Add a block to the level and register an event for it.
 -- @ptable info Block info, with at least the following properties:
 --
@@ -438,9 +460,7 @@ function M.New (info, params, into)
 		OldFlags[index] = tile_flags.GetWorkingFlags(index)
 	end
 
-	local tiles_layer = params.tiles_layer
-
-	tiles_layer:insert(block.m_bgroup)
+	params:GetLayer("tiles"):insert(block.m_bgroup)
 
 	LoadedBlocks[block.m_id] = block
 
@@ -448,106 +468,6 @@ function M.New (info, params, into)
 
 	return block
 end
-
---
---
---
-
-local BlockKeys = { "type", "col1", "row1", "col2", "row2" }
-
---- Handler for block-related events sent by the editor.
---
--- If an editor event function is available for _type_, if will be called afterward as
--- `func(what, arg1, arg2, arg3)`.
--- @string type Block type, as listed by @{GetTypes}.
--- @string what Name of event.
--- @param arg1 Argument #1.
--- @param arg2 Argument #2.
--- @param arg3 Argument #3.
--- @return Result(s) of the event, if any.
-function M.EditorEvent (type, what, arg1, arg2, arg3)
-	local cons = nil--BlockList[type].editor
-
-	if cons then
-		local event = cons--("editor_event")
-
-		-- Build --
-		-- arg1: Level
-		-- arg2: Original entry
-		-- arg3: Block to build
-		if what == "build" then
-			for _, key in ipairs(BlockKeys) do
-				arg3[key] = arg2[key]
-			end
-
-		-- Enumerate Defaults --
-		-- arg1: Defaults
-		elseif what == "enum_defs" then
---			arg1.starts_on = true
-
-		-- Enumerate Properties --
-		-- arg1: Dialog
-		elseif what == "enum_props" then
-			arg1:StockElements(event and event("get_thumb_filename"))
-			arg1:AddSeparator()
---			arg1:AddCheckbox{ text = "On By Default?", value_name = "starts_on" }
---			arg1:AddSeparator()
-
-		-- Get Link Grouping --
-		elseif what == "get_link_grouping" then
-			return {
-				{ text = "ACTIONS", font = "bold", color = "actions" }, "fire"
-			}
-
-		-- Get Link Info --
-		-- arg1: Info to populate
-		elseif what == "get_link_info" then
-			arg1.fire = "Do area effect"
-
-		-- Get Tag --
-		elseif what == "get_tag" then
-			return "block"
-
-		-- New Tag --
-		elseif what == "new_tag" then
-			return "sources_and_targets", nil, "fire"
-
-		-- Prep Link --
-		elseif what == "prep_link" then
-			-- ??
-
-		-- Verify --
-		elseif what == "verify" then
-			-- Has one or more source...
-		end
-
-		local result, r2, r3
-
-		if event then
-			result, r2, r3 = event(what, arg1, arg2, arg3)
-		end
-
-		return result, r2, r3
-	end
-end
-
---
---
---
-
----
--- @treturn {string,...} Unordered list of block type names.
---[=[
-function M.GetTypes ()
-	local types = {}
-
-	for k in pairs(BlockList) do
-		types[#types + 1] = k
-	end
-
-	return types
-end
---]=]
 
 --
 --

@@ -74,8 +74,6 @@ end
 --
 --
 --
--- Background layer --
-local BG
 
 -- Secondary background layer on which fill effects are put --
 local FillLayer
@@ -84,7 +82,7 @@ local FillLayer
 local Rows
 
 Runtime:addEventListener("leave_level", function()
-	BG, FillLayer, Rows, Shapes = nil
+	FillLayer, Rows, Shapes = nil
 end)
 
 --
@@ -372,13 +370,13 @@ Runtime:addEventListener("post_reset", BakeShapes)
 --
 --
 
-local function AddFillLayer ()
+local function AddFillLayer (params)
 	FillLayer = display.newGroup()
 
-	BG:insert(FillLayer)
+	params:GetLayer("background"):insert(FillLayer)
 end
 
-Runtime:addEventListener("reset_level", function()
+Runtime:addEventListener("reset_level", function(level)
 	if Shapes then
 		for i in pairs(Shapes) do
 			Shapes[i] = {}
@@ -386,7 +384,7 @@ Runtime:addEventListener("reset_level", function()
 
 		FillLayer:removeSelf()
 
-		AddFillLayer()
+		AddFillLayer(level.params)
 	end
 end)
 
@@ -408,7 +406,7 @@ end)
 
 Runtime:addEventListener("things_loaded", function(level)
 	if Shapes then
-		BG, Rows = level.bg_layer, {}
+		Rows = {}
 
 		local _, nrows = tile_layout.GetCounts()
 
@@ -416,7 +414,7 @@ Runtime:addEventListener("things_loaded", function(level)
 			Rows[i] = {}
 		end
 
-		AddFillLayer()
+		AddFillLayer(level.params)
 	end
 
 	BakeShapes()

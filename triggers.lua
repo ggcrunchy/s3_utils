@@ -46,13 +46,12 @@ local M = {}
 --
 --
 
-local Events = {}
-
-for _, v in ipairs{ "on_enter", "on_leave" } do
-	Events[v] = multicall.NewDispatcher()
-end
+local Actions, Events = {}, {}
 
 --
+--
+--
+
 local function Enter (trigger)
 	if not trigger.off then
 		trigger.off = trigger.deactivate
@@ -61,50 +60,76 @@ local function Enter (trigger)
 	end
 end
 
+function Actions:do_enter ()
+	return function()
+		return Enter(self)
+	end
+end
+
 --
+--
+--
+
 local function Leave (trigger)
 	if not trigger.off then
 		Events.on_leave:DispatchForObject(trigger)
 	end
 end
 
--- --
-local Actions = {
-	-- Play --
-	do_enter = function(trigger)
-		return function()
-			return Enter(trigger)
-		end
-	end,
-
-	-- Pause --
-	do_leave = function(trigger)
-		return function()
-			return Leave(trigger)
-		end
-	end,
-
-	-- Resume --
-	do_impulse = function(trigger)
-		return function()
-			Enter(trigger)
-
-			return Leave(trigger)
-		end
+function Actions:do_leave ()
+	return function()
+		return Leave(self)
 	end
-}
+end
 
--- --
-local FlagGroups = { "player", "enemy", "projectile" }
+--
+--
+--
 
-local Triggers
+function Actions:do_impulse ()
+	return function()
+		Enter(self)
+
+		return Leave(self)
+	end
+end
+
+--
+--
+--
+
+for _, v in ipairs{ "on_enter", "on_leave" } do
+	Events[v] = multicall.NewDispatcher()
+end
+
+--
+--
+--
 
 local BitBegan, BitEnded = 0x1, 0x2
 local BitBoth = BitBegan + BitEnded
 
 --- DOCME
+function M.editor ()
+	return {
+		inputs = {
+			bitmask = { detect_when = BitBoth },
+			boolean = { deactivate = false, restore = true }
+		},
+		actions = Actions, events = Events
+	}
+end
+
+--
+--
+--
+
+local FlagGroups = { "player", "enemy", "projectile" }
+
+local Triggers
+
+--- DOCME
 function M.make (info, params)
-	--
 	local trigger, detect = { deactivate = info.deactivate, restore = info.restore }, info.detect_when
 
 	if detect > 0 then
@@ -128,7 +153,7 @@ function M.make (info, params)
 
 		-- 
 		local w, h = tile_layout.GetSizes()
-		local rect = display.newRect(params.things_layer, (info.col - .5) * w, (info.row - .5) * h, w, h)
+		local rect = display.newRect(params:GetLayer("things"), (info.col - .5) * w, (info.row - .5) * h, w, h)
 
 		rect:addEventListener("collision", function(event)
 			local phase, which = event.phase, handles[collision.GetType(event.other)]
@@ -159,82 +184,6 @@ function M.make (info, params)
 
 	Triggers = Triggers or {}
 	Triggers[#Triggers + 1] = trigger
-end
-
---
-local function LinkTrigger (trigger, other, tsub, osub)
-	local helper = bind.PrepLink(trigger, other, tsub, osub)
-
-	helper("try_actions", Actions)
-	helper("try_events", Events)
-	helper("commit")
-end
-
---- DOCME
-function M.editor (_, what, arg1, arg2)
-	-- Build --
-	-- arg1: Level
-	-- arg2: Original entry
-	-- arg3: Item to build
-	if what == "build" then
-		-- TODO: Versioning to keep the bitfield in sync?
-
-	-- Enumerate Defaults --
-	-- arg1: Defaults
-	elseif what == "enum_defs" then
-		arg1.deactivate = false
-		arg1.detect_when = BitBoth
-		arg1.restore = true
-
-	-- Enumerate Properties --
-	-- arg1: Dialog
-	elseif what == "enum_props" then
-		arg1:StockElements()
-		arg1:AddSeparator()
-		arg1:AddBitfield{
-			text = "Detect when?", strs = {
-				"player enter", "player leave", "enemy enter", "enemy leave", "projectile enter", "projectile leave"
-			}, value_name = "detect_when"
-		}
-		arg1:AddCheckbox{ text = "Deactivate on enter?", value_name = "deactivate" }
-
-		local restore_section = arg1:BeginSection()
-
-			arg1:AddCheckbox{ text = "Restore on reset?", value_name = "restore" }
-
-		arg1:EndSection()
-
-		--
-		arg1:SetStateFromValue_Watch(restore_section, "deactivate")
-
-	-- Get Link Grouping --
-	elseif what == "get_link_grouping" then
-		return {
-			{ text = "ACTIONS", font = "bold", color = "actions" }, "do_enter", "do_leave", "do_impulse",
-			{ text = "EVENTS", font = "bold", color = "events", is_source = true }, "on_enter", "on_leave"
-		}
-
-	-- Get Link Info --
-	-- arg1: Info to populate
-	elseif what == "get_link_info" then
-		arg1.on_enter = "On(enter)"
-		arg1.on_leave = "On(leave)"
-		arg1.do_enter = "Enter"
-		arg1.do_leave = "Leave"
-		arg1.do_impulse = "Impulse"
-
-	-- Get Tag --
-	elseif what == "get_tag" then
-		return "trigger"
-
-	-- New Tag --
-	elseif what == "new_tag" then
-		return "sources_and_targets", Events, Actions
-
-	-- Prep Link --
-	elseif what == "prep_link" then
-		return LinkTrigger
-	end
 end
 
 --

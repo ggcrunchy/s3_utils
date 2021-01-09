@@ -30,7 +30,6 @@ local pairs = pairs
 -- Modules --
 local adaptive = require("tektite_core.table.adaptive")
 local audio = require("solar2d_utils.audio")
-local bind = require("solar2d_utils.bind")
 local events = require("solar2d_utils.events")
 local multicall = require("solar2d_utils.multicall")
 
@@ -44,47 +43,74 @@ local M = {}
 --
 --
 
--- --
-local Actions = {
-	-- Play --
-	do_play = function(sound)
-		local function play ()
-			return sound.group:PlaySound("sample")
-		end
+local Actions, Events = {}, {}
 
-		events.Redirect(play, sound)
+--- DOCME
+function M.editor ()
+	return {
+		actions = Actions, events = Events,
+		inputs = {
+			boolean = { looping = false--[[, persist_on_reset = false]], streaming = false },
+			uint = { delay = 0, loop_count = 1 }
+		}
+	}
+end
 
-		return play
-	end,
+--
+--
+--
 
-	-- Pause --
-	do_pause = function(sound)
-		return function()
-			return sound.group:PauseAll()
-		end
-	end,
-
-	-- Resume --
-	do_resume = function(sound)
-		return function()
-			return sound.group:ResumeAll()
-		end
-	end,
-
-	-- Stop --
-	do_stop = function(sound)
-		return function(what)
-			return sound.group:StopAll()
-		end
+function Actions:do_play ()
+	local function play ()
+		return self.group:PlaySound("sample")
 	end
-}
 
--- --
-local Events = {}
+	events.Redirect(play, self)
+
+	return play
+end
+
+--
+--
+--
+
+function Actions:do_pause ()
+	return function()
+		return self.group:PauseAll()
+	end
+end
+
+--
+--
+--
+
+function Actions:do_resume ()
+	return function()
+		return self.group:ResumeAll()
+	end
+end
+
+--
+--
+--
+
+function Actions:do_stop ()
+	return function()
+		return self.group:StopAll()
+	end
+end
+
+--
+--
+--
 
 for _, v in ipairs{ "on_done", "on_stop" } do
-	Events[v] = multicall.NewDispatcher()--bind.BroadcastBuilder_Helper()
+	Events[v] = multicall.NewDispatcher()
 end
+
+--
+--
+--
 
 local function IsDone (sound)
 	return not sound.group:IsActive()
@@ -117,13 +143,11 @@ function M.make (info, params)
 	local psl = params:GetPubSubList()
 
 	for k, event in pairs(Events) do
-	--	event.Subscribe(sound, info[k], psl)
 		psl:Subscribe(info[k], event:GetAdder(), sound)
 	end
 
 	--
 	for k in adaptive.IterSet(info.actions) do
---		bind.Publish(psl, 
 		psl:Publish(Actions[k](sound), info.uid, k)
 	end
 
@@ -135,85 +159,6 @@ function M.make (info, params)
 	Sounds = Sounds or {}
 	Sounds[#Sounds + 1] = sound
 end
-
---
---
---
-
-local function LinkSound (sound, other, ssub, osub)
-	local helper = bind.PrepLink(sound, other, ssub, osub)
-
-	helper("try_actions", Actions)
-	helper("try_events", Events)
-	helper("commit")
-end
-
---- DOCME
-function M.editor (_, what, arg1, arg2)
-	-- Enumerate Defaults --
-	-- arg1: Defaults
-	if what == "enum_defs" then
-		arg1.delay = 0
-		arg1.loop_count = 1
-		arg1.looping = false
-		arg1.persist_on_reset = false
-		arg1.streaming = false
-
-	-- Enumerate Properties --
-	-- arg1: Dialog
-	elseif what == "enum_props" then
-		arg1:StockElements()
-		arg1:AddSeparator()
-		arg1:AddSoundPicker{ text = "Sound file", value_name = "filename" }
-		arg1:AddCheckbox{ text = "Streaming?", value_name = "streaming" }
-		arg1:AddCheckbox{ text = "Persist over reset?", value_name = "persist_on_reset" }
-		arg1:AddCheckbox{ text = "Loop forever?", value_name = "looping" }
-		-- volume, panning, etc...
-
-		local loop_count_section = arg1:BeginSection()
-
-			arg1:AddStepperWithEditable{ before = "Loop count: ", min = 1, value_name = "loop_count" }
-
-		arg1:EndSection()
-
-		arg1:AddStepperWithEditable{ before = "Delay between sounds: ", value_name = "delay" }
-		-- Hook to position??
-
-		--
-		arg1:SetStateFromValue_Watch(loop_count_section, "looping", "use_false")
-	-- Get Link Grouping --
-	elseif what == "get_link_grouping" then
-		return {
-			{ text = "ACTIONS", font = "bold", color = "actions" }, "do_play", "do_pause", "do_resume", "do_stop",
-			{ text = "EVENTS", font = "bold", color = "events", is_source = true }, "on_done", "on_stop"
-		}
-
-	-- Get Link Info --
-	-- arg1: Info to populate
-	elseif what == "get_link_info" then
-		arg1.on_done = "On(done)"
-		arg1.on_stop = "On(stop)"
-		arg1.do_play = "Play"
-		arg1.do_pause = "Pause"
-		arg1.do_resume = "Resume"
-		arg1.do_stop = "Stop"
-
-	-- Get Tag --
-	elseif what == "get_tag" then
-		return "sound"
-
-	-- New Tag --
-	elseif what == "new_tag" then
-		return "sources_and_targets", Events, Actions
-
-	-- Prep Link --
-	elseif what == "prep_link" then
-		return LinkSound
-	end
-end
-
--- Any useful flags? (Ongoing vs. cut off? Singleton or instantiable? Looping, already playing...)
--- Perhaps impose that sound is singleton (or give warning...) if certain actions are linked
 
 --
 --

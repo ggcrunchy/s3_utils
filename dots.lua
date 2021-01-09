@@ -56,6 +56,20 @@ local M = {}
 --
 --
 
+--- DOCME
+function M.EditorEvent ()
+	return {
+		inputs = {
+			boolean = { can_attach = true }
+		}
+	}
+	-- ^^ TODO: inherit this somehow
+end
+
+--
+--
+--
+
 local function TryToAddBody (dot) 
 	local body_prop = dot.body_P
 
@@ -167,80 +181,6 @@ function M.DeductDot ()
 		Runtime:dispatchEvent{ name = "all_dots_removed" }
 	end
 end
-
---
---
---
-
---- Handler for dot-related events sent by the editor.
--- @string type Dot type, as listed by @{GetTypes}.
--- @string what Name of event.
--- @param arg1 Argument #1.
--- @param arg2 Argument #2.
--- @param arg3 Argument #3.
--- @return Result(s) of the event, if any.
-function M.EditorEvent (type, what, arg1, arg2, arg3)
-	local cons = nil -- DotList[type].editor -- TODO!
-
-	if cons then
-		local event = cons--("editor_event")
-
-		-- Build --
-		-- arg1: Level
-		-- arg2: Original entry
-		-- arg3: Dot to build
-		if what == "build" then
-			-- COMMON STUFF
-			-- t.col, t.row = ...
-
-		-- Enumerate Defaults --
-		-- arg1: Defaults
-		elseif what == "enum_defs" then
---			arg1.starts_on = true
-			arg1.can_attach = true
-
-		-- Enumerate Properties --
-		-- arg1: Dialog
-		elseif what == "enum_props" then
-			arg1:StockElements(event and event("get_thumb_filename"))
-			arg1:AddSeparator()
---			arg1:AddCheckbox{ text = "On By Default?", value_name = "starts_on" }
-			arg1:AddCheckbox{ text = "Can Attach To Block?", value_name = "can_attach" }
-			arg1:AddSeparator()
-
-		-- Verify --
-		elseif what == "verify" then
-			-- COMMON STUFF... nothing yet, I don't think, assuming well-formed editor
-		end
-
-		local result, r2, r3
-
-		if event then
-			result, r2, r3 = event(what, arg1, arg2, arg3)
-		end
-
-		return result, r2, r3
-	end
-end
-
---
---
---
-
----
--- @treturn {string,...} Unordered list of dot type names.
---[=[
-function M.GetTypes ()
-	local types = {}
-
-	for k in pairs(DotList) do
-		types[#types + 1] = k
-	end
-
-	return types
-end
-]=]
-
 
 --
 --

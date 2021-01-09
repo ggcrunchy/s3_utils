@@ -30,13 +30,11 @@ local ipairs = ipairs
 local yield = coroutine.yield
 
 -- Modules --
---local actions = require("s3_utils.state.actions")
 local _ = require("config.Directories")
 local directories = require("s3_utils.directories")
 local tile_layout = require("s3_utils.tile_layout")
 local tile_maps = require("s3_utils.tile_maps")
 local tilesets = require("s3_utils.tilesets")
---local values = require("s3_utils.state.values")
 
 -- Solar2D globals --
 local display = display
@@ -89,12 +87,12 @@ local function AuxAddThing (info, params)
 end
 
 --- DOCME
-function M.AddThings (current_level, level, params)
+function M.AddThings (level, params)
 	tilesets.UseTileset(level.tileset or "Tree")
 
 	local tgroup = display.newGroup()
 
-	current_level.tiles_layer:insert(tgroup)
+	params:GetLayer("tiles"):insert(tgroup)
 
 	tile_maps.AddTiles(tgroup, tilesets.NewTile, level)
 
@@ -103,27 +101,13 @@ function M.AddThings (current_level, level, params)
 	for i = 1, #(things or "") do
 		AuxAddThing(things[i], params)
 	end
---[[
-	TODO? ideally these are just are covered by the above loop, but the
-	current design might still have some kinks left
-
-	-- ...and actions...
-	for i = 1, #(level.actions or "") do
-		actions.AddAction(level.actions[i], params)
-	end
-
-	-- ...and values...
-	for i = 1, #(level.values or "") do
-		values.AddValue(level.values[i], params)
-	end
-]]
 end
 
 --
 --
 --
 
-local Groups = { "game_group", "canvas_group", "game_group_dynamic", "hud_group" }
+local Groups = { "game", "canvas", "game_dynamic", "hud" }
 
 local Canvas
 
@@ -145,10 +129,12 @@ function M.BeforeEntering (w, h)
 		tile_layout.SetCounts(ncols, nrows)
 		tile_layout.SetSizes(w, h)
 
-		for _, name in ipairs(Groups) do
-			current_level[name] = display.newGroup()
+		current_level.groups = {}
 
-			view:insert(current_level[name])
+		for _, name in ipairs(Groups) do
+			current_level.groups[name] = display.newGroup()
+
+			view:insert(current_level.groups[name])
 		end
 
 		-- Rig up a canvas that captures certain layers for use in post-processing.
@@ -158,7 +144,7 @@ function M.BeforeEntering (w, h)
 
 		current_level.canvas = Canvas
 
-		Canvas:draw(current_level.game_group)
+		Canvas:draw(current_level.groups.game)
 		Runtime:addEventListener("enterFrame", InvalidateCanvas)
 		Runtime:addEventListener("set_canvas_alpha", SetCanvasRectAlpha)
 		
@@ -167,23 +153,25 @@ function M.BeforeEntering (w, h)
 		-- Give it a frame to take hold, and finish up.
 		yield()
 
-		CanvasRect = display.newImageRect(current_level.canvas_group, Canvas.filename, Canvas.baseDir, display.contentWidth, display.contentHeight)
+		CanvasRect = display.newImageRect(current_level.groups.canvas, Canvas.filename, Canvas.baseDir, display.contentWidth, display.contentHeight)
 
 		CanvasRect.x, CanvasRect.y = display.contentCenterX, display.contentCenterY
 
-		-- Add game group sublayers, duplicating them in the level info for convenience.
-		for i, name in ipairs{ "bg_layer", "tiles_layer", "decals_layer", "things_layer", "markers_layer" } do
+		-- Add game group layers and export them for things.
+		current_level.layers = {}
+
+		for i, name in ipairs{ "background", "tiles", "decals", "things", "markers" } do
 			local layer = display.newGroup()
 
-			current_level[name] = layer
+			current_level.layers[name] = layer
 
-			current_level[i > 2 and "game_group_dynamic" or "game_group"]:insert(layer)
+			current_level.groups[i > 2 and "game_dynamic" or "game"]:insert(layer)
 		end
 
 		-- Add the level background, falling back to a decent default if none was given.
-		local bg_func = level.background or level_list.DefaultBackground
+		local background_func = level.background or level_list.DefaultBackground
 
-		bg_func(current_level.bg_layer)
+		background_func(current_level.layers.background)
 
 		-- Enforce true letterbox mode.
 		if display.screenOriginX ~= 0 then
@@ -205,7 +193,7 @@ end
 --- DOCME
 function M.Cleanup (current_level)
 	for _, name in ipairs(Groups) do
-		if name ~= "game_group" then
+		if name ~= "game" then
 			display.remove(current_level and current_level[name])
 		end
 	end

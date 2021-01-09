@@ -38,8 +38,8 @@ local component = require("tektite_core.component")
 local coro_flow = require("solar2d_utils.coro_flow")
 local enemy_events = require("annex.EnemyEvents")
 local multicall = require("solar2d_utils.multicall")
-local object_vars = require("config.ObjectVariables")
-local store = require("s3_utils.state.store")
+--local object_vars = require("config.ObjectVariables")
+--local store = require("s3_utils.state.store")
 local tile_layout = require("s3_utils.tile_layout")
 local timers = require("solar2d_utils.timers")
 local visibility = require("solar2d_utils.visibility")
@@ -271,26 +271,9 @@ end
 --
 --
 
----
--- @treturn {string,...} Unordered list of enemy type names.
---[=[
-function M.GetTypes ()
-	local types = {}
-
-	for k in pairs(EnemyList) do
-		types[#types + 1] = k
-	end
-
-	return types
-end
-]=]
-
---
---
---
-
 local function ClearLocalVars (enemy)
-	store.RemoveFamily(enemy.m_local_vars)
+--	store.RemoveFamily(enemy.m_local_vars)
+-- TODO!
 
 	enemy.m_local_vars = nil
 end
@@ -520,7 +503,7 @@ function M.New (info, params, enemy, type_info)
 		psl:Publish(Actions[k](enemy), info.uid, k)
 	end
 
-	object_vars.PublishProperties(psl, info.props, Properties, info.uid, enemy)
+--	object_vars.PublishProperties(psl, info.props, Properties, info.uid, enemy)
 
 	-- Find the start tile to (re)spawn the enemy there, and kick off its behavior. Unless
 	-- fixed, this starting position may attach to a block and be moved around.

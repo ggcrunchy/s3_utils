@@ -37,6 +37,17 @@ local M = {}
 --
 --
 
+--- DOCME
+function M.editor ()
+	return {
+		self = "position"
+	}
+end
+
+--
+--
+--
+
 -- Index -> position map --
 local Positions
 
@@ -53,33 +64,6 @@ function M.make (info, params)
 	local psl = params:GetPubSubList()
 
 	psl:Publish(pos, info.uid, "pos")
-end
-
---
---
---
-
---- DOCME
-function M.editor (_, what, arg1, arg2)
-	-- Enumerate Properties --
-	-- arg1: Dialog
-	if what == "enum_props" then
-		arg1:StockElements()
-		-- TODO: "dynamic" boolean?
-
-	-- Get Link Info --
-	-- arg1: Info to populate
-	elseif what == "get_link_info" then
-		arg1.link = { text = "Generic link", is_source = true }
-
-	-- Get Tag --
-	elseif what == "get_tag" then
-		return "position"
-
-	-- New Tag --
-	elseif what == "new_tag" then
-		return { sub_links = { link = true } }
-	end
 end
 
 --

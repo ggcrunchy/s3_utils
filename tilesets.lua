@@ -133,26 +133,6 @@ end
 --
 --
 
---[[
---  Tileset lookup table --
-local TilesetList
-
---- DOCME
-function M.GetTypes ()
-	local list = {}
-
-	for name in pairs(TilesetList) do
-		list[#list + 1] = name
-	end
-
-	return list
-end
-]]
-
---
---
---
-
 --- DOCME
 function M.NewTile (group, name, x, y, w, h)
 	local tile = display.newImageRect(group, Sheet, NameToIndex[name], w, h)
@@ -171,10 +151,8 @@ local Image
 local function FindTileset (name)
 	name = "." .. name
 
-	local res
-
 	for _, dir in directories.IterateForLabel("tilesets") do
-		res = directories.TryRequire(dir .. name)
+		local res = directories.TryRequire(dir .. name)
 
 		if res then
 			return res
@@ -224,39 +202,36 @@ function M.UseTileset (name)
 				cache:remove(i)
 			end
 
-			local frames = {}
-
-			for ri = 1, 4 do
-				local y = (ri - 1) * cellh + 1
-
-				for ci = 1, #Names[ri] do -- n.b. avoid gap in last row
-					frames[#frames + 1] = { x = (ci - 1) * cellw + 1, y = y, width = cellw, height = cellh }
-				end
-			end
-
 			Sheet = graphics.newImageSheet(Image.filename, Image.baseDir, {
-				frames = frames,
+				width = cellw, height = cellh, numFrames = 15,
+
 				sheetContentWidth = w,
 				sheetContentHeight = h
 			})
 
-			local params, prepare_mesh, with_mesh, uvs, verts = ts.params, ts.prepare_mesh, ts.with_mesh
+			if ts.init then
+				ts.init()
+			end
+
+			local params, uvs, verts = ts.params
 
 			params.cell_width, params.cell_height = cellw, cellh
 
 			local indices, knots, normals, vertices = mesh.Build(params)
 
-			if prepare_mesh then
-				uvs, verts = prepare_mesh(knots, normals, vertices)
+			if ts.prepare_mesh then
+				uvs, verts = ts.prepare_mesh(knots, normals, vertices)
 			end
 
 			local tmesh = display.newMesh{ indices = indices, uvs = uvs, vertices = verts or vertices, mode = "indexed" }
 
-			if with_mesh then
-				with_mesh(tmesh, knots, normals, vertices)
+			if ts.with_mesh then
+				ts.with_mesh(tmesh, knots, normals, vertices)
 			end
 
 			tmesh.fill.effect = ts.name
+
+			-- TODO: allow snapshot, followed by "real" effect
 
 			Image:draw(tmesh)
 		end
@@ -266,8 +241,6 @@ function M.UseTileset (name)
 		Runtime:dispatchEvent{ name = "tileset_details_changed" }
 	end
 end
-
---TilesetList = require_ex.DoList("config.TileSets")
 
 ---
 ---

@@ -30,7 +30,6 @@ local pairs = pairs
 -- Modules --
 local adaptive = require("tektite_core.table.adaptive")
 local audio = require("solar2d_utils.audio")
-local bind = require("solar2d_utils.bind")
 local events = require("solar2d_utils.events")
 local multicall = require("solar2d_utils.multicall")
 
@@ -45,8 +44,26 @@ local M = {}
 --
 
 --- DOCME
-function M.AddMenuMusic (info)
+function M.AddMenuMusic ()--info)
 	-- How much can actually be done here? (probably a config file thing...)
+end
+
+--
+--
+--
+
+local Actions, Events = {}, {}
+
+--- DOCME
+function M.editor ()
+	return {
+		actions = Actions, events = Events,
+		inputs = {
+			boolean = { looping = true },
+			uint = { loop_count = 1 },
+			string = { filename = "" }
+		}
+	}
 end
 
 --
@@ -55,7 +72,6 @@ end
 
 local Music
 
---
 local function PlayNewTrack (group)
 	for _, track in ipairs(Music) do
 		track.group:StopAll()
@@ -64,60 +80,72 @@ local function PlayNewTrack (group)
 	group:PlaySound("track")
 end
 
--- --
-local Actions = {
-	-- Play --
-	do_play = function(music)
-		local function play ()--arg)
-			return PlayNewTrack(music.group)
-		end
-
-		events.Redirect(play, music)
-
-		return play
-	end,
-
-	-- Play (No Cancel) --
-	do_play_no_cancel = function(music)
-		local function play ()
-			return music.group:PlaySound("track")
-		end
-
-		events.Redirect(play, music)
-
-		return play
-	end,
-
-	-- Pause --
-	do_pause = function(music)
-		return function()
-			return music.group:PauseAll()
-		end
-	end,
-
-	-- Resume --
-	do_resume = function(music)
-		return function()
-			return music.group:ResumeAll()
-		end
-	end,
-
-	-- Stop --
-	do_stop = function(music)
-		return function()
-			return music.group:StopAll()
-		end
+function Actions:do_play ()
+	local function play ()
+		return PlayNewTrack(self.group)
 	end
-}
 
--- --
-local Events = {}
+	events.Redirect(play, self)
 
-for _, v in ipairs{ "on_done", "on_stop" } do
-	Events[v] = multicall.NewDispatcher()--bind.BroadcastBuilder_Helper()
+	return play
 end
 
--- --
+--
+--
+--
+
+function Actions:do_play_no_cancel ()
+	local function play ()
+		return self.group:PlaySound("track")
+	end
+
+	events.Redirect(play, self)
+
+	return play
+end
+
+--
+--
+--
+
+function Actions:do_pause ()
+	return function()
+		return self.group:PauseAll()
+	end
+end
+
+--
+--
+--
+
+function Actions:do_resume ()
+	return function()
+		return self.group:ResumeAll()
+	end
+end
+
+--
+--
+--
+
+function Actions:do_stop ()
+	return function()
+		return self.group:StopAll()
+	end
+end
+
+--
+--
+--
+
+for _, v in ipairs{ "on_done", "on_stop" } do
+	Events[v] = multicall.NewDispatcher()
+end
+
+--
+--
+--
+
 local PlayOnEnter, PlayOnReset
 
 local function IsDone (music)
@@ -152,13 +180,11 @@ function M.make (info, params)
 	local psl = params:GetPubSubList()
 
 	for k, event in pairs(Events) do
-	--	event.Subscribe(music, info[k], psl)
 		psl:Subscribe(info[k], event:GetAdder(), music)
 	end
 
 	--
 	for k in adaptive.IterSet(info.actions) do
---		bind.Publish(psl, 
 		psl:Publish(Actions[k](music), info.uid, k)
 	end
 
@@ -170,80 +196,6 @@ function M.make (info, params)
 	Music = Music or {}
 	Music[#Music + 1] = music
 end
-
---
---
---
-
-local function LinkMusic (music, other, msub, osub)
-	local helper = bind.PrepLink(music, other, msub, osub)
-
-	helper("try_actions", Actions)
-	helper("try_events", Events)
-	helper("commit")
-end
-
---- DOCME
-function M.editor (_, what, arg1, arg2)
-	-- Enumerate Defaults --
-	-- arg1: Defaults
-	if what == "enum_defs" then
-		arg1.filename = ""
-		arg1.loop_count = 1
-		arg1.looping = true
-
-	-- Enumerate Properties --
-	-- arg1: Dialog
-	elseif what == "enum_props" then
-		arg1:StockElements()
-		arg1:AddSeparator()
-		arg1:AddMusicPicker{ text = "Music file", value_name = "filename" }
-		arg1:AddCheckbox{ text = "Loop forever?", value_name = "looping" }
-
-		local loop_count_section = arg1:BeginSection()
-
-			arg1:AddStepperWithEditable{ before = "Loop count: ", min = 1, value_name = "loop_count" }
-
-		arg1:EndSection()
-
-		-- volume?
-
-		--
-		arg1:SetStateFromValue_Watch(loop_count_section, "looping", "use_false")
-
-	-- Get Link Grouping --
-	elseif what == "get_link_grouping" then
-		return {
-			{ text = "ACTIONS", font = "bold", color = "actions" }, "do_play", "do_play_no_cancel", "do_pause", "do_resume", "do_stop",
-			{ text = "EVENTS", font = "bold", color = "events", is_source = true }, "on_done", "on_stop"
-		}
-
-	-- Get Link Info --
-	-- arg1: Info to populate
-	elseif what == "get_link_info" then
-		arg1.on_done = "On(done)"
-		arg1.on_stop = "On(stop)"
-		arg1.do_play = "Play, removing any others"
-		arg1.do_play_no_cancel = "Play, leaving others"
-		arg1.do_pause = "Pause"
-		arg1.do_resume = "Resume"
-		arg1.do_stop = "Stop"
-
-	-- Get Tag --
-	elseif what == "get_tag" then
-		return "music"
-
-	-- New Tag --
-	elseif what == "new_tag" then
-		return "sources_and_targets", Events, Actions
-	
-	-- Prep Link --
-	elseif what == "prep_link" then
-		return LinkMusic
-	end
-end
-
--- Some default score (perhaps in LevelMap, if not here), if one not present?
 
 --
 --
