@@ -126,8 +126,6 @@ end
 
 local FlagGroups = { "player", "enemy", "projectile" }
 
-local Triggers
-
 --- DOCME
 function M.make (info, params)
 	local trigger, detect = { deactivate = info.deactivate, restore = info.restore }, info.detect_when
@@ -182,25 +180,20 @@ function M.make (info, params)
 		psl:Publish(Actions[k](trigger), info.uid, k)
 	end
 
-	Triggers = Triggers or {}
-	Triggers[#Triggers + 1] = trigger
+	local triggers = params:GetOrAddData("triggers", "table")
+
+	triggers[#triggers + 1] = trigger
 end
 
 --
 --
 --
 
-Runtime:addEventListener("leave_level", function()
-	Triggers = nil
-end)
+Runtime:addEventListener("reset", function(level)
+	local triggers = level.params:GetData("triggers")
 
---
---
---
-
-Runtime:addEventListener("reset_level", function()
-	for i = 1, #(Triggers or "") do
-		local trigger = Triggers[i]
+	for i = 1, #(triggers or "") do
+		local trigger = triggers[i]
 
 		if trigger.restore then
 			trigger.off = false

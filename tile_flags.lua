@@ -336,7 +336,7 @@ end)
 --
 --
 
-Runtime:addEventListener("reset_level", function()
+Runtime:addEventListener("reset", function()
 	_Resolve_()
 end)
 

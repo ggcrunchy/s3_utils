@@ -176,7 +176,7 @@ end)
 --
 --
 
-Runtime:addEventListener("reset_level", function()
+Runtime:addEventListener("reset", function()
 	for i = 1, #(Sounds or "") do
 		local sound = Sounds[i]
 

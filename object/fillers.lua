@@ -203,7 +203,7 @@ end)
 --
 --
 
-Runtime:addEventListener("reset_level", function()
+Runtime:addEventListener("reset", function()
 	CancelRunning()
 
 	Batch, Running = {}, {}

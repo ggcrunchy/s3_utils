@@ -277,7 +277,7 @@ end)
 --
 --
 
-Runtime:addEventListener("reset_level", function()
+Runtime:addEventListener("reset", function()
 	Remaining, PreviousTime = 0
 
 	if Dots then

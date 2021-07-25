@@ -213,7 +213,7 @@ end)
 --
 --
 
-Runtime:addEventListener("reset_level", function()
+Runtime:addEventListener("reset", function()
 	if PlayOnReset then
 		PlayNewTrack(PlayOnReset)
 	end

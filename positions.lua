@@ -24,9 +24,6 @@
 -- [ MIT license: http://www.opensource.org/licenses/mit-license.php ]
 --
 
--- Standard library imports --
-local pairs = pairs
-
 -- Modules --
 local tile_layout = require("s3_utils.tile_layout")
 
@@ -48,9 +45,6 @@ end
 --
 --
 
--- Index -> position map --
-local Positions
-
 --- DOCME
 -- @ptable info
 function M.make (info, params)
@@ -58,40 +52,26 @@ function M.make (info, params)
 
 	tile_layout.PutObjectAt(pos.m_index, pos)
 
-	Positions = Positions or {}
-	Positions[info.uid] = pos
-
 	local psl = params:GetPubSubList()
 
-	psl:Publish(pos, info.uid, "pos")
+	psl:Publish(pos, info.uid, "self")
+
+	local positions = params:GetOrAddData("positions", "table")
+
+	positions[#positions + 1] = pos
 end
 
 --
 --
 --
 
---- DOCME
-function M.GetPosition (id)
-	return Positions and Positions[id]
-end
+Runtime:addEventListener("reset", function(level)
+	local positions = level.params:GetData("positions")
 
---
---
---
+	for i = 1, #(positions or "") do
+		local pos = positions[i]
 
-Runtime:addEventListener("leave_level", function()
-	Positions = nil
-end)
-
---
---
---
-
-Runtime:addEventListener("reset_level", function()
-	if Positions then
-		for _, pos in pairs(Positions) do
-			tile_layout.PutObjectAt(pos.m_index, pos)
-		end
+		tile_layout.PutObjectAt(pos.m_index, pos)
 	end
 end)
 

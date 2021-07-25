@@ -376,7 +376,7 @@ local function AddFillLayer (params)
 	params:GetLayer("background"):insert(FillLayer)
 end
 
-Runtime:addEventListener("reset_level", function(level)
+Runtime:addEventListener("reset", function(level)
 	if Shapes then
 		for i in pairs(Shapes) do
 			Shapes[i] = {}

@@ -673,7 +673,7 @@ end)
 --
 --
 
-Runtime:addEventListener("reset_level", function()
+Runtime:addEventListener("reset", function()
 	Broadcast("about_to_reset")
 
 	for _, enemy in IterEnemies() do
@@ -690,7 +690,7 @@ Runtime:addEventListener("reset_level", function()
 		else
 			timer.cancel(enemy.m_func)
 
-			enemy.m_func = timers.PerformWithDelayFromExample(30, enemy.m_func)
+			enemy.m_func = timers.PerformWithDelayFromExample(150, enemy.m_func)
 		end
 	end
 end)
