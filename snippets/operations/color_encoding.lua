@@ -25,7 +25,7 @@
 
 -- Modules --
 local includer = require("solar2d_utils.includer")
-local qualifiers = require("s3_utils.snippets.miscellany.qualifiers")
+local qualifiers = require("s3_utils.snippets.utils.qualifiers")
 
 -- Globals --
 local system = system

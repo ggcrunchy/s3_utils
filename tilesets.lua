@@ -29,10 +29,12 @@ local copy = table.copy
 -- Standard library imports --
 local assert = assert
 local ipairs = ipairs
+local open = io.open
 local pairs = pairs
 
 -- Modules --
 local directories = require("s3_utils.directories")
+local json = require("json")
 local mesh = require("s3_utils.tile_texture.mesh")
 local tile_layout = require("s3_utils.tile_layout")
 
@@ -133,11 +135,25 @@ end
 --
 --
 
+local Image
+
+local ImageInfo = {}
+
 --- DOCME
 function M.NewTile (group, name, x, y, w, h)
-	local tile = display.newImageRect(group, Sheet, NameToIndex[name], w, h)
+  local index = NameToIndex[name]
+	local tile = display.newImageRect(group, Sheet, index, w, h)
 
 	tile.x, tile.y = x, y
+
+  local info = ImageInfo[Image]
+  local prepare_tile = info and info.prepare_tile
+
+  if prepare_tile then
+    local coff = (index - 1) % 4
+
+    prepare_tile(tile, (index - coff - 1) / 4, coff) -- n.b. zero-based
+  end
 
 	return tile
 end
@@ -145,8 +161,6 @@ end
 --
 --
 --
-
-local Image
 
 local function FindTileset (name)
 	name = "." .. name
@@ -162,10 +176,12 @@ end
 
 --- DOCME
 -- TODO: de-globalize this, e.g. for hub level with mixed tile sets
+-- could have an indirection layer, so layer[index] -> name / image + sheet
 function M.UseTileset (name)
-	local ts = assert(FindTileset(name), "Invalid tileset" .. name)
+	local ts = assert(FindTileset(name), "Invalid tileset " .. name)
+  local info = ImageInfo[Image]
 
-	if not Image or Image.m_name ~= name then
+	if not (info and info.name == name) then
 		local cellw, cellh = tile_layout.GetSizes()
 		local w, h, old_w, old_h, update = 4 * cellw, 4 * cellh, -1, -1
 
@@ -175,12 +191,13 @@ function M.UseTileset (name)
 			if w > old_w or h > old_h then
 				Image:releaseSelf()
 
-				update, Image = Image.m_update
+				update, Image = info.update -- n.b. info replaced in next step
 			end
 		end
 
 		if not Image then
-			Image = graphics.newTexture{ type = "canvas", width = w, height = h }
+			Image, info = graphics.newTexture{ type = "canvas", width = w, height = h }, {}
+      ImageInfo[Image] = info
 
 			if ts.update then
 				update = timer.performWithDelay(ts.update_delay or 100, ts.update, 0)
@@ -193,7 +210,9 @@ function M.UseTileset (name)
 			end
 		end
 
-		Image.m_name, Image.m_update, w, h = name, update, Image.width, Image.height
+		w, h = Image.width, Image.height
+    info.prepare_tile = ts.prepare_tile
+    info.name, info.update = name, update
 
 		local cache = Image.cache
 
@@ -217,7 +236,33 @@ function M.UseTileset (name)
 
 			params.cell_width, params.cell_height = cellw, cellh
 
-			local indices, knots, normals, vertices = mesh.Build(params)
+			local indices, knots, normals, vertices
+      local filename = ("Name%s_Mesh.json"):format(name)
+      local path, data = system.pathForFile(filename, system.DocumentsDirectory)
+      local file = open(path)
+
+      if false then
+        local contents = file:read("*a")
+
+        file:close()
+
+        data = json.decode(contents)
+      end
+      
+      if data then
+        indices, knots, normals, vertices = data.indices, data.knots, data.normals, data.vertices
+      else
+        indices, knots, normals, vertices = mesh.Build(params)
+        
+        local out = open(path, "w")
+        
+        if out then
+          local encoded = json.encode{ indices = indices, knots = knots, normals = normals, vertices = vertices }
+
+          out:write(encoded)
+          out:close()
+        end
+      end
 
 			if ts.prepare_mesh then
 				uvs, verts = ts.prepare_mesh(knots, normals, vertices)
@@ -248,13 +293,15 @@ end
 
 Runtime:addEventListener("leave_level", function()
 	if Image then
-		local update = Image.m_update
+		local update = ImageInfo[Image].update
 
 		if update then
 			timer.cancel(update)
 		end
 
 		Image:releaseSelf()
+
+    ImageInfo[Image] = nil
 	end
 
 	Image, Sheet = nil

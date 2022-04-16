@@ -577,7 +577,7 @@ collision.AddHandler("enemy", function(phase, enemy, other)
 
 		enemy:dispatchEvent(TouchedEnemyEvent)
 	
-		TouchedEnemyEvent.target = nil
+		TouchedEnemyEvent.enemy = nil
 	elseif OnCollision then
 		OnCollision(phase, enemy, other)
 	end
