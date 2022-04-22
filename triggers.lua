@@ -132,12 +132,13 @@ function M.make (info, params)
 
 	if detect > 0 then
 		local flags, handles = 0, {}
+    local named_bits = collision.GetNamedBits()
 
 		for _, name in ipairs(FlagGroups) do
 			local bits = bit.band(detect, BitBoth)
 
 			if bits ~= 0 then
-				flags = flags + collision.GetBitmask(name)
+				flags = flags + named_bits:GetBitmask(name)
 
 				if bits == 0x3 then
 					handles[name] = "both"

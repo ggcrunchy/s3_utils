@@ -42,7 +42,6 @@ local multicall = require("solar2d_utils.multicall")
 --local store = require("s3_utils.state.store")
 local tile_layout = require("s3_utils.tile_layout")
 local timers = require("solar2d_utils.timers")
-local visibility = require("solar2d_utils.visibility")
 
 -- Solar2D globals --
 local display = display
@@ -285,7 +284,7 @@ local function Kill (enemy, other)
 
 		enemy.m_alive = false
 
-		visibility.Enable(enemy, false)
+		collision.Enable(enemy, false)
 
 		enemy_events.on_kill(enemy, other)
 	end
@@ -331,7 +330,7 @@ local function PhaseIn (enemy, type_info, is_sleeping)
 	enemy.m_ready = not is_sleeping
 
 	coro_flow.WaitUntilPropertyTrue(enemy, "m_ready")
-	visibility.Enable(enemy, false)
+	collision.Enable(enemy, false)
 
 	--
 	enemy.isVisible = true
@@ -348,13 +347,13 @@ local function Alive (enemy, type_info)
 	--
 	Events.on_wake:DispatchForObject(enemy)
 
-	-- Make sure the enemy is visible and alive, i.e. able to hurt you and be hurt itself.
+	-- Make sure the enemy is alive and not hidden, i.e. able both to hurt and be hurt.
 	-- Account for enemies that were phasing in when the dots got cleared.
 	enemy.m_alive = not enemy.m_no_respawn
 
 	--
 	if enemy.m_alive then
-		visibility.Enable(enemy, true)
+		collision.Enable(enemy, true)
 	end
 
 	-- Have it follow its type-specific behavior, until it gets killed.
@@ -690,7 +689,7 @@ Runtime:addEventListener("reset", function()
 		else
 			timer.cancel(enemy.m_func)
 
-			enemy.m_func = timers.PerformWithDelayFromExample(150, enemy.m_func)
+			enemy.m_func = timers.PerformWithDelayFromExample(30, enemy.m_func)
 		end
 	end
 end)

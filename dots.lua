@@ -1,14 +1,12 @@
 --- Functionality common to most or all "dots", i.e. objects of interest that occupy tiles.
--- The nomenclature is based on _Amazing Penguin_, this game's spiritual prequel, in which
--- such things looked like dots.
+-- The nomenclature comes from _Amazing Penguin_, the chief inspiration behind this project,
+-- where such things looked like dots.
 --
--- All dots support an **ActOn** method, which defines how the dot responds if acted on by
--- the player.
+-- Each dot type has an **ActOn** method, defining how it responds to player action.
 --
--- A dot may optionally provide other methods: **Reset** and **Update** define how the dot
--- changes state when the level resets and per-frame, respectively; **GetProperty**, called
--- with a name as argument, returns the corresponding property if available, otherwise
--- **nil** (or nothing).
+-- A dot may provide certain other methods: **Reset** and **Update** define the behavior when
+-- the level resets and per-frame, respectively; **GetProperty**, given a name, returns the
+-- corresponding property if available, otherwise **nil** (or nothing).
 
 --
 -- Permission is hereby granted, free of charge, to any person obtaining
@@ -111,9 +109,7 @@ local Remaining
 --    cons(group, info)
 -- and which returns the new dot, which must be a display object without physics.
 --
--- These modules are loaded through @{tektite_core.require_ex.DoList} from **config.Dots**.
---
--- Various dot read properties (cf. @{tektite_core.table.meta.Augment}) are important:
+-- Various readable properties (cf. @{tektite_core.table.meta.Augment}) are important:
 --
 -- If the **is_counted\_P** property is true, the dot will count toward the remaining dots
 -- total. If this count falls to 0, the **all\_dots\_removed** event is dispatched.
@@ -131,7 +127,7 @@ local Remaining
 --
 -- * **col**: Column on which dot sits.
 -- * **row**: Row on which dot sits.
--- * **type**: Name of dot type, q.v. _name_, above. This is also assigned as the dot's collision type.
+-- * **type**: Name of dot type, q.v. _name_, above. This is also assigned as the collision type.
 --
 -- Instance-specific data may also be passed in other fields.
 -- @ptable Load parameters.

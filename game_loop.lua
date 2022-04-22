@@ -193,8 +193,8 @@ end
 --- DOCME
 function M.Cleanup (current_level)
 	for _, name in ipairs(Groups) do
-		if name ~= "game" then
-			display.remove(current_level and current_level[name])
+		if name ~= "game" then -- TODO: what was this about?
+			display.remove(current_level and current_level.params:GetGroup(name))
 		end
 	end
 
