@@ -40,13 +40,13 @@ local ipairs = ipairs
 local max = math.max
 local min = math.min
 local pairs = pairs
+local remove = table.remove
 
 -- Modules --
 local component = require("tektite_core.component")
 local data_store = require("s3_objects.mixin.data_store")
 local events = require("solar2d_utils.events")
 local meta = require("tektite_core.table.meta")
-local rect_iters = require("iterator_ops.grid.rect")
 local tile_flags = require("s3_utils.tile_flags")
 local tile_layout = require("s3_utils.tile_layout")
 local tile_maps = require("s3_utils.tile_maps")
@@ -85,8 +85,36 @@ end
 
 local NCols, NRows
 
+local IterStack = {}
+
+local function GridIter (state)
+  local col, row = state.col, state.row
+
+  if col > state.col2 then
+    row = row + 1
+
+    if row == state.last_row then
+      IterStack[#IterStack + 1] = state
+
+      return
+    else
+      col, state.row = state.col1, row
+    end
+  end
+
+  state.col = col + 1
+
+  return row * NCols + col, col, row + 1
+end
+
 local function AuxBlock (col1, row1, col2, row2)
-	return rect_iters.GridIter(col1, row1, col2, row2, NCols)
+  local state = remove(IterStack) or {}
+
+  state.col, state.row = col1, row1 - 1
+  state.col1, state.col2 = col1, col2
+  state.last_row = row2
+
+	return GridIter, state
 end
 
 local function MinMax_N (a, b, n)

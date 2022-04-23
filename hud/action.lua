@@ -71,7 +71,7 @@ local function Touch (event)
 	return true
 end
 
-local Images, Sequence
+local Sequence
 
 --- DOCME
 -- @pgroup group
@@ -119,7 +119,7 @@ Runtime:addEventListener("leave_level", function()
 
 	Cancel(Scaling)
 
-	ActionGroup, Images, Scaling, Sequence = nil
+	ActionGroup, Scaling, Sequence = nil
 end)
 
 --
@@ -128,9 +128,8 @@ end)
 
 local FadeIconParams = { tag = "action_fading" }
 
-local function FadeIcon (icon, alpha, delay)
+local function FadeIcon (icon, alpha, how)
 	FadeIconParams.alpha = alpha
-	FadeIconParams.delay = delay
 	FadeIconParams.time = ceil(150 * abs(alpha - icon.alpha))
 
 	if icon.fade_dir then
@@ -142,15 +141,16 @@ local function FadeIcon (icon, alpha, delay)
 	transition.to(icon, FadeIconParams)
 
 	icon.fade_dir = alpha > .5 and "in" or "out"
+  icon.finish, FadeIconParams.delay = how == "finish"
 end
 
 function FadeIconParams.onComplete (icon)
-	local n, fade_dir = #Sequence, icon.fade_dir
+	local n, fade_dir, finish = #Sequence, icon.fade_dir, icon.finish
 
-	icon.fade_dir = nil
+	icon.fade_dir, icon.finish = nil
 
-	-- No items left: kill the sequence.
-	if n == 0 or not display.isValid(icon) then
+	-- No items left, or icon should not continue the cycle.
+	if n == 0 or finish or not display.isValid(icon) then
 		return
 
 	-- Faded out: fade the next icon in. The "next" icon might be itself, if others were
@@ -169,7 +169,9 @@ function FadeIconParams.onComplete (icon)
 
 	-- Faded in: if there are other icons, continue the cycle.
   elseif n > 1 then
-		FadeIcon(icon, 0, 400)
+    FadeIconParams.delay = 400
+
+		FadeIcon(icon, 0)
 	end
 end
 
@@ -203,8 +205,10 @@ local function RemoveIconFromSequence (index)
 	icon.ref_count = icon.ref_count - 1
 
 	if icon.ref_count == 0 then
-		if icon.fade_dir == "in" then
-      FadeIcon(icon, 0)
+		if icon.fade_dir ~= "out" then
+      FadeIcon(icon, 0, icon.fade_dir and "finish") -- only current icon should have direction;
+                                                    -- other icons should just fade away without
+                                                    -- attempting to maintain the cycle
     end
 
 		remove(Sequence, index)
@@ -220,6 +224,8 @@ local function CreateIcon (name, is_text)
 
   if is_text then
     icon = display.newText(name, 0, 0, native.systemFontBold, 16) -- TODO: font, size
+  elseif display.isValid(name) then
+    icon, name = name
   else
     icon = display.newImage(name)
   end
@@ -229,7 +235,7 @@ local function CreateIcon (name, is_text)
   icon.x, icon.y = action.x, action.y
   icon.width, icon.height, icon.alpha = 96, 96, 0
 
-  icon.name =  name
+  icon.name =  name -- nil if name was an object, see above
 
   return icon
 end
@@ -242,7 +248,7 @@ local function FindIcon (name, is_text)
   for i = 2, ActionGroup.numChildren do -- ignore action button
     local object = ActionGroup[i]
 
-    if object.name == name and IsTextObject(object) == is_text then
+    if (object.name or object) == name and IsTextObject(object) == is_text then -- cf. CreateIcon w.r.t. nil name
       return i, object
     end
   end
