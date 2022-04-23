@@ -26,10 +26,10 @@
 local abs = math.abs
 local assert = assert
 local ceil = math.ceil
-local ipairs = ipairs
 local remove = table.remove
-local setmetatable = setmetatable
-local type = type
+
+-- Extension imports --
+local indexOf = table.indexOf
 
 -- Solar2D globals --
 local display = display
@@ -45,29 +45,6 @@ local M = {}
 --
 
 local ActionGroup
-
--- Lazily add images to the action sequence --
-local ImagesMT = {
-	__index = function(t, name)
-		local action, ai = ActionGroup[1]
-
-		if type(name) == "string" then
-			ai = display.newImage(ActionGroup, name, action.x, action.y)
-		else
-			ai = name
-
-			ActionGroup:insert(ai)
-
-			ai.x, ai.y = action.x, action.y
-		end
-
-		ai.width, ai.height, ai.alpha = 96, 96, 0
-
-		t[name], ai.name = ai, name
-
-		return ai
-	end
-}
 
 local function Touch (event)
 	local button, phase = event.target, event.phase
@@ -120,8 +97,6 @@ function M.AddActionButton (group, do_actions)
 
 	ActionGroup.isVisible = false
 
-	-- Create a fresh action sequence.
-	Images = setmetatable({}, ImagesMT)
 	Sequence = {}
 end
 
@@ -137,38 +112,28 @@ local function Cancel (trans)
 	end
 end
 
-local Current, Scaling
+local Scaling
 
 Runtime:addEventListener("leave_level", function()
 	transition.cancel("action_fading")
 
 	Cancel(Scaling)
 
-	ActionGroup, Current, Images, Scaling, Sequence = nil
+	ActionGroup, Images, Scaling, Sequence = nil
 end)
 
 --
 --
 --
 
-local function IndexOf (name)
-	for i, v in ipairs(Sequence) do
-		if v.name == name then
-			return i, v
-		end
-	end
-end
-
 local FadeIconParams = { tag = "action_fading" }
 
 local function FadeIcon (icon, alpha, delay)
-	Current = icon
-
 	FadeIconParams.alpha = alpha
-	FadeIconParams.delay = delay or 0
+	FadeIconParams.delay = delay
 	FadeIconParams.time = ceil(150 * abs(alpha - icon.alpha))
 
-	if icon.is_fading then
+	if icon.fade_dir then
 		transition.cancel(icon)
 	else
 		icon.alpha = 1 - alpha
@@ -176,94 +141,111 @@ local function FadeIcon (icon, alpha, delay)
 
 	transition.to(icon, FadeIconParams)
 
-	icon.is_fading = true
+	icon.fade_dir = alpha > .5 and "in" or "out"
 end
 
 function FadeIconParams.onComplete (icon)
-	local n = #Sequence
+	local n, fade_dir = #Sequence, icon.fade_dir
+
+	icon.fade_dir = nil
 
 	-- No items left: kill the sequence.
 	if n == 0 or not display.isValid(icon) then
-		Current = nil
+		return
 
-	-- On fade out: Try to fade in the next icon (which might be the icon itself). Ignore
-	-- the icon if it is no longer in the sequence.
-	elseif icon.alpha < .5 then
-		local index = IndexOf(icon.prev or icon.name)
+	-- Faded out: fade the next icon in. The "next" icon might be itself, if others were
+  -- removed from the sequence.
+  -- If the icon has been removed from the sequence, choose a "next" arbitrarily.
+  elseif fade_dir == "out" then
+		local index = indexOf(Sequence, icon)
 
 		if index then
-			if index < n then
-				index = index + 1
-			else
-				index = 1
-			end
+      index = (index % n) + 1
+    else
+      index = 1
+    end
 
-			FadeIcon(Sequence[index].icon, 1)
-		end
+    FadeIcon(Sequence[index], 1)
 
-	-- On fade in: Tell this icon to fade out shortly if other icons are in the queue.
-	elseif n > 1 then
+	-- Faded in: if there are other icons, continue the cycle.
+  elseif n > 1 then
 		FadeIcon(icon, 0, 400)
 	end
-
-	-- The previous name was either of no use or has served its purpose.
-	icon.is_fading, icon.prev = nil
 end
 
-local function AddIconToSequence (item, name, is_text)
-	--  Do any instances of the icon exist?
-	if not item then
-		-- Append a fresh shared icon state.
-		local n, key = #Sequence, name
+--
+--
+--
 
-		if is_text then
-			key = display.newText(name, 0, 0, native.systemFontBold, 16) -- TODO: font, size
-		end
+local function AddIconToSequence (found, icon)
+	if not found then
+		local n = #Sequence
 
-		item = { count = 0, icon = Images[key], name = name }
+		Sequence[n + 1], icon.ref_count = icon, 0
 
-		Sequence[n + 1] = item
-
-		-- If only one other type of icon was in the queue, it just became multi-icon, so
-		-- kick off the fade sequence. If the queue was empty, fade the first icon in.
+    -- If the sequence was empty, the new icon is "current", so fade it in.
+    -- If there was a single icon, kick off the fade in / out cycle.
 		if n <= 1 then
-			FadeIcon(Sequence[1].icon, n == 1 and 0 or 1)
+			FadeIcon(Sequence[1], n == 1 and 0 or 1)
 		end
 	end
 
-	item.count = item.count + 1
+	icon.ref_count = icon.ref_count + 1
 end
 
-local function RemoveIconFromSequence (index, item)
-	assert(item, "No icon for dot being untouched")
+--
+--
+--
 
-	item.count = item.count - 1
+local function RemoveIconFromSequence (index)
+	local icon = assert(Sequence[index], "No icon for dot being untouched")
 
-	-- Remove the state from the queue if it has no more references.
-	if item.count == 0 then
-		-- Is this the icon being shown?
-		if item.icon == Current then
-			-- Fade the icon out, but spare the effort if it's doing so already.
-			if not item.is_fading or FadeIconParams.alpha > .5 then
-				FadeIcon(item.icon, 0)
-			end
+	icon.ref_count = icon.ref_count - 1
 
-			-- Since indices are trouble to maintain, get the name of the previous item in
-			-- the sequence: this will be the reference point for the "go to next" logic,
-			-- after the fade out.
-			local prev = index > 1 and index - 1 or #Sequence
+	if icon.ref_count == 0 then
+		if icon.fade_dir == "in" then
+      FadeIcon(icon, 0)
+    end
 
-			item.icon.prev = index ~= prev and Sequence[prev].name
-
-		-- Otherwise, if there were only two items, it follows that the other is being
-		-- shown. If it was fading out, fade it back in instead.
-		elseif #Sequence == 2 and item.is_fading and FadeIconParams.alpha < .5 then
-			FadeIcon(Sequence[3 - index].icon, 1)
-		end
-
-		-- The above was easier with the sequence intact, but now the item can be removed.
 		remove(Sequence, index)
 	end
+end
+
+--
+--
+--
+
+local function CreateIcon (name, is_text)
+  local action, icon = ActionGroup[1]
+
+  if is_text then
+    icon = display.newText(name, 0, 0, native.systemFontBold, 16) -- TODO: font, size
+  else
+    icon = display.newImage(name)
+  end
+  
+  ActionGroup:insert(icon)
+
+  icon.x, icon.y = action.x, action.y
+  icon.width, icon.height, icon.alpha = 96, 96, 0
+
+  icon.name =  name
+
+  return icon
+end
+
+local function IsTextObject (object)
+  return object._type == "TextObject"
+end
+
+local function FindIcon (name, is_text)
+  for i = 2, ActionGroup.numChildren do -- ignore action button
+    local object = ActionGroup[i]
+
+    if object.name == name and IsTextObject(object) == is_text then
+      return i, object
+    end
+  end
 end
 
 local function MergeDotIntoSequence (dot, touch)
@@ -274,14 +256,19 @@ local function MergeDotIntoSequence (dot, touch)
 		name = dot.touch_text_P or "Use"
 	end
 
-	local index, item = IndexOf(name)
+  local _, icon = FindIcon(name, is_text)
+	local index = indexOf(Sequence, icon)
 
 	if touch then
-		AddIconToSequence(item, name, is_text)
+		AddIconToSequence(index, icon or CreateIcon(name, is_text))
 	else
-		RemoveIconFromSequence(index, item)
+		RemoveIconFromSequence(index)
 	end
 end
+
+--
+--
+--
 
 local ScaleInOut = { time = 250, transition = easing.outQuad }
 
@@ -316,11 +303,11 @@ local FadeParams = {
 	tag = "action_fading", time = 200,
 
 	onComplete = function(agroup)
-		if (agroup.alpha or 0) < .5 then
+		if agroup.alpha < .5 then
 			agroup.isVisible = false
 		end
 
-		agroup.is_fading = nil
+		agroup.m_button_fading = nil
 	end
 }
 
@@ -333,15 +320,15 @@ local function ShowAction (show)
 		from, to = to, from
 	end
 
-	-- If it was already fading, stop that and use whatever its current alpha happens to
-	-- be. Otherwise, begin from some defined alpha. Kick off a fade-in or fade-out.
-	if ActionGroup.is_fading then
+	-- If the button was already fading, stop and keep the current alpha; otherwise, begin from
+  -- some defined value. Kick off a fade (in or out) from there.
+	if ActionGroup.m_button_fading then
 		transition.cancel(ActionGroup)
 	else
 		ActionGroup.alpha = from
 	end
 
-	FadeParams.alpha, ActionGroup.is_fading = to, true
+	FadeParams.alpha, ActionGroup.m_button_fading = to, true
 
 	transition.to(ActionGroup, FadeParams)
 end
