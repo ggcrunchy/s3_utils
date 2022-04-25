@@ -38,8 +38,6 @@ local component = require("tektite_core.component")
 local coro_flow = require("solar2d_utils.coro_flow")
 local enemy_events = require("annex.EnemyEvents")
 local multicall = require("solar2d_utils.multicall")
---local object_vars = require("config.ObjectVariables")
---local store = require("s3_utils.state.store")
 local tile_layout = require("s3_utils.tile_layout")
 local timers = require("solar2d_utils.timers")
 
@@ -162,93 +160,32 @@ local Properties = {
 	}
 }
 
-local function LinkEnemy (enemy, other, esub, osub)
-	local helper = bind.PrepLink(enemy, other, esub, osub)
-
-	helper("try_actions", Actions)
-	helper("try_events", Events)
-	helper("try_out_properties", Properties)
-	helper("commit")
-end
-
---- Handler for enemy-related events sent by the editor.
--- @string type Enemy type, as listed by @{GetTypes}.
--- @string what Name of event.
--- @param arg1 Argument #1.
--- @param arg2 Argument #2.
--- @param arg3 Argument #3.
--- @return Result of the event, if any.
-function M.EditorEvent (type, what, arg1, arg2, arg3)
-	local type_info = nil--EnemyList[type] -- TODO!!!
-	local event = type_info and type_info.EditorEvent
-
-	if event then
-		-- Build --
-		-- arg1: Level
-		-- arg2: Original entry
-		-- arg3: Spawn point to build
-		if what == "build" then
-			-- COMMON STUFF
-			-- t.col, t.row = ...
-
-		-- Enumerate Defaults --
-		-- arg1: Defaults
-		elseif what == "enum_defs" then
-			arg1.asleep = false
-			arg1.sleep_on_death = false
-			arg1.can_attach = true
-
-		-- Enumerate Properties --
-		-- arg1: Dialog
-		elseif what == "enum_props" then
-			arg1:StockElements(event("get_thumb_filename"))
-			arg1:AddSeparator()
-			arg1:AddCheckbox{ text = "Asleep By Default?", value_name = "asleep" }
-			arg1:AddCheckbox{ text = "Fall Asleep If Killed?", value_name = "sleep_on_death" }
-			arg1:AddCheckbox{ text = "Can Attach To Block?", value_name = "can_attach" }
-			arg1:AddSeparator()
-
-		-- Get Link Grouping --
-		elseif what == "get_link_grouping" then
-			return {
-				{ text = "ACTIONS", font = "bold", color = "actions" }, "do_kill", "do_wake",
-				{ text = "EVENTS", font = "bold", color = "events", is_source = true }, "on_die", "on_wake",
-				{ text = "OUT-PROPERTIES", font = "bold", color = "props", is_source = true }, "alive", "enemy_x", "enemy_y", "sp_x", "sp_y", "local_vars"
-			}
-
-		-- Get Link Info --
-		-- arg1: Info to populate
-		elseif what == "get_link_info" then
-			arg1.on_die = "On(die)"
-			arg1.on_wake = "On(wake)"
-			arg1.do_kill = "Kill enemy"
-			arg1.do_wake = "Wake spawner"
-			arg1.alive = "BOOL: Is alive?"
-			arg1.enemy_x = "NUM: Enemy's x"
-			arg1.enemy_y = "NUM: Enemy's y"
-			arg1.local_vars = "FAM: Enemy vars"
-			arg1.sp_x = "NUM: Spawner's x"
-			arg1.sp_y = "NUM: Spawner's y"
-
-		-- Get Tag --
-		elseif what == "get_tag" then
-			return "enemy"
-
-		-- New Tag --
-		elseif what == "new_tag" then
-			return "sources_and_targets", Events, Actions, object_vars.UnfoldPropertyFunctionsAsTagReadyList(Properties)
-
-		-- Prep Link --
-		elseif what == "prep_link" then
-			return LinkEnemy
-
-		-- Verify --
-		elseif what == "verify" then
-			-- COMMON STUFF... nothing yet, I don't think, assuming well-formed editor
-		end
-
-		return event(what, arg1, arg2, arg3)
-	end
+--- DOCME
+function M.EditorEvent ()
+  return {
+    inputs = {
+      boolean = {
+        asleep = false, can_attach = true, sleep_on_death = false
+        -- "Asleep By Default?", "Can Attach To Block?", "Fall Asleep If Killed?"
+      }
+    },
+    
+  --[[
+    on_die = "On(die)"
+    on_wake = "On(wake)"
+    do_kill = "Kill enemy"
+    do_wake = "Wake spawner"
+    alive = "BOOL: Is alive?"
+    enemy_x = "NUM: Enemy's x"
+    enemy_y = "NUM: Enemy's y"
+    local_vars = "FAM: Enemy vars"
+    sp_x = "NUM: Spawner's x"
+    sp_y = "NUM: Spawner's y"
+  ]]
+    read_properties = Properties,
+    actions = Actions, events = Events
+  }
+	-- ^^ TODO: this is to be inherited somehow...
 end
 
 --
@@ -272,7 +209,6 @@ end
 
 local function ClearLocalVars (enemy)
 --	store.RemoveFamily(enemy.m_local_vars)
--- TODO!
 
 	enemy.m_local_vars = nil
 end
