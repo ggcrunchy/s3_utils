@@ -115,6 +115,7 @@ function M.TryToMove (object, dist, dir)
 			-- If the entity steps onto the center of a non-corner / junction tile for the
 			-- first time during a path, update the pathing state.
 			tx, ty, tile = GetTileInfo(x, y)
+      flags = tile_flags.GetFlags(tile)
 
 			if not tile_layout.IsStraight(flags) and gtile ~= tile and numeric.IsClose(tx - x, ty - y, path_opts.NearGoal) then
 				dir = path_opts.UpdateOnMove(dir, tile, object)
