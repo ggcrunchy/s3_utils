@@ -501,8 +501,66 @@ end
 --
 --
 
+local ShapeList
+
+Runtime:addEventListener("filled_shape", function(event)
+  local block = ShapeList and ShapeList[event.shape]
+
+  if block then
+    block:ConsumeFillList(event.shape:GetFillList())
+
+    ShapeList[event.shape] = nil
+  end
+end)
+
+--
+--
+--
+
 Runtime:addEventListener("leave_level", function()
 	LoadedBlocks, BlockIDs, OldFlags = nil
+end)
+
+--
+--
+--
+
+local ShapeInfo = {}
+
+local function AuxVisit (tile, info)
+  local ncols = info.dr
+
+  for index = info.ul, info.lr, info.column_count do
+    if tile >= index and tile <= index + ncols then
+      return
+    end
+  end
+
+  return "quit"
+end
+
+Runtime:addEventListener("new_shape", function(event)
+  local shape = event.shape
+
+  ShapeInfo.column_count = tile_layout.GetCounts()
+
+  for i = 1, #(LoadedBlocks or "") do
+    local block = LoadedBlocks[i]
+    local c1, r1, c2, r2 = block:GetInitialRect()
+
+    ShapeInfo.dr = c2 - c1
+    ShapeInfo.ul = tile_layout.GetIndex(c1, r1)
+    ShapeInfo.lr = tile_layout.GetIndex(c2, r2)
+
+    if block.ConsumeFillList and shape:Visit(AuxVisit, ShapeInfo) then
+      shape:SetFillList{}
+
+      ShapeList = ShapeList or {}
+      ShapeList[shape] = block
+
+      break
+    end
+  end
 end)
 
 --
@@ -535,6 +593,9 @@ Runtime:addEventListener("pre_reset", function()
 			block:SetRect(block:GetInitialRect()) -- TODO: Make responsibilty of event?
 			block:FillSelf()
 		end
+
+    -- Flush any shape-to-block mappings.
+    ShapeList = nil
 	end
 end)
 

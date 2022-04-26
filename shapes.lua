@@ -90,7 +90,7 @@ end)
 --
 
 -- Helper to fill a shape, processing its tile structure
-local function FillShape (_, tiles)
+local function FillShape (shape, tiles)
 	-- We'll process our tiles from top to bottom, starting from the left-hand side of each
 	-- row, since this consists of just iterating the tiles in index order.
 	local indices = {}
@@ -136,6 +136,8 @@ local function FillShape (_, tiles)
 	end
 
 	-- Start a new shape fill.
+  local n = FillLayer.numChildren
+
 	fillers.Begin_Color(FillLayer, 1, 0, 0)
 
 	-- Backtrack to the first occupied row, then iterate through each row and its spans.
@@ -171,6 +173,15 @@ local function FillShape (_, tiles)
 
 	-- Commit the fill.
 	fillers.End("flood_fill")
+
+  -- If something wants to use the fill entries, gather them.
+  local list = shape:GetFillList()
+
+  if list then
+    for i = n + 1, FillLayer.numChildren do
+      list[#list + 1] = FillLayer[i]
+    end
+  end
 end
 
 local function IsMatch (shape1, shape2, n)
@@ -237,18 +248,35 @@ end
 
 --
 local function NewShape (dots, tiles)
-	local Shape, count = {}, #dots
+	local Shape = {}
 
 	--- @type shape
 
-	--- Predicate.
+  --
+  --
+  --
+
+  local fill_list
+
+  --- DOCME
+  function Shape:GetFillList ()
+    return fill_list
+  end
+
+	---
 	-- @uint index Tile index.
 	-- @treturn boolean The tile at this index is part of the shape exterior?
 	function Shape:HasTile (index)
 		return tiles[index] ~= nil
 	end
 
-	--- Logically removes a dot from the shape.
+  --
+  --
+  --
+
+  local count = #dots
+
+	--- Logically remove a dot from the shape.
 	--
 	-- If the dot count goes to 0, the shape is filled and the **filled_shape** event
 	-- list is dispatched with the shape in key **shape**.
@@ -262,12 +290,33 @@ local function NewShape (dots, tiles)
 		end
 	end
 
+  --
+  --
+  --
+
+  --- DOCME
+  function Shape:SetFillList (list)
+    fill_list = list
+  end
+
+  --
+  --
+  --
+
 	--- DOCME
 	function Shape:Visit (func, context)
 		for index in pairs(tiles) do
-			func(index, context)
+			if func(index, context) == "quit" then
+        return false
+      end
 		end
+
+    return true
 	end
+
+  --
+  --
+  --
 
 	Runtime:dispatchEvent{ name = "new_shape", shape = Shape }
 
@@ -393,9 +442,11 @@ end)
 --
 
 Runtime:addEventListener("tiles_changed", function(event)
-	for i in pairs(Shapes) do
-		Shapes[i] = {}
-	end
+  if Shapes then
+    for i in pairs(Shapes) do
+      Shapes[i] = {}
+    end
+  end
 
 	BakeShapes(event)
 end)
