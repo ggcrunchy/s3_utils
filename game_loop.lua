@@ -160,7 +160,15 @@ function M.BeforeEntering (w, h)
 		-- Add game group layers and export them for things.
 		current_level.layers = {}
 
-		for i, name in ipairs{ "background", "tiles", "decals", "things", "markers" } do
+		for i, name in ipairs{
+      "background", "tiles", -- in "game" group
+      "decals", -- shadows, etc.
+      "things1", -- dots beneath player
+      "things2", -- player, on ground
+      "things3", -- dots above player (consumables)
+      "things4", -- enemies, projectiles, player when jumping, etc.
+      "markers" -- UI, etc.
+    } do
 			local layer = display.newGroup()
 
 			current_level.layers[name] = layer
