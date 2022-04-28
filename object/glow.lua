@@ -24,7 +24,11 @@
 --
 
 -- Solar2D globals --
-local transition = transition
+local easing = easing
+local Runtime = Runtime
+
+-- Cached module references --
+local _GetGlowTime_
 
 -- Exports --
 local M = {}
@@ -35,53 +39,38 @@ local M = {}
 
 local Glow = {}
 
---- Factory.
--- @byte r1 Red #1.
--- @byte g1 Green #1.
--- @byte b1 Blue #1.
--- @byte r2 Red #2.
--- @byte g2 Green #2.
--- @byte b2 Blue #2.
--- @treturn function Getter, which returns the red, green, and blue values interpolated to
--- the current glow time.
+---
+-- @byte r1 Red...
+-- @byte g1 ...green...
+-- @byte b1 ...and blue, #1.
+-- @byte r2 Red...
+-- @byte g2 ...green...
+-- @byte b2 ...and blue, #2.
+-- @treturn function Returns the red, green, and blue values interpolated at the glow time.
 -- @see GetGlowTime
 function M.ColorInterpolator (r1, g1, b1, r2, g2, b2)
-	return function()
-		local u = 1 - (1 - 2 * Glow.t)^2
-		local s, t = 1 - u, u
+  local dr, dg, db = r2 - r1, g2 - g1, b2 - b1
 
-		return s * r1 + t * r2, s * g1 + t * g2, s * b1 + t * b2
+	return function()
+    -- 1 - (1 - x)^2 -> x * (2 - x), cf. http://www.plunk.org/~hatch/rightway.html...
+    local x = 2 * _GetGlowTime_() -- ...so we have 2 * t * (2 - 2 * t)...
+		local u = 4 * x * (1 - x) -- ...and finally this
+
+		return r1 + u * dr, g1 + u * dg, b1 + u * db
 	end
 end
 
 ---
 -- @treturn number Current glow time, &isin; [0, 1].
 function M.GetGlowTime ()
-	return Glow.t
+  return easing.inOutQuad(Runtime.getFrameStartTime() % 1100, 1100, 0, 1)
+--	return Glow.t
 end
 
 --
 --
 --
 
-Runtime:addEventListener("leave_level", function()
-	transition.cancel(Glow)
-end)
-
---
---
---
-
-local GlowParams = { time = 1100, t = 1, transition = easing.inOutQuad, iterations = 0 }
-
-Runtime:addEventListener("things_loaded", function()
-	Glow.t = 0
-
-	transition.to(Glow, GlowParams)
-end)
-
---
---
---
+_GetGlowTime_ = M.GetGlowTime
 
 return M
