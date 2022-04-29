@@ -540,9 +540,6 @@ Runtime:addEventListener("block", BroadcastEvent)
 
 local function BlockFunc (event)
 	local start = event.target
-
-	start.m_local_coordinate_system = event.local_coordinate_system
-
 	local x, y = event.group:localToContent(start.m_old_x, start.m_old_y)
 
 	start.rotation, start.x, start.y = event.angle or 0, start.parent:contentToLocal(x, y)
@@ -550,22 +547,16 @@ end
 
 Runtime:addEventListener("block_setup", function(event)
 	local block = event.block
-	local cmin, cmax = block:GetColumns()
-	local rmin, rmax = block:GetRows()
 
 	for _, enemy in IterEnemies() do
-		if enemy.m_can_attach then
-			local start, col, row = enemy.m_start, tile_layout.GetCell(enemy.m_tile)
+		if enemy.m_can_attach and block:Contains_Index(enemy.m_tile) then
+			local start = enemy.m_start
 
-			if col >= cmin and col <= cmax and row >= rmin and row <= rmax then
-				start.m_old_x, start.m_old_y = start.x, start.y
+      start.m_old_x, start.m_old_y, start.m_block = start.x, start.y, block
 
-				start:addEventListener("with_block_update", BlockFunc)
-				block:DataStore_Append(start)
-
-				start.m_block = block
-			end
-		end
+      start:addEventListener("with_block_update", BlockFunc)
+      block:DataStore_Append(start)
+    end
 	end
 end)
 

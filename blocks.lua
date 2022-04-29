@@ -205,6 +205,36 @@ end
 --
 --
 
+--- DOCME
+function Block:Contains (col, row)
+  local cmin, cmax = self:GetColumns()
+  local rmin, rmax = self:GetRows()
+
+  return col >= cmin and col <= cmax and row >= rmin and row <= rmax
+end
+
+--
+--
+--
+
+--- DOCME
+function Block:Contains_Index (index)
+  return self:Contains(tile_layout.GetCell(index))
+end
+
+--
+--
+--
+
+--- DOCME
+function Block:Contains_XY (x, y)
+  return self:Contains(tile_layout.GetCell_XY(x, y))
+end
+
+--
+--
+--
+
 --- Fill a region with occupancy information matching this block.
 -- @int col1 A column...
 -- @int row1 ... and row.
