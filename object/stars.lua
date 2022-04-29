@@ -117,14 +117,12 @@ local RotateSpeed = 1.5 * _2pi
 --- DOCME
 -- @pgroup group
 -- @uint nstars
--- @number x
--- @number y
 -- @number dx
 -- @number dy
 -- @ptable[opt] opts
 -- @treturn DisplayGroup X
 -- @treturn DisplayGroup Y
-function M.RingOfStars (group, nstars, x, y, dx, dy, opts)
+function M.RingOfStars (group, nstars, dx, dy, opts)
 	--
 	local square, file, func
 
@@ -150,8 +148,8 @@ function M.RingOfStars (group, nstars, x, y, dx, dy, opts)
 	local function Update (star, angle, index)
 		angle = angle % _2pi
 
-		star.x = x + cos(angle) * dx
-		star.y = y + sin(angle) * dy
+		star.x = cos(angle) * dx
+		star.y = sin(angle) * dy
 
 		;(angle < pi and front or back):insert(star)
 
@@ -178,7 +176,7 @@ function M.RingOfStars (group, nstars, x, y, dx, dy, opts)
 
 			stars[i] = display.newImageRect(name, w, h)
 		else
-			stars[i] = _Star_(front, x, y, 10, 0)
+			stars[i] = _Star_(front, 0, 0, 10, 0)
 		end
 
 		Update(stars[i], (i - 1) * _2pi / nstars, i)
@@ -188,10 +186,7 @@ function M.RingOfStars (group, nstars, x, y, dx, dy, opts)
 	local delay = 10
 
 	timer.performWithDelay(10, function(event)
-		local front_valid, back_valid = display.isValid(front), display.isValid(back)
-
-		--
-		if front_valid and back_valid then
+		if display.isValid(front) and display.isValid(back) then
 			local t = (event.count * delay) * RotateSpeed / 1000
 			local dt = _2pi / #stars
 
@@ -200,17 +195,9 @@ function M.RingOfStars (group, nstars, x, y, dx, dy, opts)
 
 				t = t + dt
 			end
-
-		--
 		else
-			if front_valid then
-				front:removeSelf()
-			end
-
-			if back_valid then
-				back:removeSelf()
-			end
-
+			display.remove(front)
+      display.remove(back)
 			timer.cancel(event.source)
 		end
 	end, 0)
