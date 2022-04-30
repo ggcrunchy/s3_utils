@@ -532,32 +532,57 @@ end)
 --
 --
 
-Runtime:addEventListener("block", BroadcastEvent)
+local EE = { name = "starts" }
+
+Runtime:addEventListener("block", function(event)
+  event.name = "start_setup"
+
+  BroadcastEvent(event, "all")
+
+  event.name = "block"
+
+  BroadcastEvent(event)
+end)
 
 --
 --
 --
 
-local function BlockFunc (event)
-	local start = event.target
-	local x, y = event.group:localToContent(start.m_old_x, start.m_old_y)
+local function UpdateStart (enemy, event)
+  if event.phase == "began" then
+    local start = enemy.m_start
 
-	start.rotation, start.x, start.y = event.angle or 0, start.parent:contentToLocal(x, y)
+    if start.m_block == event.block then
+      start.m_last_x, start.m_last_y = start.x, start.y
+    end
+  end
 end
 
 Runtime:addEventListener("block_setup", function(event)
 	local block = event.block
+  local cfl, list = block.ConsumeFillList
+
+  if not cfl then -- block is fixed?
+    return -- start position will be, too
+  end
 
 	for _, enemy in IterEnemies() do
 		if enemy.m_can_attach and block:Contains_Index(enemy.m_tile) then
 			local start = enemy.m_start
 
-      start.m_old_x, start.m_old_y, start.m_block = start.x, start.y, block
-
-      start:addEventListener("with_block_update", BlockFunc)
+      list = list or {}
+      list[#list + 1] = start
+    
+      enemy.start_setup, start.m_block = UpdateStart, block
+      
       block:DataStore_Append(start)
+      enemy:addEventListener("start_setup")
     end
 	end
+
+  if list then
+    cfl(block, list, "keep")
+  end
 end)
 
 --
