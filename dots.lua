@@ -39,10 +39,10 @@ local sort = table.sort
 local collision = require("solar2d_utils.collision")
 local shapes = require("s3_utils.shapes")
 local tile_layout = require("s3_utils.tile_layout")
+local timers = require("solar2d_utils.timers")
 
 -- Solar2D globals --
 local Runtime = Runtime
-local timer = timer
 
 -- Cached module references --
 local _DeductDot_
@@ -81,23 +81,15 @@ end
 -- Tile index -> dot map --
 local Dots
 
-local PreviousTime
-
-local function OnEnterFrame (event)
-	local now, dt = event.time, 0
-
-	if PreviousTime then
-		dt = (now - PreviousTime) / 1000
-	end
-
-	PreviousTime = now
-
+local function AuxEnterFrame (dt)
 	for _, dot in ipairs(Dots) do
 		if dot.Update then
 			dot:Update(dt)
 		end
 	end
 end
+
+local OnEnterFrame
 
 -- How many dots are left to pick up? --
 local Remaining
@@ -155,14 +147,15 @@ function M.New (info, dot)
 	dot.m_count = is_counted and 1 or 0
 	dot.m_index = index
 
-	if not Dots then
-		Dots, Remaining = {}, 0
+	if dot.Update and not OnEnterFrame then
+    OnEnterFrame = timers.WithDelta(AuxEnterFrame)
 
 		Runtime:addEventListener("enterFrame", OnEnterFrame)
 	end
 
-	Remaining = Remaining + dot.m_count
+	Remaining = (Remaining or 0) + dot.m_count
 
+  Dots = Dots or {}
 	Dots[#Dots + 1] = dot
 end
 
@@ -265,9 +258,11 @@ end)
 --
 
 Runtime:addEventListener("leave_level", function()
-	Dots, PreviousTime = nil
+  if OnEnterFrame then
+    Runtime:removeEventListener("enterFrame", OnEnterFrame)
+  end
 
-	Runtime:removeEventListener("enterFrame", OnEnterFrame)
+	Dots, OnEnterFrame, Remaining = nil
 end)
 
 --
@@ -275,7 +270,7 @@ end)
 --
 
 Runtime:addEventListener("reset", function()
-	Remaining, PreviousTime = 0
+	Remaining = 0
 
 	if Dots then
 		for _, dot in ipairs(Dots) do
@@ -291,7 +286,7 @@ Runtime:addEventListener("reset", function()
 			Remaining = Remaining + dot.m_count
 		end
 
-		timer.performWithDelay(0, function()
+    collision.DoLater(function()
 			for _, dot in ipairs(Dots) do
 				if collision.RemoveBody(dot) then
 					TryToAddBody(dot)
