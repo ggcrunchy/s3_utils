@@ -127,7 +127,8 @@ local Remaining
 --
 -- * **col**: Column on which dot sits.
 -- * **row**: Row on which dot sits.
--- * **type**: Name of dot type, q.v. _name_, above. This is also assigned as the collision type.
+-- * **type**: Name of dot type, q.v. _name_, above. This is also assigned as the collision type,
+-- although the **type\_name\_P** may be used to override this.
 --
 -- Instance-specific data may also be passed in other fields.
 -- @ptable Load parameters.
@@ -138,7 +139,7 @@ function M.New (info, dot)
 	tile_layout.PutObjectAt(index, dot)
 
 	if TryToAddBody(dot) then
-		collision.SetType(dot, info.type:sub(5)) -- lop off the "dot." part
+		collision.SetType(dot, dot.type_name_P or info.type:sub(5)) -- lop off the "dot." part
 	end
 
 	local is_counted

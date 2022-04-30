@@ -480,12 +480,12 @@ local function TryConfigFunc (key)
 		broadcast_event = BroadcastEvent, kill = Kill,
 
 		-- Helper for getting hit by harmful things
-		die_or_react = function(enemy, name, okey, object)
-			ReactEvent.name, ReactEvent[okey], ReactEvent.result = name, object, "dead"
+		die_or_react = function(enemy, name, what, object)
+			ReactEvent.name, ReactEvent.source, ReactEvent.what, ReactEvent.result = name, object, what, "dead"
 
 			enemy:dispatchEvent(ReactEvent)
 
-			ReactEvent[okey] = nil
+			ReactEvent.source = nil
 
 			if ReactEvent.result == "dead" then
 				Kill(enemy, object)
@@ -532,14 +532,14 @@ end)
 --
 --
 
-local EE = { name = "starts" }
-
 Runtime:addEventListener("block", function(event)
-  event.name = "start_setup"
+  for _, enemy in IterEnemies() do
+    local start = enemy.m_start
 
-  BroadcastEvent(event, "all")
-
-  event.name = "block"
+    if start.m_block == event.block then
+      start.m_last_x, start.m_last_y = start.x, start.y
+    end
+  end
 
   BroadcastEvent(event)
 end)
@@ -548,39 +548,22 @@ end)
 --
 --
 
-local function UpdateStart (enemy, event)
-  if event.phase == "began" then
-    local start = enemy.m_start
-
-    if start.m_block == event.block then
-      start.m_last_x, start.m_last_y = start.x, start.y
-    end
-  end
-end
-
 Runtime:addEventListener("block_setup", function(event)
 	local block = event.block
   local cfl, list = block.ConsumeFillList
 
-  if not cfl then -- block is fixed?
-    return -- start position will be, too
-  end
+  if cfl then -- not a fixed block?
+    for _, enemy in IterEnemies() do
+      if enemy.m_can_attach and block:Contains_Index(enemy.m_tile) then
+        local start = enemy.m_start
 
-	for _, enemy in IterEnemies() do
-		if enemy.m_can_attach and block:Contains_Index(enemy.m_tile) then
-			local start = enemy.m_start
-
-      list = list or {}
-      list[#list + 1] = start
-    
-      enemy.start_setup, start.m_block = UpdateStart, block
+        list = list or {}
+        list[#list + 1] = start
       
-      block:DataStore_Append(start)
-      enemy:addEventListener("start_setup")
+        start.m_block = block
+      end
     end
-	end
 
-  if list then
     cfl(block, list, "keep")
   end
 end)
@@ -601,15 +584,16 @@ end)
 
 local EventToBroadcast
 
-local function Broadcast (name)
+local function Broadcast (name, what)
 	EventToBroadcast = EventToBroadcast or {}
 	EventToBroadcast.name = name
+  EventToBroadcast.what = what
 
 	BroadcastEvent(EventToBroadcast)
 end
 
 Runtime:addEventListener("leave_level", function()
-	Broadcast("about_to_leave")
+	Broadcast("about_to", "leave")
 
 	for _, enemy in IterEnemies() do
 		ClearLocalVars(enemy)
@@ -625,7 +609,7 @@ end)
 --
 
 Runtime:addEventListener("reset", function()
-	Broadcast("about_to_reset")
+	Broadcast("about_to", "reset")
 
 	for _, enemy in IterEnemies() do
 		ClearLocalVars(enemy)
@@ -661,8 +645,6 @@ end)
 --
 
 TryConfigFunc("add_listeners")
-
--- TODO: Bosses too?
 
 --
 --
