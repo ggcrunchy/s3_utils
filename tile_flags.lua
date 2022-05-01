@@ -52,8 +52,8 @@ local M = {}
 local Current
 
 ---
--- @return Name of current flag group.
-function M.GetCurrentGroup ()
+-- @return Name of current flag set.
+function M.GetCurrentSet ()
 	return Current
 end
 
@@ -89,23 +89,23 @@ end
 --
 --
 
-local NilNonce = {}
+local NilCookie = {}
 
 local function MaybeNil (name)
 	if name == nil then
-		return NilNonce
+		return NilCookie
 	else
 		return name
 	end
 end
 
-local FlagGroups
+local FlagSets
 
 --- DOCME
-function M.GetFlags_FromGroup (name, index)
-	local fgroup = FlagGroups and FlagGroups[MaybeNil(name)]
+function M.GetFlags_FromSet (name, index)
+	local fset = FlagSets and FlagSets[MaybeNil(name)]
 
-	return fgroup and fgroup.resolved[index] or 0 -- n.b. fallthrough when resolved[index] nil
+	return fset and fset.resolved[index] or 0 -- n.b. fallthrough when resolved[index] nil
 end
 
 --
@@ -244,30 +244,30 @@ end
 --
 --
 
-local function AuxBindGroup (fgroup)
-	ResolvedFlags, WorkingFlags = fgroup.resolved, fgroup.working
+local function AuxBindSet (fset)
+	ResolvedFlags, WorkingFlags = fset.resolved, fset.working
 end
 
-local function AuxUseGroup (name)
+local function AuxUseSet (name)
 	Current, name = name, MaybeNil(name)
 
-	local fgroup = FlagGroups[name] or { resolved = {}, working = {} }
+	local fset = FlagSets[name] or { resolved = {}, working = {} }
 
-	FlagGroups[name] = fgroup
+	FlagSets[name] = fset
 
-	AuxBindGroup(fgroup)
+	AuxBindSet(fset)
 end
 
---- Swap out the current working / resolved flags for another group (created on first use).
+--- Swap out the current working / resolved flags for another set (created on first use).
 --
--- This is a no-op if _name_ is already the current group.
+-- This is a no-op if _name_ is already the current set.
 -- @param name Name of set, or **nil** for the default.
--- @return Name of group in use before call.
-function M.UseGroup (name)
+-- @return Name of set in use before call.
+function M.UseSet (name)
 	local current = Current
 
 	if not rawequal(name, current) then
-		AuxUseGroup(name)
+		AuxUseSet(name)
 	end
 
 	return current
@@ -277,21 +277,21 @@ end
 --
 --
 
---- Visit all flag groups, namely the default one and anything instantiated by @{UseGroup}.
--- For each one, _func_ is called with the group name after making the given flags current.
+--- Visit all flag sets, namely the default one and anything instantiated by @{UseSet}.
+-- For each one, _func_ is called with the set name after making the given flags current.
 --
--- The group current before this call is restored afterward.
-function M.VisitGroups (func)
+-- The set current before this call is restored afterward.
+function M.VisitSets (func)
 	local current = Current
 
-	for name, fgroup in pairs(FlagGroups) do
+	for name, fset in pairs(FlagSets) do
 		if name ~= current then
-			AuxBindGroup(fgroup)
+			AuxBindSet(fset)
 			func(name)
 		end
 	end
 
-	AuxBindGroup(FlagGroups[MaybeNil(current)])
+	AuxBindSet(FlagSets[MaybeNil(current)])
 	func(current)
 end
 
@@ -319,9 +319,9 @@ end
 --
 
 Runtime:addEventListener("enter_level", function()
-	FlagGroups, Current = {}
+	FlagSets, Current = {}
 
-	AuxUseGroup(nil)
+	AuxUseSet(nil)
 end)
 
 --
@@ -329,7 +329,7 @@ end)
 --
 
 Runtime:addEventListener("leave_level", function()
-	FlagGroups, WorkingFlags, ResolvedFlags = nil
+	FlagSets, WorkingFlags, ResolvedFlags = nil
 end)
 
 --

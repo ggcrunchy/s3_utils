@@ -25,6 +25,7 @@
 
 -- Standard library imports --
 local abs = math.abs
+local assert = assert
 local ipairs = ipairs
 local pairs = pairs
 local pi = math.pi
@@ -550,9 +551,11 @@ end)
 
 Runtime:addEventListener("block_setup", function(event)
 	local block = event.block
-  local cfl, list = block.ConsumeFillList
+  local glcs, list = block.GetLocalCoordinateSystem
 
-  if cfl then -- not a fixed block?
+  if glcs then -- not a fixed block?
+    local cfl = assert(block.ConsumeFillList, "Local coordinate system assumed to use fill list") -- TODO leaky abstraction
+
     for _, enemy in IterEnemies() do
       if enemy.m_can_attach and block:Contains_Index(enemy.m_tile) then
         local start = enemy.m_start

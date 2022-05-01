@@ -44,6 +44,7 @@ local remove = table.remove
 
 -- Modules --
 local component = require("tektite_core.component")
+local coordinate = require("tektite_core.number.coordinate")
 local data_store = require("s3_objects.mixin.data_store")
 local events = require("solar2d_utils.events")
 local meta = require("tektite_core.table.meta")
@@ -57,7 +58,7 @@ local Runtime = Runtime
 local system = system
 
 -- Imports --
-local GetFlags_FromGroup = tile_flags.GetFlags_FromGroup
+local GetFlags_FromSet = tile_flags.GetFlags_FromSet
 local GetImage = tile_maps.GetImage
 local SetFlags = tile_flags.SetFlags
 
@@ -372,12 +373,12 @@ local function ZeroSpan (block, col1, row1, col2, row2)
 	end
 end
 
---- Populate the flags in a group with the block's old flags, zeroing out a one-cell
+--- Populate the flags in a set with the block's old flags, zeroing out a one-cell
 -- rect around them for safety.
--- @param[opt=self] name Name of flag group, cf. @{tile_flags.UseGroup}.
--- @param[opt] from Name of source flag group. If absent, uses the default.
+-- @param[opt=self] name Name of flag set, cf. @{tile_flags.UseSet}.
+-- @param[opt] from Name of source flag set. If absent, uses the default.
 function Block:MakeIsland (name, from)
-	local cur = tile_flags.UseGroup(name or self)
+	local cur = tile_flags.UseSet(name or self)
 	local cmin, cmax = self:GetColumns()
 	local rmin, rmax = self:GetRows()
 
@@ -398,11 +399,11 @@ function Block:MakeIsland (name, from)
 	end
 
 	for index in self:IterSelf() do
-		SetFlags(index, GetFlags_FromGroup(from, index))
+		SetFlags(index, GetFlags_FromSet(from, index))
 	end
 
 	tile_flags.Resolve()
-	tile_flags.UseGroup(cur)
+	tile_flags.UseSet(cur)
 end
 
 --
@@ -424,6 +425,33 @@ function Block:SetRect (col1, row1, col2, row2)
 
 	self.m_cmin, self.m_cmax = col1, col2
 	self.m_rmin, self.m_rmax = row1, row2
+end
+
+--
+--
+--
+
+local Event = {}
+
+--- DOCME
+function Block:TryToBeginLate (object)
+		Event.name, Event.result, Event.target = "is_done", true, self
+
+		self:dispatchEvent(Event)
+
+    Event.target = nil
+
+    local active = not Event.result
+
+		if active then
+			Event.name, Event.block, Event.force, Event.phase = "block", self, true, "began"
+
+			object:dispatchEvent(Event)
+
+			Event.block = nil
+		end
+
+    return active
 end
 
 --
@@ -463,7 +491,30 @@ component.AddToObject(Block, data_store)
 --
 --
 
-local LoadedBlocks
+local ActiveBlocks, LoadedBlocks
+
+--- DOCME
+function M.FindActiveBlock (x, y)
+  for i = 1, #(ActiveBlocks or "") do
+    local id = ActiveBlocks[i]
+    local block = LoadedBlocks[id]
+    local lcs = block:GetLocalCoordinateSystem()
+
+    x, y = coordinate.GlobalToLocal(lcs, x, y, "use_ref")
+
+    local tile = tile_layout.GetIndex_XY(x, y)
+
+    if BlockIDs[tile] == id then
+      return block, tile
+    end
+  end
+
+  return nil
+end
+
+--
+--
+--
 
 --- Add a block to the level and register an event for it.
 -- @ptable info Block info, with at least the following properties:
@@ -531,6 +582,31 @@ end
 --
 --
 
+Runtime:addEventListener("block", function(event)
+  local block = event.block
+
+  if block.GetLocalCoordinateSystem then
+    if event.phase == "began" then
+      ActiveBlocks = ActiveBlocks or {}
+      ActiveBlocks[#ActiveBlocks + 1] = block.m_id
+    else
+      local id = block.m_id
+
+      for i = 1, #(ActiveBlocks or "") do
+        if ActiveBlocks[i] == id then
+          remove(ActiveBlocks, i)
+          
+          break
+        end
+      end
+    end
+  end
+end)
+
+--
+--
+--
+
 local ShapeList
 
 Runtime:addEventListener("filled_shape", function(event)
@@ -548,7 +624,7 @@ end)
 --
 
 Runtime:addEventListener("leave_level", function()
-	LoadedBlocks, BlockIDs, OldFlags = nil
+	ActiveBlocks, LoadedBlocks, BlockIDs, OldFlags = nil
 end)
 
 --
@@ -599,18 +675,10 @@ end)
 
 Runtime:addEventListener("pre_reset", function()
 	if LoadedBlocks then
-		BlockIDs = {}
+		BlockIDs, ActiveBlocks = {}
 
-		-- Restore any flags that may have been altered by a block.
+		-- Restore any flags that might have been altered by a block.
 		for i, flags in pairs(OldFlags) do
---[[
-			local image = GetImage(i) -- Relevant?...
-
-			if image then
-				PutObjectAt(i, image)
-			end
-]]
--- Physics...
 			SetFlags(i, flags)
 		end
 

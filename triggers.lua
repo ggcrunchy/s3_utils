@@ -124,7 +124,7 @@ end
 --
 --
 
-local FlagGroups = { "player", "enemy", "projectile" }
+local FlagNames = { "player", "enemy", "projectile" }
 
 --- DOCME
 function M.make (info, params)
@@ -134,7 +134,7 @@ function M.make (info, params)
 		local flags, handles = 0, {}
     local named_bits = collision.GetNamedBits()
 
-		for _, name in ipairs(FlagGroups) do
+		for _, name in ipairs(FlagNames) do
 			local bits = bit.band(detect, BitBoth)
 
 			if bits ~= 0 then
