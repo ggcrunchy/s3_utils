@@ -62,6 +62,9 @@ local GetFlags_FromSet = tile_flags.GetFlags_FromSet
 local GetImage = tile_maps.GetImage
 local SetFlags = tile_flags.SetFlags
 
+-- Extension imports --
+local indexOf = table.indexOf
+
 -- Exports --
 local M = {}
 
@@ -590,14 +593,10 @@ Runtime:addEventListener("block", function(event)
       ActiveBlocks = ActiveBlocks or {}
       ActiveBlocks[#ActiveBlocks + 1] = block.m_id
     else
-      local id = block.m_id
+      local index = ActiveBlocks and indexOf(ActiveBlocks, block.m_id)
 
-      for i = 1, #(ActiveBlocks or "") do
-        if ActiveBlocks[i] == id then
-          remove(ActiveBlocks, i)
-          
-          break
-        end
+      if index then
+        remove(ActiveBlocks, index)
       end
     end
   end

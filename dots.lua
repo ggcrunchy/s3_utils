@@ -64,6 +64,23 @@ function M.EditorEvent ()
 	-- ^^ TODO: inherit this somehow
 end
 
+
+--
+--
+--
+
+-- How many dots are left to pick up? --
+local Remaining
+
+--- Deduct a remaining dot, firing off an event if it was the last one.
+function M.DeductDot ()
+	Remaining = Remaining - 1
+
+	if Remaining == 0 then
+		Runtime:dispatchEvent{ name = "all_dots_removed" }
+	end
+end
+
 --
 --
 --
@@ -90,9 +107,6 @@ local function AuxEnterFrame (dt)
 end
 
 local OnEnterFrame
-
--- How many dots are left to pick up? --
-local Remaining
 
 --- Adds a new _name_-type sensor dot to the level.
 --
@@ -163,13 +177,19 @@ end
 --
 --
 
---- Deduct a remaining dot, firing off an event if it was the last one.
-function M.DeductDot ()
-	Remaining = Remaining - 1
+local TouchEvent = { name = "touching_dot" }
 
-	if Remaining == 0 then
-		Runtime:dispatchEvent{ name = "all_dots_removed" }
-	end
+--- DOCME
+function M.Touch (dot, phase)
+  local is_touched = phase == "began"
+
+  TouchEvent.dot, TouchEvent.is_touching = dot, is_touched
+
+  Runtime:dispatchEvent(TouchEvent)
+
+  TouchEvent.dot = nil
+
+  return is_touched
 end
 
 --
