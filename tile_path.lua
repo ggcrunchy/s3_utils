@@ -25,12 +25,12 @@
 
 -- Standard library imports --
 local abs = math.abs
+local max = math.max
 local min = math.min
 
 -- Modules --
 local meta = require("tektite_core.table.meta")
 local movement = require("s3_utils.movement")
-local numeric = require("s3_utils.numeric")
 local tile_flags = require("s3_utils.tile_flags")
 local tile_layout = require("s3_utils.tile_layout")
 
@@ -117,7 +117,7 @@ function M.TryToMove (object, dist, dir)
 			tx, ty, tile = GetTileInfo(x, y)
       flags = tile_flags.GetFlags(tile)
 
-			if not tile_layout.IsStraight(flags) and gtile ~= tile and numeric.IsClose(tx - x, ty - y, path_opts.NearGoal) then
+			if not tile_layout.IsStraight(flags) and gtile ~= tile and max(abs(tx - x), abs(ty - y)) < path_opts.NearGoal then
 				dir = path_opts.UpdateOnMove(dir, tile, object)
 			end
 		end
@@ -125,7 +125,7 @@ function M.TryToMove (object, dist, dir)
 
 	--
 	-- CONSIDER: What if 'dist' happened to be low?
-	local stuck = numeric.IsClose(x - x0, y - y0, 1e-3)
+	local stuck = 1 + (x - x0)^2 + (y - y0)^2 == 1
 
 	if stuck and path_opts and path_opts.IsFollowingPath(object) then
 		local count = StuckFrameCounts[object] or 0

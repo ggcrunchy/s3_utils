@@ -30,9 +30,14 @@ local next = next
 -- Modules --
 local enums = require("s3_utils.enums")
 
+-- Solar2D globals --
+local display = display
+
 -- Cached module references --
 local _GetCell_
 local _GetCell_XY_
+local _GetFullHeight_
+local _GetFullWidth_
 local _GetIndex_
 local _GetPosition_
 
@@ -119,8 +124,40 @@ end
 --
 
 --- DOCME
-function M.GetFullSizes ()
-	return ColumnCount * Width, RowCount * Height
+function M.GetFullHeight (how)
+  local height = RowCount * Height
+  local ch = how == "match_content" and display.contentHeight
+
+  if ch and ch > height then
+    return ch
+  else
+    return height
+  end
+end
+
+--
+--
+--
+
+--- DOCME
+function M.GetFullSizes (how)
+	return _GetFullWidth_(how), _GetFullHeight_(how)
+end
+
+--
+--
+--
+
+--- DOCME
+function M.GetFullWidth (how)
+  local width = ColumnCount * Width
+  local cw = how == "match_content" and display.contentWidth
+
+  if cw and cw > width then
+    return cw
+  else
+    return width
+  end
 end
 
 --
@@ -289,6 +326,8 @@ end
 
 _GetCell_ = M.GetCell
 _GetCell_XY_ = M.GetCell_XY
+_GetFullHeight_ = M.GetFullHeight
+_GetFullWidth_ = M.GetFullWidth
 _GetIndex_ = M.GetIndex
 _GetPosition_ = M.GetPosition
 

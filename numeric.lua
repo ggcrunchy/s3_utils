@@ -24,7 +24,6 @@
 --
 
 -- Standard library imports --
-local abs = math.abs
 local assert = assert
 local ceil = math.ceil
 local floor = math.floor
@@ -40,45 +39,30 @@ local M = {}
 --
 
 --- DOCME
--- @number dx
--- @number dy
--- @number tolerx
--- @number tolery
-function M.IsClose (dx, dy, tolerx, tolery)
-	tolerx, tolery = tolerx or 1e-5, tolery or tolerx or 1e-5
-
-	return abs(dx) <= tolerx and abs(dy) <= tolery
-end
-
---
---
---
-
---- DOCME
 function M.MakeLengthQuantizer (params)
-    assert(params == nil or type(params) == "table", "Non-table params")
+  assert(params == nil or type(params) == "table", "Non-table params")
 
-    local step_func, bias, minimum, offset, rescale, unit = floor
+  local step_func, bias, minimum, offset, rescale, unit = floor
 
-    if params then
-        if params.round_up then
-            step_func = ceil
-        end
-
-        bias, minimum, offset, rescale, unit = params.bias, params.minimum, params.offset, params.rescale, params.unit
-
-        assert(bias == nil or type(bias) == "number", "Non-number bias")
-        assert(minimum == nil or type(minimum) == "number", "Non-number minimum")
-        assert(offset == nil or type(offset) == "number", "Non-number offset")
-        assert(rescale == nil or type(rescale) == "number", "Non-number rescale")
-        assert(unit == nil or type(unit) == "number", "Non-number unit")
+  if params then
+    if params.round_up then
+      step_func = ceil
     end
 
-    bias, minimum, offset, rescale, unit = bias or 0 or 1, minimum or 0, offset or 0, rescale or 1, unit or 1
+    bias, minimum, offset, rescale, unit = params.bias, params.minimum, params.offset, params.rescale, params.unit
 
-    return function(dx, dy)
-        return max(minimum, step_func(sqrt(dx^2 + dy^2) / unit + bias)) * rescale + offset
-    end
+    assert(bias == nil or type(bias) == "number", "Non-number bias")
+    assert(minimum == nil or type(minimum) == "number", "Non-number minimum")
+    assert(offset == nil or type(offset) == "number", "Non-number offset")
+    assert(rescale == nil or type(rescale) == "number", "Non-number rescale")
+    assert(unit == nil or type(unit) == "number", "Non-number unit")
+  end
+
+  bias, minimum, offset, rescale, unit = bias or 0 or 1, minimum or 0, offset or 0, rescale or 1, unit or 1
+
+  return function(dx, dy)
+    return max(minimum, step_func(sqrt(dx^2 + dy^2) / unit + bias)) * rescale + offset
+  end
 end
 
 --
@@ -93,17 +77,6 @@ function M.RoundTo (n, inc)
 	inc = inc or 1
 
 	return floor(n / inc + .5) * inc
-end
-
---
---
---
-
---- DOCME
--- @number value
--- @treturn boolean X
-function M.NotZero (value)
-	return abs(value) > 1e-5
 end
 
 --
@@ -172,8 +145,8 @@ local function GetN (ix, iy, x, y)
 end
 
 -- 2D skew factor:
-local F = (math.sqrt(3) - 1) / 2
-local G = (3 - math.sqrt(3)) / 6
+local F = (sqrt(3) - 1) / 2
+local G = (3 - sqrt(3)) / 6
 local G2 = 2 * G - 1
 
 --- 2-dimensional simplex noise.
@@ -181,37 +154,37 @@ local G2 = 2 * G - 1
 -- @number y Value #2.
 -- @treturn number Noise value &isin; [-1, +1].
 function M.SampleNoise (x, y)
-    -- Skew the input space to determine which simplex cell we are in.
-    local s = (x + y) * F
-    local ix, iy = floor(x + s), floor(y + s)
+  -- Skew the input space to determine which simplex cell we are in.
+  local s = (x + y) * F
+  local ix, iy = floor(x + s), floor(y + s)
 
-    -- Unskew the cell origin back to (x, y) space.
-    local t = (ix + iy) * G
-    local x0 = x + t - ix
-    local y0 = y + t - iy
+  -- Unskew the cell origin back to (x, y) space.
+  local t = (ix + iy) * G
+  local x0 = x + t - ix
+  local y0 = y + t - iy
 
-    -- Calculate the contribution from the two fixed corners.
-    -- A step of (1,0) in (i,j) means a step of (1-G,-G) in (x,y), and
-    -- A step of (0,1) in (i,j) means a step of (-G,1-G) in (x,y).
-    ix, iy = ix % 256, iy % 256
+  -- Calculate the contribution from the two fixed corners.
+  -- A step of (1,0) in (i,j) means a step of (1-G,-G) in (x,y), and
+  -- A step of (0,1) in (i,j) means a step of (-G,1-G) in (x,y).
+  ix, iy = ix % 256, iy % 256
 
-    local n0 = GetN(ix, iy, x0, y0)
-    local n2 = GetN(ix + 1, iy + 1, x0 + G2, y0 + G2)
+  local n0 = GetN(ix, iy, x0, y0)
+  local n2 = GetN(ix + 1, iy + 1, x0 + G2, y0 + G2)
 
-    --[[
-        Determine other corner based on simplex (equilateral triangle) we are in:
-        if x0 > y0 then
-            ix, x1 = ix + 1, x1 - 1
-        else
-            iy, y1 = iy + 1, y1 - 1
-        end
-    ]]
-    local xi = x0 > y0 and 1 or 0
-    local n1 = GetN(ix + xi, iy + (1 - xi), x0 + G - xi, y0 + G - (1 - xi))
+  --[[
+      Determine other corner based on simplex (equilateral triangle) we are in:
+      if x0 > y0 then
+          ix, x1 = ix + 1, x1 - 1
+      else
+          iy, y1 = iy + 1, y1 - 1
+      end
+  ]]
+  local xi = x0 > y0 and 1 or 0
+  local n1 = GetN(ix + xi, iy + (1 - xi), x0 + G - xi, y0 + G - (1 - xi))
 
-    -- Add contributions from each corner to get the final noise value.
-    -- The result is scaled to return values in the interval [-1,1].
-    return 70.1480580019 * (n0 + n1 + n2)
+  -- Add contributions from each corner to get the final noise value.
+  -- The result is scaled to return values in the interval [-1,1].
+  return 70.1480580019 * (n0 + n1 + n2)
 end
 
 --

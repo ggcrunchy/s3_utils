@@ -24,74 +24,17 @@
 --
 
 -- Standard library imports --
+local abs = math.abs
 local max = math.max
 local min = math.min
 local type = type
 
 -- Modules --
 local coro_flow = require("solar2d_utils.coro_flow")
-local numeric = require("s3_utils.numeric")
 local tile_layout = require("s3_utils.tile_layout")
-
--- Plugins --
-local mwc = require("plugin.mwc")
-
--- Solar2D globals --
-local display = display
 
 -- Exports --
 local M = {}
-
---
---
---
-
-local BestT, Nx, Ny
-
-local function TryNormal (t, nx, ny, compx, compy)
-	if t > 0 and t < BestT and (nx ~= compx or ny ~= compy) then
-		BestT, Nx, Ny = t, nx, ny
-	end
-end
-
-local MaxX, MaxY
-
---- DOCME
--- @number px
--- @number py
--- @number vx
--- @number vy
--- @number nx
--- @number ny
--- @treturn number
--- @treturn number
--- @treturn number
-function M.FindNearestBorder (px, py, vx, vy, nx, ny)
-	BestT = 1 / 0
-
-	if numeric.NotZero(vx) then
-		TryNormal(-px / vx, 1, 0, nx, ny)
-		TryNormal((MaxX - px) / vx, -1, 0, nx, ny)
-	end
-
-	if numeric.NotZero(vy) then
-		TryNormal(-py / vy, 0, 1, nx, ny)
-		TryNormal((MaxY - py) / vy, 0, -1, nx, ny)
-	end
-
-	return BestT, Nx, Ny
-end
-
---
---
---
-
---- DOCME
--- @treturn number X
--- @treturn number Y
-function M.GetExtents ()
-	return MaxX, MaxY
-end
 
 --
 --
@@ -111,7 +54,6 @@ function M.GetTileNeighbor (start, halfx, halfy, gen)
 	repeat
 		col = min(ncols, max(col - halfx, 1) + gen() % w)
 		row = min(nrows, max(row - halfy, 1) + gen() % h)
-
 		tile = tile_layout.GetIndex(col, row)
 	until tile ~= start
 
@@ -122,8 +64,12 @@ end
 --
 --
 
-local function TSign (n, bias)
-	return n + (n < 0 and -bias or bias)
+local function BiasDim (n, bias)
+  if n < 0 then
+    return n - bias
+  else
+    return n + bias
+  end
 end
 
 --- DOCME
@@ -146,8 +92,8 @@ function M.GetTileNeighbor_Biased (start, halfx, halfy, gen, biasx, biasy)
 		local gh = halfy - gen() % h + 1
 
 		if gw ~= 0 and gh ~= 0 then
-			col = max(1, min(col + TSign(gw, biasx), ncols))
-			row = max(1, min(row + TSign(gh, biasy), nrows))
+			col = max(1, min(col + BiasDim(gw, biasx), ncols))
+			row = max(1, min(row + BiasDim(gh, biasy), nrows))
 			tile = tile_layout.GetIndex(col, row)
 		end
 	until tile ~= start
@@ -190,7 +136,7 @@ function M.SamplePositions (n, tolerx, tolery, target, dt, update, arg)
 		end
 
 		--
-		if i > 1 and not numeric.IsClose(x - prevx, y - prevy, tolerx, tolery) then
+		if i > 1 and (abs(x - prevx) > tolerx or abs(y - prevy > tolery)) then
 			return false
 		end		
 
@@ -200,33 +146,6 @@ function M.SamplePositions (n, tolerx, tolery, target, dt, update, arg)
 
 	return true, sumx / n, sumy / n
 end
-
---
---
---
-
---- DOCME
--- @pobject enemy
--- @treturn boolean X
-function M.StartWithGenerator (enemy)
-	local life = enemy.m_life
-
-	enemy.m_life = (life or 0) + 1
-	enemy.m_gen = mwc.MakeGenerator{ z = enemy.m_tile or 0, w = enemy.m_life }
-
-	return life == nil
-end
-
---
---
---
-
-Runtime:addEventListener("things_loaded", function()
-	local w, h = tile_layout.GetFullSizes()
-
-	MaxX = max(w, display.contentWidth)
-	MaxY = max(h, display.contentHeight)
-end)
 
 --
 --

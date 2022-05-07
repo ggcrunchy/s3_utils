@@ -258,9 +258,9 @@ local function PutInPlace (enemy)
 end
 
 -- Behavior of an enemy after (re)spawning and while waiting to become alive
-local function PhaseIn (enemy, type_info, is_sleeping)
+local function PhaseIn (enemy, type_info, is_sleeping, iteration, index)
 	if type_info.Start then
-		type_info.Start(enemy)
+		type_info.Start(enemy, iteration, index)
 	end
 
 	--
@@ -330,11 +330,12 @@ end
 -- Coroutine body: Common overall enemy logic
 local function EnemyFunc (event, index, type_info, info)
 	local enemy = Enemies[index]
-
-	local is_sleeping = info.asleep
+	local is_sleeping, iteration = info.asleep, 0
 
 	while true do
-		PhaseIn(enemy, type_info, is_sleeping)
+    iteration = iteration + 1
+
+		PhaseIn(enemy, type_info, is_sleeping, iteration, index)
 		Alive(enemy, type_info)
 		Die(enemy, type_info)
 

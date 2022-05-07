@@ -40,9 +40,17 @@ function M.GetFlagByName (name)
     return DirectionFlags[name]
 end
 
+--
+--
+--
+
 --- DOCME
 function M.IsFlagSet (flags, name)
     return bit.band(flags or 0, DirectionFlags[name]) ~= 0
 end
+
+--
+--
+--
 
 return M
