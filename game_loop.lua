@@ -107,18 +107,19 @@ end
 --
 --
 
-local Groups = { "game", "canvas", "game_dynamic", "hud" }
+local Groups = { "game", "canvas", "game_dynamic", "hud", "borders" }
 
-local Canvas
-
-local function InvalidateCanvas ()
-	Canvas:invalidate("cache")
+local function InvalidateCanvas (canvas_rect)
+	canvas_rect.m_canvas:invalidate("cache")
 end
 
-local CanvasRect
+local function SetCanvasRectAlpha (canvas_rect, event)
+	canvas_rect.alpha = event.alpha
+end
 
-local function SetCanvasRectAlpha (event)
-	CanvasRect.alpha = event.alpha
+local function WipeCanvasRect (event)
+  Runtime:removeEventListener("enterFrame", event.target)
+  Runtime:removeEventListener("set_canvas_alpha", event.target)
 end
 
 --- DOCME
@@ -138,24 +139,29 @@ function M.BeforeEntering (w, h)
 		end
 
 		-- Rig up a canvas that captures certain layers for use in post-processing.
-		Canvas = graphics.newTexture{
-			type = "canvas", width = display.contentWidth, height = display.contentHeight
-		}
+    local cw, ch = display.contentWidth, display.contentHeight
+		local canvas = graphics.newTexture{ type = "canvas", width = cw, height = ch }
 
-		current_level.canvas = Canvas
+		canvas:draw(current_level.groups.game)
 
-		Canvas:draw(current_level.groups.game)
-		Runtime:addEventListener("enterFrame", InvalidateCanvas)
-		Runtime:addEventListener("set_canvas_alpha", SetCanvasRectAlpha)
-		
-		Canvas.anchorX, Canvas.anchorY = -.5, -.5
+		local canvas_rect = display.newImageRect(current_level.groups.canvas, canvas.filename, canvas.baseDir, cw, ch)
+
+		canvas.anchorX, canvas_rect.x = -.5, display.contentCenterX
+		canvas.anchorY, canvas_rect.y = -.5, display.contentCenterY
+
+    canvas_rect.m_canvas = canvas
+
+    canvas_rect.enterFrame = InvalidateCanvas
+    canvas_rect.set_canvas_alpha = SetCanvasRectAlpha
+
+		Runtime:addEventListener("enterFrame", canvas_rect)
+    Runtime:addEventListener("set_canvas_alpha", canvas_rect)
+		canvas_rect:addEventListener("finalize", WipeCanvasRect)
 
 		-- Give it a frame to take hold, and finish up.
 		yield()
 
-		CanvasRect = display.newImageRect(current_level.groups.canvas, Canvas.filename, Canvas.baseDir, display.contentWidth, display.contentHeight)
-
-		CanvasRect.x, CanvasRect.y = display.contentCenterX, display.contentCenterY
+    current_level.canvas = canvas
 
 		-- Add game group layers and export them for things.
 		current_level.layers = {}
@@ -184,11 +190,11 @@ function M.BeforeEntering (w, h)
 		-- Enforce true letterbox mode.
 		if display.screenOriginX ~= 0 then
 			for i = 1, 2 do
-				local border = display.newRect(0, display.contentCenterY, -display.screenOriginX, display.contentHeight)
+				local border = display.newRect(current_level.groups.borders, 0, display.contentCenterY, -display.screenOriginX, ch)
 
 				border:setFillColor(0)
 
-				border.anchorX, border.x = i == 1 and 1 or 0, i == 1 and 0 or display.contentWidth
+				border.anchorX, border.x = i == 1 and 1 or 0, i == 1 and 0 or cw
 			end
 		end
 	end
@@ -201,16 +207,12 @@ end
 --- DOCME
 function M.Cleanup (current_level)
 	for _, name in ipairs(Groups) do
-		if name ~= "game" then -- TODO: what was this about?
+		if name ~= "game" then -- in canvas
 			display.remove(current_level and current_level.params:GetGroup(name))
 		end
 	end
 
-	Canvas:releaseSelf()
-	Runtime:removeEventListener("enterFrame", InvalidateCanvas)
-	Runtime:removeEventListener("set_canvas_alpha", SetCanvasRectAlpha)
-
-	Canvas, CanvasRect = nil
+	current_level.canvas:releaseSelf()
 end
 
 --

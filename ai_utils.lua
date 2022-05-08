@@ -136,7 +136,7 @@ function M.SamplePositions (n, tolerx, tolery, target, dt, update, arg)
 		end
 
 		--
-		if i > 1 and (abs(x - prevx) > tolerx or abs(y - prevy > tolery)) then
+		if i > 1 and (abs(x - prevx) > tolerx or abs(y - prevy) > tolery) then
 			return false
 		end		
 
