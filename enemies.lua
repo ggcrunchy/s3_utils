@@ -267,7 +267,6 @@ local function PhaseIn (enemy, type_info, is_sleeping, iteration, index)
 	enemy.m_ready = not is_sleeping
 
 	coro_flow.WaitUntilPropertyTrue(enemy, "m_ready")
-	collision.Enable(enemy, false)
 
 	--
 	enemy.isVisible = true
@@ -454,6 +453,7 @@ function M.New (info, params, enemy, type_info)
 
 	collision.MakeSensor(enemy, "dynamic", type_info.body)
 	collision.SetType(enemy, "enemy")
+	collision.Enable(enemy, false)
 	component.AddToObject(enemy, EnemyComponent)
 
 	enemy.isVisible = false
@@ -621,6 +621,7 @@ Runtime:addEventListener("reset", function()
 		enemy.m_alive = false
 
 		enemy_events.base_reset(enemy)
+    collision.Enable(enemy, false)
 
 		enemy.isVisible = true
 
