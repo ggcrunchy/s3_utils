@@ -292,27 +292,19 @@ end)
 Runtime:addEventListener("reset", function()
 	Remaining = 0
 
-	if Dots then
-		for _, dot in ipairs(Dots) do
-			tile_layout.PutObjectAt(dot.m_index, dot)
+	for i = 1, #(Dots or "") do
+    local dot = Dots[i]
 
-			dot.isVisible = true
-			dot.rotation = 0
+    tile_layout.PutObjectAt(dot.m_index, dot)
 
-			if dot.Reset then
-				dot:Reset()
-			end
+    dot.isVisible = true
+    dot.rotation = 0
 
-			Remaining = Remaining + dot.m_count
-		end
+    if dot.Reset then
+      dot:Reset()
+    end
 
-    collision.DoLater(function()
-			for _, dot in ipairs(Dots) do
-				if collision.RemoveBody(dot) then
-					TryToAddBody(dot)
-				end
-			end
-		end)
+    Remaining = Remaining + dot.m_count
 	end
 end)
 
