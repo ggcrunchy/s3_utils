@@ -94,6 +94,8 @@ local function FollowObject ()
 	if display.isValid(Object) then
 		local x, y = Object.x, Object.y
 
+    EnsureSizes()
+
 		for group in pairs(Groups) do
 			local gx, gy, scale = _GetState_(group, x, y, Width, Height)
 
@@ -116,7 +118,7 @@ end
 function M.Follow (object)
 	local old_object = Object
 
-	Object = object
+	Object, Width = object -- n.b. invalidate dimensions
 
 	-- Add or remove the follow listener if we changed between following some object and
 	-- following no object (or vice versa).
@@ -144,7 +146,7 @@ local CW, CH = display.contentWidth, display.contentHeight
 function M.GetMinScale (w, h)
 	EnsureSizes()
 
-	return min(max(CW / (w or Width), CH / (h or Height)), 1)
+	return min(max(CW / (w or Width), 1), min(CH / (h or Height)), 1)
 end
 
 --
@@ -181,7 +183,7 @@ end
 --
 
 local function AuxGetScale (w, h)
-	return max(Scale, _GetMinScale_(w, h))
+  return max(Scale, _GetMinScale_(w, h))
 end
 
 --- DOCME
