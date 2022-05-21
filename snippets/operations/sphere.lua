@@ -58,6 +58,10 @@ M.GET_UV_FROM_DIFF = includer.AddSnippet{
 
 }
 
+--
+--
+--
+
 --- DOCME
 M.GET_UV_FROM_DIR = includer.AddSnippet{
     requires = RequiresPi,
@@ -71,6 +75,10 @@ M.GET_UV_FROM_DIR = includer.AddSnippet{
 ]]
 
 }
+
+--
+--
+--
 
 --- DOCME
 M.GET_UV_Z_PHI = includer.AddSnippet{
@@ -93,6 +101,10 @@ M.GET_UV_Z_PHI = includer.AddSnippet{
 ]]
 
 }
+
+--
+--
+--
 
 local PhiToU = [[
     P_POSITION float u = .5 + phi * ONE_OVER_TWO_PI;
@@ -134,6 +146,10 @@ M.GET_UV_PHI_DELTA = includer.AddSnippet{
 
 }
 
+--
+--
+--
+
 --- DOCME
 M.GET_UV_PHI_DELTA_Z_PHI = includer.AddSnippet{
     requires = RequiresPi,
@@ -157,6 +173,10 @@ M.GET_UV_PHI_DELTA_Z_PHI = includer.AddSnippet{
 
 }
 
+--
+--
+--
+
 --- DOCME
 M.GET_TANGENT = includer.AddSnippet{
     requires = RequiresPi,
@@ -171,5 +191,9 @@ M.GET_TANGENT = includer.AddSnippet{
 ]]
 
 }
+
+--
+--
+--
 
 return M

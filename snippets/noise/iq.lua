@@ -1,4 +1,4 @@
---- Mixins for "iq" noise.
+--- Mixins for "iq" noise. See also https://iquilezles.org/articles/.
 
 --
 -- Permission is hereby granted, free of charge, to any person obtaining
@@ -75,6 +75,10 @@ M.IQ1 = includer.AddSnippet{
 
 }
 
+--
+--
+--
+
 --- DOCME
 M.OCTAVES = includer.AddSnippet{
     requires = { M.IQ1 },
@@ -88,6 +92,10 @@ M.OCTAVES = includer.AddSnippet{
 ]]):gsub("_PRECISION_", Precision)
 
 }
+
+--
+--
+--
 
 --- DOCME
 M.IQ2 = includer.AddSnippet{
@@ -106,6 +114,10 @@ M.IQ2 = includer.AddSnippet{
 ]]):gsub("_PRECISION_", Precision)
 
 }
+
+--
+--
+--
 
 local NoiseSnippet = includer.AddSnippet{
     requires = { M.IQ2 },
@@ -157,6 +169,10 @@ M.FBM4 = includer.AddSnippet{
 
 }
 
+--
+--
+--
+
 --- DOCME
 M.TURB4 = includer.AddSnippet{
     requires = RequiresNoise,
@@ -177,5 +193,9 @@ M.TURB4 = includer.AddSnippet{
 ]]):gsub("_PRECISION_", Precision)
 
 }
+
+--
+--
+--
 
 return M

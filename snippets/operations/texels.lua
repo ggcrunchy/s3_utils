@@ -45,6 +45,10 @@ M.GET_ABOVE_TEXEL = includer.AddSnippet[[
 	}
 ]]
 
+--
+--
+--
+
 --- DOCME
 M.GET_RIGHT_TEXEL = includer.AddSnippet[[
 	P_UV vec4 GetRightTexel (sampler2D s, P_UV vec2 uv)
@@ -52,6 +56,10 @@ M.GET_RIGHT_TEXEL = includer.AddSnippet[[
 		return texture2D(s, uv + vec2(CoronaTexelSize.x, 0.));
 	}
 ]]
+
+--
+--
+--
 
 --- DOCME
 M.LAPLACIAN = includer.AddSnippet[[
@@ -68,6 +76,10 @@ M.LAPLACIAN = includer.AddSnippet[[
 	}
 ]]
 
+--
+--
+--
+
 --- DOCME
 M.NORMALIZED_CORNER = includer.AddSnippet[[
 
@@ -78,6 +90,10 @@ M.NORMALIZED_CORNER = includer.AddSnippet[[
 		return vec2(step(.25, v - y * .5), y);
 	}
 ]]
+
+--
+--
+--
 
 --- DOCME
 M.SEAMLESS_COMBINE = includer.AddSnippet[[
@@ -97,6 +113,10 @@ M.SEAMLESS_COMBINE = includer.AddSnippet[[
     #define SEAMLESS_EVALUATE_AND_COMBINE(op, uv, coords) SEAMLESS_COMBINE_RESULTS(SEAMLESS_EVALUATE_COORDS(op, uv), SEAMLESS_EVALUATE_COORDS(op, coords), coords)
 ]]
 
+--
+--
+--
+
 --- DOCME
 M.SET_TEXCOORD = includer.AddSnippet{
 	vertex = [[
@@ -104,6 +124,10 @@ M.SET_TEXCOORD = includer.AddSnippet{
 	#define SET_TEXCOORD(coord) v_TexCoord = coord
 ]]
 }
+
+--
+--
+--
 
 --- DOCME
 M.SOFT_MIN2 = includer.AddSnippet[[
@@ -118,6 +142,10 @@ M.SOFT_MIN2 = includer.AddSnippet[[
 	}
 ]]
 
+--
+--
+--
+
 --- DOCME
 M.SOFT_MIN3 = includer.AddSnippet[[
 
@@ -131,6 +159,10 @@ M.SOFT_MIN3 = includer.AddSnippet[[
 	}
 ]]
 
+--
+--
+--
+
 --- DOCME
 M.SOFT_MIN4 = includer.AddSnippet[[
 
@@ -143,6 +175,10 @@ M.SOFT_MIN4 = includer.AddSnippet[[
 		return (a * ea + b * eb + c * ec + d * ed) / (ea + eb + ec + ed);
 	}
 ]]
+
+--
+--
+--
 
 --- DOCME
 M.SOFT_MAX2 = includer.AddSnippet{
@@ -158,6 +194,10 @@ M.SOFT_MAX2 = includer.AddSnippet{
 
 }
 
+--
+--
+--
+
 --- DOCME
 M.SOFT_MAX3 = includer.AddSnippet{
     requires = { M.SOFT_MIN3 },
@@ -171,6 +211,10 @@ M.SOFT_MAX3 = includer.AddSnippet{
 ]]
 
 }
+
+--
+--
+--
 
 --- DOCME
 M.SOFT_MAX4 = includer.AddSnippet{
@@ -187,6 +231,10 @@ M.SOFT_MAX4 = includer.AddSnippet{
 
 }
 
+--
+--
+--
+
 -- TODO: barycentric / FEM stuff
 
 local Corners = { upper_left = 0, upper_right = .25, lower_left = .5, lower_right = .75 }
@@ -196,7 +244,8 @@ function M.NormalizedCornerValue (what)
 	return assert(Corners[what], "Invalid corner name")
 end
 
---- DOCME
-
+--
+--
+--
 
 return M

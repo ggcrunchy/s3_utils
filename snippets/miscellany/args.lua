@@ -53,9 +53,17 @@ M.INOUT = includer.AddSnippet([[
 
     #define INOUT_PARAM(precision) ]] .. Order([[precision]], [[inout]]))
 
+--
+--
+--
+
 --- DOCME
 M.OUT = includer.AddSnippet([[
 
     #define OUT_PARAM(precision) ]] .. Order([[precision]], [[out]]))
+
+--
+--
+--
 
 return M

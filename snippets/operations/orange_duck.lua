@@ -44,6 +44,10 @@ M.RELATIONAL = includer.AddSnippet[[
     #define WHEN_LE(x, y) (1. - WHEN_GT(x, y))
 ]]
 
+--
+--
+--
+
 --- DOCME
 M.LOGICAL = includer.AddSnippet[[
 
@@ -52,5 +56,9 @@ M.LOGICAL = includer.AddSnippet[[
     #define LOGICAL_OR (a, b) min(a + b, 1.)
     #define LOGICAL_XOR (a, b) mod(a + b, 2.)
 ]]
+
+--
+--
+--
 
 return M

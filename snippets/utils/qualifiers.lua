@@ -40,6 +40,10 @@ function M.DefaultPrecisionOr (alt_precision)
     return SupportsHighPrecision and "P_DEFAULT" or alt_precision
 end
 
+--
+--
+--
+
 local AuxIterPrecision
 
 if SupportsHighPrecision then

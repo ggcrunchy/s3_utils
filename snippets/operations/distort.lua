@@ -44,6 +44,10 @@ M.GET_DISTORT_INFLUENCE = includer.AddSnippet[[
 	}
 ]]
 
+--
+--
+--
+
 --- DOCME
 M.GET_DISTORTED_RGB = includer.AddSnippet{
 	vertex = [[
@@ -54,7 +58,7 @@ M.GET_DISTORTED_RGB = includer.AddSnippet{
 	}
 ]],
 
-    fragment = ([[
+  fragment = ([[
 
 	P_COLOR vec3 GetDistortedRGB (sampler2D s, P_UV vec2 offset)
 	{
@@ -67,15 +71,8 @@ M.GET_DISTORTED_RGB = includer.AddSnippet{
 	varyings = { v_DistortPos = "vec2" }
 }
 
---- DOCME
-function M.AttachCanvasToPaint (paint, canvas)
-	paint.filename, paint.baseDir = canvas.filename, canvas.baseDir
-end
-
---- DOCME
-function M.BindCanvasEffect (object, fill, name)
-    object.fill = fill
-    object.fill.effect = name
-end
+--
+--
+--
 
 return M

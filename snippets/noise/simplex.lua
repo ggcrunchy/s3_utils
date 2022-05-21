@@ -103,6 +103,10 @@ M.SIMPLEX_2D = includer.AddSnippet(([[
     }
 ]]):gsub("_PRECISION_", Precision))
 
+--
+--
+--
+
 --- DOCME
 M.SIMPLEX_3D = includer.AddSnippet(([[
 
@@ -201,6 +205,10 @@ M.SIMPLEX_3D = includer.AddSnippet(([[
       }
 ]]):gsub("_PRECISION_", Precision))
 
+--
+--
+--
+
 --- DOCME
 M.FLOW_NOISE_2D = includer.AddSnippet(([[
 
@@ -295,5 +303,9 @@ M.FLOW_NOISE_2D = includer.AddSnippet(([[
       return 40.0 * (n.x + n.y + n.z);
     }
 ]]):gsub("_PRECISION_", Precision))
+
+--
+--
+--
 
 return M

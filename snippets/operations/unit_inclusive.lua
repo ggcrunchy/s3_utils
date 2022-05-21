@@ -145,6 +145,10 @@ M.UNIT_PAIR = includer.AddSnippet{
 
 }
 
+--
+--
+--
+
 --- DOCME
 M.UNIT_PAIR4 = includer.AddSnippet{
 	requires = { TenBitsPair4Snippet },
@@ -171,6 +175,10 @@ M.UNIT_PAIR4 = includer.AddSnippet{
 ]]
 
 }
+
+--
+--
+--
 
 local Max -- maximum unsigned value
 
@@ -200,6 +208,10 @@ function M.Decode (pair)
 	return x / 1024, y / 1024
 end
 
+--
+--
+--
+
 local function EncodeTenBitsPair (x, y)
 	assert(x >= 0 and x <= 1024, "Invalid x")
 	assert(y >= 0 and y <= 1024, "Invalid y")
@@ -227,9 +239,17 @@ function M.Encode (x, y)
 	return EncodeTenBitsPair(x * 1024, y * 1024)
 end
 
+--
+--
+--
+
 local CombinedProperties = {}
 
 CombinedProperties.__index = CombinedProperties
+
+--
+--
+--
 
 --- DOCME
 function CombinedProperties:AddPair (combined_name, prop1, prop2)
@@ -260,6 +280,10 @@ function CombinedProperties:AddPair (combined_name, prop1, prop2)
 	self[prop1], self[prop2] = func, func
 end
 
+--
+--
+--
+
 --- DOCME
 function CombinedProperties:GetProperty (object, name)
 	local func = rawget(self, name)
@@ -270,6 +294,10 @@ function CombinedProperties:GetProperty (object, name)
 		return object[name]
 	end
 end
+
+--
+--
+--
 
 --- DOCME
 function CombinedProperties:SetProperty (object, name, value)
@@ -283,6 +311,10 @@ function CombinedProperties:SetProperty (object, name, value)
 		object[name] = value
 	end
 end
+
+--
+--
+--
 
 --- DOCME
 function CombinedProperties:WrapForTransitions (object)
@@ -299,10 +331,18 @@ function CombinedProperties:WrapForTransitions (object)
 	return setmetatable(wrapper, wrapper)
 end
 
+--
+--
+--
+
 --- DOCME
 function M.NewCombinedProperties ()
 	return setmetatable({}, CombinedProperties)
 end
+
+--
+--
+--
 
 Max = EncodeTenBitsPair(1024, 1023)
 
@@ -317,6 +357,10 @@ Max = EncodeTenBitsPair(1024, 1023)
 function M.VertexDatum (name, index, defx, defy)
 	return { name = name, index = index, default = _Encode_(defx, defy), min = -Max, max = Max }
 end
+
+--
+--
+--
 
 _Decode_ = M.Decode
 _Encode_ = M.Encode

@@ -149,6 +149,10 @@ M.WORLEY_2x2 = includer.AddSnippet(([[
     }
 ]]):gsub("_PRECISION_", Precision))
 
+--
+--
+--
+
 --- DOCME
 M.WORLEY_3x3x3 = includer.AddSnippet(([[
 
@@ -324,6 +328,10 @@ M.WORLEY_3x3x3 = includer.AddSnippet(([[
     }
 ]]):gsub("_PRECISION_", Precision))
 
+--
+--
+--
+
 --- DOCME
 M.WORLEY_2x2x2 = includer.AddSnippet(([[
 
@@ -391,5 +399,9 @@ M.WORLEY_2x2x2 = includer.AddSnippet(([[
     #endif
     }
 ]]):gsub("_PRECISION_", Precision))
+
+--
+--
+--
 
 return M

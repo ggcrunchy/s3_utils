@@ -54,6 +54,10 @@ if HasSinglePrecisionFloats then -- are the larger numbers representable? (TODO:
 
 ]]):gsub("_PRECISION_", Precision))
 
+  --
+  --
+  --
+
 	--- DOCME
 	M.ENCODE_FLOAT_RGBA = includer.AddSnippet(([[
 
@@ -69,6 +73,11 @@ if HasSinglePrecisionFloats then -- are the larger numbers representable? (TODO:
 ]]):gsub("_PRECISION_", Precision))
 
 else -- lossy alternative
+
+  --
+  --
+  --
+
 	M.DECODE_FLOAT_RGBA = includer.AddSnippet(([[
 
 	_PRECISION_ float DecodeFloatRGBA (_PRECISION_ vec4 rgba)
@@ -77,6 +86,10 @@ else -- lossy alternative
 	}
 
 ]]):gsub("_PRECISION_", Precision))
+
+  --
+  --
+  --
 
 	M.ENCODE_FLOAT_RGBA = includer.AddSnippet(([[
 
@@ -93,6 +106,10 @@ else -- lossy alternative
 
 end
 
+--
+--
+--
+
 --- DOCME
 M.DECODE_TWO_FLOATS_RGBA = includer.AddSnippet(([[
 
@@ -102,6 +119,9 @@ M.DECODE_TWO_FLOATS_RGBA = includer.AddSnippet(([[
 	}
 ]]):gsub("_PRECISION_", Precision))
 
+--
+--
+--
 
 --- DOCME
 M.ENCODE_TWO_FLOATS_RGBA = includer.AddSnippet(([[
@@ -121,5 +141,9 @@ M.ENCODE_TWO_FLOATS_RGBA = includer.AddSnippet(([[
 	-- 1- could be 1 - 2^-16 or 1 - 2^-32
 	-- then follow lead of encode functions
 	-- this is in something... proof of concept for meshes, probably
+
+--
+--
+--
 
 return M
