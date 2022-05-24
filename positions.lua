@@ -54,7 +54,7 @@ function M.make (info, params)
 
 	local psl = params:GetPubSubList()
 
-	psl:Publish(pos, info.uid, "self")
+	psl:Publish(pos, info.uid, "pos")
 
 	local positions = params:GetOrAddData("positions", "table")
 

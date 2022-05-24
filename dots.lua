@@ -46,6 +46,7 @@ local Runtime = Runtime
 
 -- Cached module references --
 local _DeductDot_
+local _GetIndex_
 
 -- Exports --
 local M = {}
@@ -79,6 +80,15 @@ function M.DeductDot ()
 	if Remaining == 0 then
 		Runtime:dispatchEvent{ name = "all_dots_removed" }
 	end
+end
+
+--
+--
+--
+
+--- DOCME
+function M.GetIndex (dot)
+  return dot.m_index
 end
 
 --
@@ -200,7 +210,7 @@ Runtime:addEventListener("act_on_dot", function(event)
 	local dot = event.dot
 
 	-- Remove the dot from any shapes that contain it.
-	shapes.RemoveAt(dot.m_index)
+	shapes.RemoveAt(_GetIndex_(dot))
 
 	-- If this dot counts toward the "dots remaining", deduct it.
 	if dot.m_count > 0 then
@@ -218,7 +228,7 @@ end)
 --
 
 local function DotLess (a, b)
-	return a.m_index < b.m_index
+	return _GetIndex_(a) < _GetIndex_(b)
 end
 
 local function BlockFunc (event)
@@ -253,13 +263,13 @@ Runtime:addEventListener("block_setup", function(event)
 	local slot, n = 1, #Dots
 
 	for index in block:IterSelf() do
-		while slot <= n and Dots[slot].m_index < index do
+		while slot <= n and _GetIndex_(Dots[slot]) < index do
 			slot = slot + 1
 		end
 
 		local dot = Dots[slot]
 
-		if dot and dot.m_index == index and not dot.omit_from_blocks_P then
+		if dot and _GetIndex_(dot) == index and not dot.omit_from_blocks_P then
 			dot.m_old_x, dot.m_old_y = dot.x, dot.y
 
 			if dot.addEventListener then
@@ -295,7 +305,7 @@ Runtime:addEventListener("reset", function()
 	for i = 1, #(Dots or "") do
     local dot = Dots[i]
 
-    tile_layout.PutObjectAt(dot.m_index, dot)
+    tile_layout.PutObjectAt(_GetIndex_(dot), dot)
 
     dot.isVisible = true
     dot.rotation = 0
@@ -313,5 +323,6 @@ end)
 --
 
 _DeductDot_ = M.DeductDot
+_GetIndex_ = M.GetIndex
 
 return M
