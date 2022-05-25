@@ -93,15 +93,8 @@ end
 -- [1]: http://www.itn.liu.se/~stegu/simplexnoise/simplexnoise.pdf
 -- [2]: http://www.luajit.org
 
--- Index loop when index sums exceed 256 --
-local MT = {
-	__index = function(t, i)
-		return t[i - 256]
-	end
-}
-
 -- Permutation of 0-255, replicated to allow easy indexing with sums of two bytes --
-local Perms = setmetatable({
+local Perms = {
 	151, 160, 137, 91, 90, 15, 131, 13, 201, 95, 96, 53, 194, 233, 7, 225,
 	140, 36, 103, 30, 69, 142, 8, 99, 37, 240, 21, 10, 23, 190, 6, 148,
 	247, 120, 234, 75, 0, 26, 197, 62, 94, 252, 219, 203, 117, 35, 11, 32,
@@ -118,14 +111,17 @@ local Perms = setmetatable({
 	81,	51, 145, 235, 249, 14, 239,	107, 49, 192, 214, 31, 181, 199, 106, 157,
 	184, 84, 204, 176, 115, 121, 50, 45, 127, 4, 150, 254, 138, 236, 205, 93,
 	222, 114, 67, 29, 24, 72, 243, 141, 128, 195, 78, 66, 215, 61, 156, 180
-}, MT)
-
--- The above, mod 12 for each element --
-local Perms12 = setmetatable({}, MT)
+}
 
 for i = 1, 256 do
-	Perms12[i] = Perms[i] % 12 + 1
-	Perms[i] = Perms[i] + 1
+  Perms[256 + i] = Perms[i]
+end
+
+-- The above, mod 12 for each element --
+local Perms12 = {}
+
+for i = 1, 512 do
+	Perms12[i] = Perms[i] % 12
 end
 
 -- Gradients for 2D, 3D case --
@@ -138,8 +134,8 @@ local Grads3 = {
 -- 2D weight contribution
 local function GetN (ix, iy, x, y)
     local t = .5 - x^2 - y^2
-    local index = Perms12[ix + Perms[iy + 1]]
-    local grad = Grads3[index]
+    local index = Perms12[ix + Perms[iy + 1] + 1]
+    local grad = Grads3[index + 1]
 
     return max(0, t^4) * (grad[1] * x + grad[2] * y)
 end
