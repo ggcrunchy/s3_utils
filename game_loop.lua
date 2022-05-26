@@ -110,7 +110,11 @@ end
 local Groups = { "game", "canvas", "game_dynamic", "hud", "borders" }
 
 local function InvalidateCanvas (canvas_rect)
-	canvas_rect.m_canvas:invalidate("cache")
+  local canvas = canvas_rect.m_canvas
+
+  if canvas.invalidate then -- Cleanup() might be called before WipeCanvasRect()
+    canvas:invalidate("cache")
+  end
 end
 
 local function SetCanvasRectAlpha (canvas_rect, event)
@@ -207,7 +211,7 @@ end
 --- DOCME
 function M.Cleanup (current_level)
 	for _, name in ipairs(Groups) do
-		if name ~= "game" then -- in canvas
+		if name ~= "game" then -- not in canvas?
 			display.remove(current_level and current_level.params:GetGroup(name))
 		end
 	end
