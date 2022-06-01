@@ -83,9 +83,15 @@ end
 -- @treturn string D
 function M.TryToMove (object, dist, dir)
 	local path_opts = PathOpts[object]
-	local acc, step, x, y = 0, min(path_opts and path_opts.NearGoal or dist, dist), object.x, object.y
+	local acc, x, y, near_goal = 0, object.x, object.y
 	local x0, y0, tilew, tileh = x, y, tile_layout.GetSizes()
 	local tx, ty, tile = GetTileInfo(x, y)
+
+  if path_opts then
+    near_goal = path_opts.NearGoal * (tilew + tileh) / 2
+  end
+
+  local step = min(near_goal or dist, dist)
 
 	while acc < dist do
 		local prevx, prevy, flags = x, y, tile_flags.GetFlags(tile)
@@ -117,7 +123,7 @@ function M.TryToMove (object, dist, dir)
 			tx, ty, tile = GetTileInfo(x, y)
       flags = tile_flags.GetFlags(tile)
 
-			if not tile_layout.IsStraight(flags) and gtile ~= tile and max(abs(tx - x), abs(ty - y)) < path_opts.NearGoal then
+			if not tile_layout.IsStraight(flags) and gtile ~= tile and max(abs(tx - x), abs(ty - y)) < near_goal then
 				dir = path_opts.UpdateOnMove(dir, tile, object)
 			end
 		end
