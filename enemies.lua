@@ -47,6 +47,9 @@ local display = display
 local Runtime = Runtime
 local timer = timer
 
+-- Cached module references --
+local _GetTargetPos_
+
 -- Exports --
 local M = {}
 
@@ -193,14 +196,29 @@ end
 --
 --
 
+local HighTarget
+
+--- DOCME
+function M.GetHighTargetPos ()
+  if HighTarget then
+    return HighTarget.x, HighTarget.y
+  else
+    return _GetTargetPos_()
+  end
+end
+
+--
+--
+--
+
 local Target
 
 --- DOCME
 function M.GetTargetPos ()
 	if Target then
 		return Target.x, Target.y
-	else
-		return 0, 0
+  else
+    return nil
 	end
 end
 
@@ -527,7 +545,7 @@ end)
 --
 
 Runtime:addEventListener("became_subject", function(event)
-	Target = event.target
+	HighTarget, Target = event.high_target, event.target
 end)
 
 --
@@ -605,7 +623,7 @@ Runtime:addEventListener("leave_level", function()
 		timer.cancel(enemy.m_func)
 	end
 
-	EventToBroadcast, Enemies, Target = nil
+	EventToBroadcast, Enemies, HighTarget, Target = nil
 end)
 
 --
@@ -654,5 +672,7 @@ TryConfigFunc("add_listeners")
 --
 --
 --
+
+_GetTargetPos_ = M.GetTargetPos
 
 return M

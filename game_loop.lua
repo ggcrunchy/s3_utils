@@ -27,6 +27,9 @@
 local assert = assert
 local ceil = math.ceil
 local ipairs = ipairs
+local remove = table.remove
+local tostring = tostring
+local type = type
 local yield = coroutine.yield
 
 -- Modules --
@@ -126,9 +129,16 @@ local function WipeCanvasRect (event)
   Runtime:removeEventListener("set_canvas_alpha", event.target)
 end
 
+local function DefaultBackground (group)
+	local w, h = tile_layout.GetFullSizes("match_content")
+	local bg = display.newRect(group, w / 2, h / 2, w, h)
+
+	bg:setFillColor(.525)
+end
+
 --- DOCME
 function M.BeforeEntering (w, h)
-	return function(view, current_level, level, level_list)
+	return function(view, current_level, level)
 		local ncols, nrows = level.ncols, ceil(#level / level.ncols)
 
 		tile_layout.SetCounts(ncols, nrows)
@@ -186,10 +196,10 @@ function M.BeforeEntering (w, h)
 			current_level.groups[i > 2 and "game_dynamic" or "game"]:insert(layer)
 		end
 
-		-- Add the level background, falling back to a decent default if none was given.
-		local background_func = level.background or level_list.DefaultBackground
+		-- Add any level background, using a sane default if absent.
+		local background_func = level.background or DefaultBackground
 
-		background_func(current_level.layers.background)
+    background_func(current_level.layers.background)
 
 		-- Enforce true letterbox mode.
 		if display.screenOriginX ~= 0 then
@@ -235,6 +245,130 @@ function M.DecodeTileLayout (level)
 	for i, tile in ipairs(level.tiles.values) do
 		level[i] = Expansions[tile] or false
 	end
+end
+
+--
+--
+--
+
+local function AssignCells (things, plist)
+  if plist then
+    for i = 1, #(things or "") do
+      local thing = things[i]
+      local pos = assert(plist[thing.label], "Label not attached to any cell")
+
+      if pos then
+        thing.col, thing.row = tile_layout.GetCell(pos)
+      end
+    end
+  else
+    for i = 1, #(things or "") do
+      assert(things[i].label == nil, "Label not attached to any cell")
+    end
+  end
+end
+
+local function ExtractLabel (what, plist, pos)
+  local cpos = what:find(":")
+
+  if cpos then
+    local label = what:sub(cpos + 1)
+
+    assert(not (plist and plist[label]), "Label already used")
+
+    what, plist = what:sub(1, cpos - 1), plist or {}
+    plist[label] = pos
+  end
+
+  return what, plist
+end
+
+local function FindLevel (name)
+	name = "." .. name
+
+	for _, dir in directories.IterateForLabel("level") do
+		local res = directories.TryRequire(dir .. name)
+
+		if res then
+			return res
+		end
+	end
+end
+
+local Substitutions = {
+  __ = false,
+  _H = "Horizontal", _V = "Vertical",
+  _T = "TopNub", _L = "LeftNub", _R = "RightNub", _B = "BottomNub",
+  UL = "UpperLeft", UR = "UpperRight", LL = "LowerLeft", LR = "LowerRight",
+  TT = "TopT", LT = "LeftT", RT = "RightT", BT = "BottomT",
+  _4 = "FourWays"
+}
+
+local function AuxLoadLevelData (name, key)
+  local level = FindLevel(name)
+
+  assert(level ~= nil, "Level not found")
+  assert(type(level) == "table", "Level data not a table")
+
+  if key then
+    level = level[key]
+
+    assert(level ~= nil, "Level not found under key")
+    assert(type(level) == "table", "Level data (under key) not a table")
+  end
+
+    local i, n, plist = 1, #level
+
+    while i <= n do
+      local what = level[i]
+
+      if what ~= "EOC" then -- regular cell?
+        assert(type(what) == "string", "Non-string level cell")
+
+        what, plist = ExtractLabel(what, plist, i)
+
+        local subst = Substitutions[what]
+
+        if subst == nil then
+          assert(false, "Invalid subtitution: " .. what)
+        end
+
+        level[i], i = subst, i + 1
+      else -- end-of-column
+        assert(not level.ncols or level.ncols == i - 1, "Column count mismatch")
+        remove(level, i) -- once at most, usually early
+
+        level.ncols, n = i - 1, n - 1
+      end
+    end
+
+    AssignCells(level.things, plist)
+
+  return level
+end
+
+local LoadCache = {}
+
+--- DOCME
+function M.LoadLevelData (name, key)
+  assert(type(name) == "string", "Non-string level data name")
+
+  local ckey -- n.b. assumes no colon in name or key
+
+  if key then
+    ckey = name .. ":" .. tostring(key)
+  else
+    ckey = name
+  end
+
+  local level = LoadCache[ckey]
+  
+  if not level then
+    level = AuxLoadLevelData(name, key)
+    LoadCache[ckey] = level
+  end
+
+  return level
 end
 
 --

@@ -136,15 +136,23 @@ function M.SamplePositions (n, tolerx, tolery, target, dt, update, arg)
 		end
 
 		--
-		if i > 1 and (abs(x - prevx) > tolerx or abs(y - prevy) > tolery) then
-			return false
-		end		
+    if x and y then
+      if i > 1 and (abs(x - prevx) > tolerx or abs(y - prevy) > tolery) then
+        return false
+      end		
 
-		prevx, sumx = x, sumx + x
-		prevy, sumy = y, sumy + y
+      prevx, sumx = x, sumx + x
+      prevy, sumy = y, sumy + y
+    else
+      n = n - 1
+    end
 	end
 
-	return true, sumx / n, sumy / n
+  if n > 0 then
+    return true, sumx / n, sumy / n
+  else
+    return false
+  end
 end
 
 --

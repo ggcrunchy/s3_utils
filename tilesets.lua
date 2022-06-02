@@ -165,7 +165,7 @@ end
 local function FindTileset (name)
 	name = "." .. name
 
-	for _, dir in directories.IterateForLabel("tilesets") do
+	for _, dir in directories.IterateForLabel("tileset") do
 		local res = directories.TryRequire(dir .. name)
 
 		if res then
