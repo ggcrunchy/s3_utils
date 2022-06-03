@@ -65,6 +65,9 @@ local SetFlags = tile_flags.SetFlags
 -- Extension imports --
 local indexOf = table.indexOf
 
+-- Cached module references --
+local _FindActiveBlock_
+
 -- Exports --
 local M = {}
 
@@ -515,6 +518,25 @@ function M.FindActiveBlock (x, y)
   return nil
 end
 
+--- DOCME
+function M.FindTileAtPos (x, y)
+  local block, tile = _FindActiveBlock_(x, y)
+
+  tile = tile or tile_layout.GetIndex_XY(x, y) -- not in block?
+
+  if tile then
+    local flags = tile_flags.GetFlags_FromSet(block, tile)
+
+    if block then
+      return tile, flags, block
+    else
+      return tile, flags
+    end
+  else
+    return nil
+  end
+end
+
 --
 --
 --
@@ -713,5 +735,7 @@ end)
 --
 --
 --
+
+_FindActiveBlock_ = M.FindActiveBlock
 
 return M
