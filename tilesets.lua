@@ -31,6 +31,7 @@ local assert = assert
 local ipairs = ipairs
 local open = io.open
 local pairs = pairs
+local yield = coroutine.yield
 
 -- Modules --
 local directories = require("s3_utils.directories")
@@ -42,6 +43,7 @@ local tile_layout = require("s3_utils.tile_layout")
 local display = display
 local graphics = graphics
 local Runtime = Runtime
+local system = system
 local timer = timer
 
 -- Exports --
@@ -174,9 +176,9 @@ local function FindTileset (name)
 	end
 end
 
+local LoadedData = {} -- memoize the JSON loads, which can be noticeable
+
 --- DOCME
--- TODO: de-globalize this, e.g. for hub level with mixed tile sets
--- could have an indirection layer, so layer[index] -> name / image + sheet
 function M.UseTileset (name)
 	local ts = assert(FindTileset(name), "Invalid tileset " .. name)
   local info = ImageInfo[Image]
@@ -238,17 +240,24 @@ function M.UseTileset (name)
 
 			local indices, knots, normals, vertices
       local filename = ("Name%s_Mesh.json"):format(name)
-      local path, data = system.pathForFile(filename, system.DocumentsDirectory)
+      local path = system.pathForFile(filename, system.DocumentsDirectory)
+	local data = LoadedData[name]
+
+	if not data then
       local file = open(path)
 
-      if false then
+      if file then 
         local contents = file:read("*a")
 
         file:close()
 
         data = json.decode(contents)
+		LoadedData[name] = data
+
+		yield()
       end
-      
+	end
+
       if data then
         indices, knots, normals, vertices = data.indices, data.knots, data.normals, data.vertices
       else

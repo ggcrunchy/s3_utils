@@ -91,7 +91,7 @@ end
 
 --- DOCME
 function M.AddThings (level, params)
-	tilesets.UseTileset(level.tileset or "Tree")
+	tilesets.UseTileset(level.tileset)
 
 	local tgroup = display.newGroup()
 
@@ -295,14 +295,9 @@ local function FindLevel (name)
 	end
 end
 
-local Substitutions = {
-  __ = false,
-  _H = "Horizontal", _V = "Vertical",
-  _T = "TopNub", _L = "LeftNub", _R = "RightNub", _B = "BottomNub",
-  UL = "UpperLeft", UR = "UpperRight", LL = "LowerLeft", LR = "LowerRight",
-  TT = "TopT", LT = "LeftT", RT = "RightT", BT = "BottomT",
-  _4 = "FourWays"
-}
+local Substitutions = tilesets.GetExpansions()
+
+Substitutions.__ = false
 
 local function AuxLoadLevelData (name, key)
   local level = FindLevel(name)
