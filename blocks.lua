@@ -510,8 +510,8 @@ function M.FindActiveBlock (x, y)
 
     local tile = tile_layout.GetIndex_XY(x, y)
 
-    if BlockIDs[tile] == id then
-      return block, tile
+    if block:Contains_Index(tile) then
+      return block, tile, x, y
     end
   end
 
@@ -520,18 +520,17 @@ end
 
 --- DOCME
 function M.FindTileAtPos (x, y)
-  local block, tile = _FindActiveBlock_(x, y)
+  local block, tile, lx, ly = _FindActiveBlock_(x, y)
+  local flags = block and tile_flags.GetFlags_FromSet(block, tile)
 
-  tile = tile or tile_layout.GetIndex_XY(x, y) -- not in block?
+  if flags ~= 0 then -- spot exists and has a tile?
+    return tile, flags, block, lx, ly
+  end
+
+  tile = tile_layout.GetIndex_XY(x, y) -- unable to find active block: try normal tile
 
   if tile then
-    local flags = tile_flags.GetFlags_FromSet(block, tile)
-
-    if block then
-      return tile, flags, block
-    else
-      return tile, flags
-    end
+    return tile, tile_flags.GetFlags(tile)
   else
     return nil
   end
