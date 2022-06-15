@@ -85,13 +85,14 @@ function M.TryToMove (object, dist, dir)
 	local path_opts = PathOpts[object]
 	local acc, x, y, near_goal = 0, object.x, object.y
 	local x0, y0, tilew, tileh = x, y, tile_layout.GetSizes()
+  local tileavg = (tilew + tileh) / 2
 	local tx, ty, tile = GetTileInfo(x, y)
 
   if path_opts then
-    near_goal = path_opts.NearGoal * (tilew + tileh) / 2
+    near_goal = path_opts.NearGoal * tileavg
   end
 
-  local step = min(near_goal or dist, dist)
+  local step = min(near_goal or dist, dist, tileavg / 4)
 
 	while acc < dist do
 		local prevx, prevy, flags = x, y, tile_flags.GetFlags(tile)
