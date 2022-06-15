@@ -523,7 +523,7 @@ function M.FindTileAtPos (x, y)
   local block, tile, lx, ly = _FindActiveBlock_(x, y)
   local flags = block and tile_flags.GetFlags_FromSet(block, tile)
 
-  if flags ~= 0 then -- spot exists and has a tile?
+  if block and flags ~= 0 then -- spot exists and has a tile?
     return tile, flags, block, lx, ly
   end
 
