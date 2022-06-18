@@ -285,8 +285,6 @@ function M.UseTileset (name)
 
 			tmesh.fill.effect = ts.name
 
-			-- TODO: allow snapshot, followed by "real" effect
-
 			Image:draw(tmesh)
 		end
 

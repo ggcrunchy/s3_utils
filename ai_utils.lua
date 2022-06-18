@@ -118,9 +118,9 @@ end
 -- @treturn number Y
 function M.SamplePositions (n, tolerx, tolery, target, dt, update, arg)
 	local sumx, sumy, prevx, prevy = 0, 0
-	local is_func = type(target) == "function"
+	local is_func, count = type(target) == "function", 0
 
-	for i = 1, n do
+	for _ = 1, n do
 		--
 		if not coro_flow.Wait(dt, update, arg) then
 			return false
@@ -137,19 +137,18 @@ function M.SamplePositions (n, tolerx, tolery, target, dt, update, arg)
 
 		--
     if x and y then
-      if i > 1 and (abs(x - prevx) > tolerx or abs(y - prevy) > tolery) then
+      if count > 0 and (abs(x - prevx) > tolerx or abs(y - prevy) > tolery) then
         return false
       end		
 
       prevx, sumx = x, sumx + x
       prevy, sumy = y, sumy + y
-    else
-      n = n - 1
+      count = count + 1
     end
 	end
 
   if n > 0 then
-    return true, sumx / n, sumy / n
+    return true, sumx / count, sumy / count
   else
     return false
   end
