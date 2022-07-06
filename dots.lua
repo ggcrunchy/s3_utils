@@ -260,16 +260,9 @@ Runtime:addEventListener("block_setup", function(event)
 
 	-- Accumulate any non-omitted dot inside the block region into its list.
 	local block = event.block
-	local slot, n = 1, #Dots
 
-	for index in block:IterSelf() do
-		while slot <= n and _GetIndex_(Dots[slot]) < index do
-			slot = slot + 1
-		end
-
-		local dot = Dots[slot]
-
-		if dot and _GetIndex_(dot) == index and not dot.omit_from_blocks_P then
+  for _, dot in ipairs(Dots) do
+    if block:Contains_Index(_GetIndex_(dot)) and not dot.omit_from_blocks_P then
 			dot.m_old_x, dot.m_old_y = dot.x, dot.y
 
 			if dot.addEventListener then

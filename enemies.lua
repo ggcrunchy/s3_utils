@@ -496,7 +496,7 @@ local ReactEvent = {}
 local function TryConfigFunc (key)
 	local func = enemy_events[key]
 
-	return func and func({
+	return func and func{
 		broadcast_event = BroadcastEvent, kill = Kill,
 
 		-- Helper for getting hit by harmful things
@@ -518,7 +518,7 @@ local function TryConfigFunc (key)
 				func(enemy, arg)
 			end
 		end
-	})
+	}
 end
 
 local OnCollision = TryConfigFunc("on_collision")
