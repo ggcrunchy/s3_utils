@@ -45,6 +45,9 @@ local graphics = graphics
 local Runtime = Runtime
 local system = system
 
+-- Solar2D modules --
+local json = directories.LazyRequire("json")
+
 -- Exports --
 local M = {}
 
@@ -237,7 +240,10 @@ end
 local Expansions = tilesets.GetExpansions()
 
 --- DOCME
-function M.DecodeTileLayout (level)
+function M.DecodeTileLayout (data)
+  local level = json.decode(data)
+
+  -- TODO: fix this up?
 	level.ncols = level.main[1]
 	level.start_col = level.player.col
 	level.start_row = level.player.row
