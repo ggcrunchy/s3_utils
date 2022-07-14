@@ -105,13 +105,15 @@ function M.TryToMove (object, dist, dir)
 		-- the path. If the position on the path switched sides, it passed the goal; if the
 		-- goal is also within cell range, we consider it reached.
 		if path_opts and path_opts.IsFollowingPath(object) then
-			local switch, gx, gy, gtile = false, path_opts.GoalPos(object)
+			local switch, gx, gy, cur_tile = false, path_opts.GoalPos(object)
 
 			if dir == "left" or dir == "right" then
 				switch = (gx - prevx) * (gx - x) <= 0 and abs(gy - y) <= tileh / 2
 			else
 				switch = (gy - prevy) * (gy - y) <= 0 and abs(gx - x) <= tilew / 2
 			end
+
+			tx, ty, tile = GetTileInfo(x, y)
 
 			if switch or StuckFrameCounts[object] == TooManyFrames then
 				path_opts.CancelPath(object)
@@ -121,12 +123,13 @@ function M.TryToMove (object, dist, dir)
 
 			-- If the entity steps onto the center of a non-corner / junction tile for the
 			-- first time during a path, update the pathing state.
-			tx, ty, tile = GetTileInfo(x, y)
-      flags = tile_flags.GetFlags(tile)
+      if tile ~= cur_tile then
+        flags = tile_flags.GetFlags(tile)
 
-			if not tile_layout.IsStraight(flags) and gtile ~= tile and max(abs(tx - x), abs(ty - y)) < near_goal then
-				dir = path_opts.UpdateOnMove(dir, tile, object)
-			end
+        if not tile_layout.IsStraight(flags) and max(abs(tx - x), abs(ty - y)) < near_goal then
+          dir = path_opts.UpdateOnMove(dir, tile, object)
+        end
+      end
 		end
 	end
 
@@ -144,7 +147,7 @@ function M.TryToMove (object, dist, dir)
 		StuckFrameCounts[object] = nil
 	end
 
-	return not stuck, x, y, dir
+	return not stuck, x, y, dir, tile
 end
 
 --
