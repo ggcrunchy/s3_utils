@@ -101,7 +101,7 @@ end
 local Methods = { flood_fill = flood }
 
 local Sounds = audio.NewSoundGroup{
-	path = "sound",
+	path = "gfx/game/player",
 	shape_filled = { file = "ShapeFilled.mp3", wait = 1000 }
 }
 

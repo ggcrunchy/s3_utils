@@ -406,7 +406,7 @@ local EnemyComponent = component.RegisterType{ name = "enemy", interfaces = { "h
 -- during the **alive** step.
 --
 -- For each name, there must be a corresponding module **"enemy.Name"** (e.g. for _name_ of
--- **"eraser"**, the module is **"enemy.Eraser"**), the value of which is a table with
+-- **"ghost"**, the module is **"enemy.Ghost"**), the value of which is a table with
 -- required fields:
 --
 -- * **Do**: Function which updates the enemy while alive, called as
