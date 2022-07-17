@@ -36,6 +36,7 @@ local indexOf = table.indexOf
 
 -- Modules --
 local audio = require("solar2d_utils.audio")
+local directories = require("s3_utils.directories")
 local flood = require("s3_utils.fill.flood")
 local tile_layout = require("s3_utils.tile_layout")
 
@@ -98,10 +99,16 @@ end
 --
 --
 
+local Here = directories.FromModule(...)
+
+--
+--
+--
+
 local Methods = { flood_fill = flood }
 
 local Sounds = audio.NewSoundGroup{
-	path = "gfx/game/player",
+	path = Here .. "../assets/sfx",
 	shape_filled = { file = "ShapeFilled.mp3", wait = 1000 }
 }
 
