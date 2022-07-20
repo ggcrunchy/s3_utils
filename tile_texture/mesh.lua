@@ -138,7 +138,7 @@ function M.Build (params)
 	local function CellCorners (col, row)
 		local lrx, lry = col * cell_width, row * cell_height
 
-		return lrx - cell_width, lry - cell_height, lrx, lry
+		return lrx - cell_width - 1, lry - cell_height - 1, lrx, lry
 	end
 
 	--
