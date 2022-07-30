@@ -330,7 +330,7 @@ local OldFlags
 -- @treturn uint Tile flags at block creation time.
 -- @see s3_utils.tile_flags.GetFlags
 function Block:GetOldFlags (index)
-	return OldFlags[index] or 0
+	return OldFlags[index] or 0 -- TODO: can trigger error when level finished...
 end
 
 --
