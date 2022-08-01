@@ -68,6 +68,10 @@ function M.CanGo (flags, dir)
 	return enums.IsFlagSet(flags, dir)
 end
 
+--
+--
+--
+
 ---
 -- @string dir One of **"left"**, **"right"**, **"up"**, **"down"**.
 -- @uint ncols Column count.
@@ -77,6 +81,10 @@ function M.GetTileDelta (dir, ncols)
 
 	return (dir == "up" or dir == "left") and -delta or delta
 end
+
+--
+--
+--
 
 local function Add (v, dist, comp)
 	v = v + dist
@@ -142,6 +150,10 @@ function M.MoveFrom (x, y, px, py, flags, dist, dir)
 	end
 end
 
+--
+--
+--
+
 --- Determine next direction, given the direction you're facing and which way you're headed.
 -- @string facing One of **"left"**, **"right"**, **"up"**, **"down"**.
 -- @string headed One of **"to_left"**, **"to_right"**, **"backward"**, **"forward"**.
@@ -154,6 +166,10 @@ function M.NextDirection (facing, headed)
 
 	return facing
 end
+
+--
+--
+--
 
 local Horz = { left = -1, right = 1 }
 local Vert = { up = -1, down = 1 }
@@ -171,6 +187,10 @@ function M.UnitDeltas (facing, headed)
 
 	return Horz[facing] or 0, Vert[facing] or 0
 end
+
+--
+--
+--
 
 --- Choose which direction to follow at a tile, given some preferences.
 -- @uint flags Tile flags.
@@ -200,6 +220,10 @@ function M.WayToGo (flags, dir1, dir2, dir3, facing)
 
 	return "backward"
 end
+
+--
+--
+--
 
 _CanGo_ = M.CanGo
 _NextDirection_ = M.NextDirection

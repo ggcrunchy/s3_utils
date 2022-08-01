@@ -82,22 +82,26 @@ end
 -- @treturn number Y
 -- @treturn string D
 function M.TryToMove (object, dist, dir)
-	local path_opts = PathOpts[object]
-	local acc, x, y, near_goal = 0, object.x, object.y
-	local x0, y0, tilew, tileh = x, y, tile_layout.GetSizes()
-  local tileavg = (tilew + tileh) / 2
-	local tx, ty, tile = GetTileInfo(x, y)
+	local path_opts, near_goal = PathOpts[object]
+	local tilew, tileh = tile_layout.GetSizes()
+  local halfw, halfh = tilew / 2, tileh / 2
 
   if path_opts then
-    near_goal = path_opts.NearGoal * tileavg
+    near_goal = path_opts.NearGoal * (halfw + halfh) -- based on average
+
+    if near_goal < dist then
+      dist = near_goal
+    end
   end
 
-  local step = min(near_goal or dist, dist, tileavg / 4)
+  local x, y, step = object.x, object.y, min(dist, tilew, tileh)
+	local x0, y0, tx, ty, tile = x, y, GetTileInfo(x, y)
 
-	while acc < dist do
+	while dist > 0 do
 		local prevx, prevy, flags = x, y, tile_flags.GetFlags(tile)
 
-		acc, x, y = acc + step, movement.MoveFrom(x, y, tx, ty, flags, min(step, dist - acc), dir)
+		dist, x, y = dist - step, movement.MoveFrom(x, y, tx, ty, flags, min(step, dist), dir)
+    tx, ty, tile = GetTileInfo(x, y)
 
 		-- If the entity is following a path, stop if it reaches the goal (or gets impeded).
 		-- Because the goal can be on the fringe of the rectangular cell, radius checks have
@@ -108,12 +112,10 @@ function M.TryToMove (object, dist, dir)
 			local switch, gx, gy, cur_tile = false, path_opts.GoalPos(object)
 
 			if dir == "left" or dir == "right" then
-				switch = (gx - prevx) * (gx - x) <= 0 and abs(gy - y) <= tileh / 2
+				switch = (gx - prevx) * (gx - x) <= 0 and abs(gy - y) <= halfh
 			else
-				switch = (gy - prevy) * (gy - y) <= 0 and abs(gx - x) <= tilew / 2
+				switch = (gy - prevy) * (gy - y) <= 0 and abs(gx - x) <= halfw
 			end
-
-			tx, ty, tile = GetTileInfo(x, y)
 
 			if switch or StuckFrameCounts[object] == TooManyFrames then
 				path_opts.CancelPath(object)
