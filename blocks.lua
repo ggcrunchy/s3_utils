@@ -506,7 +506,7 @@ function M.FindActiveBlock (x, y)
     local block = LoadedBlocks[id]
     local lcs = block:GetLocalCoordinateSystem()
 
-    x, y = coordinate.GlobalToLocal(lcs, x, y, "use_ref")
+    x, y = coordinate.GlobalToLocal(lcs, x, y)
 
     local tile = tile_layout.GetIndex_XY(x, y)
 
