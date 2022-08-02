@@ -38,6 +38,8 @@ local M = {}
 --
 --
 
+-- N.B. assumed to agree with the same list in the tilesets module:
+
 local Left, Right, Up, Down = enums.GetFlagByName("left"), enums.GetFlagByName("right"), enums.GetFlagByName("up"), enums.GetFlagByName("down")
 
 local NameToFlags = {
@@ -55,7 +57,10 @@ NameToFlags.LeftT = NameToFlags.Vertical + Right
 NameToFlags.RightT = NameToFlags.Vertical + Left
 NameToFlags.BottomT = NameToFlags.Horizontal + Up
 NameToFlags.FourWays = NameToFlags.Horizontal + NameToFlags.Vertical
--- ^^ TODO: does this belong elsewhere?
+
+--
+--
+--
 
 local Tiles
 

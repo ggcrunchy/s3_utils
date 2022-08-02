@@ -219,7 +219,7 @@ local Alts = {}
 
 -- Detect if an alternate would have made a better loop
 local function BetterAlt (attempted, n)
-	local nrows, ncols = tile_layout.GetCounts() -- TODO: was ordering it this way intentional?
+	local ncols, nrows = tile_layout.GetCounts()
 
 	for i = 1, n, 3 do
 		local dir, dt = Alts[i + 1], Alts[i + 2]
