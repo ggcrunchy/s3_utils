@@ -615,8 +615,6 @@ local function Broadcast (name, what)
 end
 
 Runtime:addEventListener("leave_level", function()
-	Broadcast("about_to", "leave")
-
 	for _, enemy in IterEnemies() do
 		ClearLocalVars(enemy)
 
