@@ -135,7 +135,9 @@ end
 --
 --
 
-local Deltas = { left = -1, right = 1 }
+local Bogus = 1 / 0
+
+local Deltas = {}
 
 local FlagsUpdatedEvent = { name = "flags_updated" }
 
@@ -162,11 +164,11 @@ function M.Resolve (update)
 		if col > 1 then
 			Deltas.left = -1
 		else
-			Deltas.left, Deltas.right = 1 / 0, 1
+			Deltas.left, Deltas.right = Bogus, 1
 		end
 			
 		if col == ncols then
-			col, Deltas.right = 0, 1 / 0
+			col, Deltas.right = 0, Bogus
 		end
 
 		local flags = WorkingFlags[i]

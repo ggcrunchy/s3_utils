@@ -213,9 +213,15 @@ end
 --
 
 --- DOCME
-function Block:Contains (col, row)
-  local cmin, cmax = self:GetColumns()
-  local rmin, rmax = self:GetRows()
+function Block:Contains (col, row, how)
+  local cmin, rmin, cmax, rmax
+
+  if how == "initial" then
+    cmin, rmin, cmax, rmax = self:GetInitialRect()
+  else
+    cmin, cmax = self:GetColumns()
+    rmin, rmax = self:GetRows()
+  end
 
   return col >= cmin and col <= cmax and row >= rmin and row <= rmax
 end
@@ -225,8 +231,10 @@ end
 --
 
 --- DOCME
-function Block:Contains_Index (index)
-  return self:Contains(tile_layout.GetCell(index))
+function Block:Contains_Index (index, how)
+  local col, row = tile_layout.GetCell(index)
+
+  return self:Contains(col, row, how)
 end
 
 --
@@ -234,8 +242,10 @@ end
 --
 
 --- DOCME
-function Block:Contains_XY (x, y)
-  return self:Contains(tile_layout.GetCell_XY(x, y))
+function Block:Contains_XY (x, y, how)
+  local col, row = tile_layout.GetCell_XY(x, y)
+
+  return self:Contains(col, row, how)
 end
 
 --
@@ -505,13 +515,11 @@ function M.FindActiveBlock (x, y)
     local id = ActiveBlocks[i]
     local block = LoadedBlocks[id]
     local lcs = block:GetLocalCoordinateSystem()
+    local lx, ly = coordinate.GlobalToLocal(lcs, x, y)
+    local tile = tile_layout.GetIndex_XY(lx, ly)
 
-    x, y = coordinate.GlobalToLocal(lcs, x, y)
-
-    local tile = tile_layout.GetIndex_XY(x, y)
-
-    if block:Contains_Index(tile) then
-      return block, tile, x, y
+    if block:Contains_Index(tile, "initial") then
+      return block, tile, lx, ly
     end
   end
 
