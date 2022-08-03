@@ -205,13 +205,31 @@ function M.BeforeEntering (w, h)
     background_func(current_level.layers.background)
 
 		-- Enforce true letterbox mode.
-		if display.screenOriginX ~= 0 then
+    local sx, sy = display.screenOriginX, display.screenOriginY
+
+		if sx ~= 0 or sy ~= 0 then
+      assert(sx == 0 or sy == 0, "Both screen origin offsets non-0")
+
 			for i = 1, 2 do
-				local border = display.newRect(current_level.groups.borders, 0, display.contentCenterY, -display.screenOriginX, ch)
+				local x, y, w, h
+
+        if sx ~= 0 then
+          x, y, w, h = 0, ch / 2, -sx, ch
+        else
+          x, y, w, h = cw / 2, 0, cw, -sy
+        end
+
+        local border = display.newRect(current_level.groups.borders, x, y, w, h)
 
 				border:setFillColor(0)
 
-				border.anchorX, border.x = i == 1 and 1 or 0, i == 1 and 0 or cw
+        local anchor, coord = i == 1 and 1 or 0, i == 1 and 0
+
+        if sx ~= 0 then
+          border.anchorX, border.x = anchor, coord or cw
+        else
+          border.anchorY, border.y = anchor, coord or ch
+        end
 			end
 		end
 	end
