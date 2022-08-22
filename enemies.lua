@@ -469,10 +469,12 @@ function M.New (info, params, enemy, type_info)
 
 	enemy.m_can_attach = not type_info.fixed
 
-	collision.MakeSensor(enemy, "dynamic", type_info.body)
-	collision.SetType(enemy, "enemy")
-	collision.Enable(enemy, false)
-	component.AddToObject(enemy, EnemyComponent)
+  local part = enemy[type_info.body and type_info.body.part_key] or enemy
+
+	collision.MakeSensor(part, "dynamic", type_info.body)
+	collision.SetType(part, "enemy")
+	collision.Enable(part, false)
+	component.AddToObject(part, EnemyComponent)
 
 	enemy.isVisible = false
 
