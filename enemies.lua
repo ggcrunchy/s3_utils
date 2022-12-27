@@ -469,7 +469,8 @@ function M.New (info, params, enemy, type_info)
 
 	enemy.m_can_attach = not type_info.fixed
 
-  local part = enemy[type_info.body and type_info.body.part_key] or enemy
+  local part_key = type_info.body and type_info.body.part_key
+  local part = part_key and enemy[part_key] or enemy -- n.b. might fallthrough
 
 	collision.MakeSensor(part, "dynamic", type_info.body)
 	collision.SetType(part, "enemy")
