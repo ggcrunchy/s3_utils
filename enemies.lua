@@ -169,8 +169,8 @@ function M.EditorEvent ()
   return {
     inputs = {
       boolean = {
-        asleep = false, can_attach = true, sleep_on_death = false
-        -- "Asleep By Default?", "Can Attach To Block?", "Fall Asleep If Killed?"
+        asleep = false, sleep_on_death = false
+        -- "Asleep By Default?", "Fall Asleep If Killed?"
       }
     },
     
@@ -459,15 +459,12 @@ function M.New (info, params, enemy, type_info)
 
 --	object_vars.PublishProperties(psl, info.props, Properties, info.uid, enemy)
 
-	-- Find the start tile to (re)spawn the enemy there, and kick off its behavior. Unless
-	-- fixed, this starting position may attach to a block and be moved around.
+	-- Find the start tile to (re)spawn the enemy there, and kick off its behavior.
 	enemy.m_start = display.newCircle(enemy.parent, 0, 0, 5)
 
 	enemy.m_start.isVisible = false
 
 	tile_layout.PutObjectAt(tile_layout.GetIndex(info.col, info.row), enemy.m_start)
-
-	enemy.m_can_attach = not type_info.fixed
 
   local part_key = type_info.body and type_info.body.part_key
   local part = part_key and enemy[part_key] or enemy -- n.b. might fallthrough
@@ -479,7 +476,7 @@ function M.New (info, params, enemy, type_info)
 
 	enemy.isVisible = false
 
-	PutInPlace(enemy) -- blocks might need this before timer fires
+	PutInPlace(enemy)
 
 	local index = #Enemies -- avoid enemy being an upvalue
 
@@ -549,48 +546,6 @@ end)
 
 Runtime:addEventListener("became_subject", function(event)
 	HighTarget, Target = event.high_target, event.target
-end)
-
---
---
---
-
-Runtime:addEventListener("block", function(event)
-  for _, enemy in IterEnemies() do
-    local start = enemy.m_start
-
-    if start.m_block == event.block then
-      start.m_last_x, start.m_last_y = start.x, start.y
-    end
-  end
-
-  BroadcastEvent(event)
-end)
-
---
---
---
-
-Runtime:addEventListener("block_setup", function(event)
-	local block = event.block
-  local glcs, list = block.GetLocalCoordinateSystem
-
-  if glcs then -- not a fixed block?
-    local cfl = assert(block.ConsumeFillList, "Local coordinate system assumed to use fill list") -- TODO leaky abstraction
-
-    for _, enemy in IterEnemies() do
-      if enemy.m_can_attach and block:Contains_Index(enemy.m_tile) then
-        local start = enemy.m_start
-
-        list = list or {}
-        list[#list + 1] = start
-      
-        start.m_block = block
-      end
-    end
-
-    cfl(block, list, "keep")
-  end
 end)
 
 --

@@ -33,7 +33,6 @@
 
 -- Standard library imports --
 local ipairs = ipairs
-local sort = table.sort
 
 -- Modules --
 local collision = require("solar2d_utils.collision")
@@ -133,9 +132,6 @@ local OnEnterFrame
 -- If the **add\_to\_shapes\_P** property is true, the dot will be added to / may be removed from
 -- shapes, and assumes that its **is_counted\_P** property is true.
 --
--- Unless the **omit\_from\_event\_blocks\_P** property is true, a dot will be added to any event
--- block that it happens to occupy.
---
 -- The **body\_P** and **body_type\_P** properties can be supplied to @{solar2d_utils.collision.MakeSensor}.
 -- If **body\_P** is **false**, these properties are not assigned.
 -- @pgroup group Display group that will hold the dot.
@@ -220,59 +216,6 @@ Runtime:addEventListener("act_on_dot", function(event)
 	-- Do dot-specific logic.
 	if dot.ActOn then
 		dot:ActOn(event.actor, event.body)
-	end
-end)
-
---
---
---
-
-local function DotLess (a, b)
-	return _GetIndex_(a) < _GetIndex_(b)
-end
-
-local function BlockFunc (event)
-	local dot = event.target
-	local x, y = event.group:localToContent(dot.m_old_x, dot.m_old_y)
-
-	dot.x, dot.y = dot.parent:contentToLocal(x, y)
-
-	local angle = event.angle
-
-	if angle then
-		local on_rotate = dot.on_rotate_block_P
-
-		if on_rotate then
-			on_rotate(dot, angle)
-		else
-			dot.rotation = angle
-		end
-	end
-end
-
-Runtime:addEventListener("block_setup", function(event)
-	-- Sort the dots for incremental traversal as we iterate the block.
-	if not Dots.sorted then
-		sort(Dots, DotLess)
-
-		Dots.sorted = true
-	end
-
-	-- Accumulate any non-omitted dot inside the block region into its list.
-	local block = event.block
-
-  for _, dot in ipairs(Dots) do
-    if block:Contains_Index(_GetIndex_(dot)) and not dot.omit_from_blocks_P then
-			dot.m_old_x, dot.m_old_y = dot.x, dot.y
-
-			if dot.addEventListener then
-				dot:addEventListener("with_block_update", BlockFunc)
-			else
-				dot.with_block_update = BlockFunc
-			end
-
-			block:DataStore_Append(dot)
-		end
 	end
 end)
 
