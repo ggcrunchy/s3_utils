@@ -1,4 +1,5 @@
 --- Action elements of the HUD.
+
 --
 -- Permission is hereby granted, free of charge, to any person obtaining
 -- a copy of this software and associated documentation files (the
@@ -26,15 +27,12 @@
 local abs = math.abs
 local assert = assert
 local ceil = math.ceil
-local remove = table.remove
-
--- Extension imports --
-local indexOf = table.indexOf
 
 -- Solar2D globals --
 local display = display
 local easing = easing
 local native = native
+local Runtime = Runtime
 local transition = transition
 
 -- Exports --
@@ -71,7 +69,7 @@ local function Touch (event)
 	return true
 end
 
-local Sequence
+local Current, Previous
 
 --- DOCME
 -- @pgroup group
@@ -96,8 +94,14 @@ function M.AddActionButton (group, do_actions)
 	action:addEventListener("touch", Touch)
 
 	ActionGroup.isVisible = false
+end
 
-	Sequence = {}
+--
+--
+--
+
+function M.GetCurrent ()
+  return Current
 end
 
 --
@@ -119,7 +123,7 @@ Runtime:addEventListener("leave_level", function()
 
 	Cancel(Scaling)
 
-	ActionGroup, Scaling, Sequence = nil
+	ActionGroup, Scaling, Current, Previous = nil
 end)
 
 --
@@ -128,7 +132,7 @@ end)
 
 local FadeIconParams = { tag = "action_fading" }
 
-local function FadeIcon (icon, alpha, how)
+local function FadeIcon (icon, alpha)
 	FadeIconParams.alpha = alpha
 	FadeIconParams.time = ceil(150 * abs(alpha - icon.alpha))
 
@@ -141,78 +145,6 @@ local function FadeIcon (icon, alpha, how)
 	transition.to(icon, FadeIconParams)
 
 	icon.fade_dir = alpha > .5 and "in" or "out"
-  icon.finish, FadeIconParams.delay = how == "finish"
-end
-
-function FadeIconParams.onComplete (icon)
-	local n, fade_dir, finish = #Sequence, icon.fade_dir, icon.finish
-
-	icon.fade_dir, icon.finish = nil
-
-	-- No items left, or icon should not continue the cycle.
-	if n == 0 or finish or not display.isValid(icon) then
-		return
-
-	-- Faded out: fade the next icon in. The "next" icon might be itself, if others were
-  -- removed from the sequence.
-  -- If the icon has been removed from the sequence, choose a "next" arbitrarily.
-  elseif fade_dir == "out" then
-		local index = indexOf(Sequence, icon)
-
-		if index then
-      index = (index % n) + 1
-    else
-      index = 1
-    end
-
-    FadeIcon(Sequence[index], 1)
-
-	-- Faded in: if there are other icons, continue the cycle.
-  elseif n > 1 then
-    FadeIconParams.delay = 400
-
-		FadeIcon(icon, 0)
-	end
-end
-
---
---
---
-
-local function AddIconToSequence (found, icon)
-	if not found then
-		local n = #Sequence
-
-		Sequence[n + 1], icon.ref_count = icon, 0
-
-    -- If the sequence was empty, the new icon is "current", so fade it in.
-    -- If there was a single icon, kick off the fade in / out cycle.
-		if n <= 1 then
-			FadeIcon(Sequence[1], n == 1 and 0 or 1)
-		end
-	end
-
-	icon.ref_count = icon.ref_count + 1
-end
-
---
---
---
-
-local function RemoveIconFromSequence (index)
-	local icon = assert(Sequence[index], "No icon for dot being untouched")
-
-	icon.ref_count = icon.ref_count - 1
-
-	if icon.ref_count == 0 then
-		if icon.fade_dir ~= "out" then
-      FadeIcon(icon, 0, icon.fade_dir and "finish") -- only current icon should have direction;
-                                                    -- other icons should just fade away without
-                                                    -- attempting to maintain the cycle
-    end
-
-		remove(Sequence, index)
-	end
 end
 
 --
@@ -235,10 +167,41 @@ local function CreateIcon (name, is_text)
   icon.x, icon.y = action.x, action.y
   icon.width, icon.height, icon.alpha = 96, 96, 0
 
-  icon.name =  name -- nil if name was an object, see above
+  icon.name = name -- nil if name was an object, see above
+  icon.ref_count = 0
 
   return icon
 end
+
+--
+--
+--
+
+local function AddIconToSequence (icon, name, is_text)
+	icon = icon or CreateIcon(name, is_text)
+
+  if icon.ref_count == 0 then
+    FadeIcon(icon, 1)
+  end
+
+	icon.ref_count = icon.ref_count + 1
+end
+
+--
+--
+--
+
+local function RemoveIconFromSequence (icon)
+	icon.ref_count = icon.ref_count - 1
+
+	if icon.ref_count == 0 and icon.fade_dir ~= "out" then
+    FadeIcon(icon, 0)
+	end
+end
+
+--
+--
+--
 
 local function IsTextObject (object)
   return object._type == "TextObject"
@@ -249,7 +212,7 @@ local function FindIcon (name, is_text)
     local object = ActionGroup[i]
 
     if (object.name or object) == name and IsTextObject(object) == is_text then -- cf. CreateIcon w.r.t. nil name
-      return i, object
+      return object
     end
   end
 end
@@ -262,13 +225,22 @@ local function MergeDotIntoSequence (dot, touch)
 		name = dot.touch_text_P or "Use"
 	end
 
-  local _, icon = FindIcon(name, is_text)
-	local index = indexOf(Sequence, icon)
+  local icon = FindIcon(name, is_text)
 
 	if touch then
-		AddIconToSequence(index, icon or CreateIcon(name, is_text))
+		AddIconToSequence(icon, name, is_text)
+
+    Previous, Current = Current, dot
 	else
-		RemoveIconFromSequence(index)
+		RemoveIconFromSequence(icon)
+
+    assert(dot == Current or dot == Previous, "Stopped touching untracked dot")
+
+    if dot == Current then
+      Current, Previous = Previous
+    else
+      Previous = nil
+    end
 	end
 end
 
@@ -351,6 +323,8 @@ Runtime:addEventListener("touching_dot", function(event)
 	MergeDotIntoSequence(event.dot, event.is_touching)
 
 	ntouch = ntouch + (event.is_touching and 1 or -1)
+
+  assert(ntouch <= 2, "Unable to handle more than two touched dots")
 
 	if ntouch == 0 then
 		ShowAction(false)
