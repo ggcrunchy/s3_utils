@@ -35,8 +35,6 @@ local unpack = unpack
 local indexOf = table.indexOf
 
 -- Modules --
-local audio = require("solar2d_utils.audio")
-local directories = require("s3_utils.directories")
 local flood = require("s3_utils.fill.flood")
 local tile_layout = require("s3_utils.tile_layout")
 
@@ -58,7 +56,7 @@ local Batch
 
 --- Add a region of tiles to the batch, to be filled in by the effect.
 -- @uint ul Index of upper-left tile in region...
--- @uint lr ...and lower-left tile.
+-- @uint lr ...and lower-right tile.
 function M.AddRegion (ul, lr)
 	assert(Batch.group, "No batch running")
 
@@ -99,25 +97,12 @@ end
 --
 --
 
-local Here = directories.FromModule(...)
-
---
---
---
-
 local Methods = { flood_fill = flood }
-
-local Sounds = audio.NewSoundGroup{
-	path = Here .. "../assets/sfx",
-	shape_filled = { file = "ShapeFilled.mp3", wait = 1000 }
-}
 
 local Running
 
 local FillOpts = {
 	on_done = function(timer)
-		Sounds:PlaySound("shape_filled")
-
 		local i, n = indexOf(Running, timer), #Running
 
 		Running[i] = Running[n]
@@ -131,9 +116,6 @@ function M.End (how)
 	local n, method = Batch.n, assert(Methods[how or "flood_fill"], "Invalid fill method")
 
 	assert(n and n > 0, "No regions added")
-
-	-- Lazily load sounds on first fill.
-	Sounds:Load()
 
 	-- Find the extents of the amalgamated regions.
 	local maxc, maxr, minc, minr = 1, 1, tile_layout.GetCounts()
