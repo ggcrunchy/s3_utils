@@ -37,7 +37,6 @@ local _ = require("config.Directories")
 local directories = require("s3_utils.directories")
 local tile_layout = require("s3_utils.tile_layout")
 local tile_maps = require("s3_utils.tile_maps")
-local tilesets = require("s3_utils.tilesets")
 
 -- Solar2D globals --
 local display = display
@@ -45,11 +44,22 @@ local graphics = graphics
 local Runtime = Runtime
 local system = system
 
--- Solar2D modules --
-local json = directories.LazyRequire("json")
-
 -- Exports --
 local M = {}
+
+--
+--
+--
+
+local function AuxFindModule (label, what)
+  for _, dir in directories.IterateForLabel(label) do
+		local res = directories.TryRequire(dir .. what)
+
+		if res then
+			return res
+		end
+	end
+end
 
 --
 --
@@ -70,13 +80,7 @@ local function FindModule (ttype)
 		label, what = "default", "." .. ttype -- ...and manually add it here
 	end
 
-	for _, dir in directories.IterateForLabel(label) do
-		local res = directories.TryRequire(dir .. what)
-
-		if res then
-			return res
-		end
-	end
+  return AuxFindModule(label, what)
 end
 
 local function AuxAddThing (info, params)
@@ -94,13 +98,13 @@ end
 
 --- DOCME
 function M.AddThings (level, params)
-	tilesets.UseTileset(level.tileset)
-
 	local tgroup = display.newGroup()
 
 	params:GetLayer("tiles"):insert(tgroup)
+  
+	local ts = assert(AuxFindModule("tileset", "." .. level.tileset), "Invalid tileset " .. level.tileset)
 
-	tile_maps.AddTiles(tgroup, tilesets.NewTile, level)
+	tile_maps.AddTiles(tgroup, ts, level)
 
 	local things = level.things
 
@@ -254,27 +258,6 @@ end
 --
 --
 
--- Tile names, expanded from two-character shorthands --
-local Expansions = tilesets.GetExpansions()
-
---- DOCME
-function M.DecodeTileLayout (data)
-  local level = json.decode(data)
-
-  -- TODO: fix this up?
-	level.ncols = level.main[1]
-	level.start_col = level.player.col
-	level.start_row = level.player.row
-
-	for i, tile in ipairs(level.tiles.values) do
-		level[i] = Expansions[tile] or false
-	end
-end
-
---
---
---
-
 local function AssignCells (things, plist)
   if plist then
     for i = 1, #(things or "") do
@@ -319,9 +302,13 @@ local function FindLevel (name)
 	end
 end
 
-local Substitutions = tilesets.GetExpansions()
-
-Substitutions.__ = false
+local Substitutions = {
+  __ = false,
+	_H = "Horizontal", _V = "Vertical",
+	UL = "UpperLeft", UR = "UpperRight", LL = "LowerLeft", LR = "LowerRight",
+	TT = "TopT", LT = "LeftT", RT = "RightT", BT = "BottomT",
+	_4 = "FourWays", _T = "TopNub", _L = "LeftNub", _R = "RightNub", _B = "BottomNub"
+}
 
 local function AuxLoadLevelData (name, key)
   local level = FindLevel(name)

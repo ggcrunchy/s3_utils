@@ -23,10 +23,17 @@
 -- [ MIT license: http://www.opensource.org/licenses/mit-license.php ]
 --
 
+-- Standard library imports --
+local remove = table.remove
+
 -- Modules --
+local builders = require("s3_utils.tile_texture.builders")
 local enums = require("s3_utils.enums")
+local movement = require("s3_utils.movement")
+local numeric = require("s3_utils.numeric")
 local tile_flags = require("s3_utils.tile_flags")
 local tile_layout = require("s3_utils.tile_layout")
+local tile_texture_utils = require("s3_utils.tile_texture.utils")
 
 -- Solar2D globals --
 local display = display
@@ -38,7 +45,18 @@ local M = {}
 --
 --
 
--- N.B. assumed to agree with the same list in the tilesets module:
+tile_texture_utils.SetProp("corner_count", 7)
+tile_texture_utils.SetProp("layer_count", 10)
+tile_texture_utils.SetProp("inside_curve_count", 6)
+tile_texture_utils.SetProp("rectangle_count", 10)
+tile_texture_utils.SetProp("outside_nub_count", 18)
+tile_texture_utils.SetProp("offset", 8)
+tile_texture_utils.SetProp("tangent", 15)
+tile_texture_utils.SetProp("tangent_step", 16)
+
+--
+--
+--
 
 local Left, Right, Up, Down = enums.GetFlagByName("left"), enums.GetFlagByName("right"), enums.GetFlagByName("up"), enums.GetFlagByName("down")
 
@@ -62,107 +80,151 @@ NameToFlags.FourWays = NameToFlags.Horizontal + NameToFlags.Vertical
 --
 --
 
-local Tiles
+local function AuxBuildComponent (index, visited, names, id, sources, top, left)
+  if visited[-index] == id then
+		local x, y = tile_layout.GetPosition(index)
+    local w, h = tile_layout.GetSizes()
+
+    local hw, hh = w / 2, h / 2
+
+    tile_texture_utils.SetProp("x1", x - hw)
+    tile_texture_utils.SetProp("y1", y - hh)
+    tile_texture_utils.SetProp("x2", x + hw - 1)
+    tile_texture_utils.SetProp("y2", y + hh - 1)
+
+    return builders.Call(names[index], sources, top, left)
+  end
+end
+
+--
+--
+--
+
+local function AuxGatherComponent (index, visited, names, ncols, id)
+  if names[index] and not visited[-index] then
+    visited[#visited + 1], id = index, id + 1
+
+    while #visited > 0 do
+      index = remove(visited)
+      visited[-index] = id
+
+      for dir in tile_flags.GetDirections(index) do
+        local nindex = index + movement.GetTileDelta(dir, ncols)
+
+        if not visited[-nindex] then
+          visited[#visited + 1] = nindex
+        end
+      end
+    end
+  end
+
+  return id
+end
+
+--
+--
+--
 
 --- Add a set of tiles to the level, adding and resolving the associated flags.
 --
 -- Currently, this is assumed to be a one-time operation on level load.
 -- @pgroup group Group to which tiles are added.
--- @callable new_tile TODO
+-- @callable tileset TODO
 -- @array names Names of tiles, from upper-left to lower-right (left to right over each row).
 --
 -- Unrecognized names will be left blank (the editor names blank tiles **false**). The array
 -- is padded with blanks to ensure its length is a multiple of the columns count.
 -- @see s3_utils.tile_flags.Resolve
-function M.AddTiles (group, new_tile, names)
-	local ncols, w, h = tile_layout.GetCounts(), tile_layout.GetSizes()
-	local index, y, n = 1, .5 * h, #names
+function M.AddTiles (group, tileset, names)
+	local ncols, index, n = tile_layout.GetCounts(), 1, #names
 
 	while index <= n do
-		local x = .5 * w
-
 		for _ = 1, ncols do
 			local name = names[index]
-			local flags = NameToFlags[name]
 
-			-- TODO: We might eventually want animating tiles...
-			if flags then
-				Tiles[index] = new_tile(group, name, x, y, w, h)
-			end
+			tile_flags.SetFlags(index, NameToFlags[name])
 
-			tile_flags.SetFlags(index, flags)
-
-			index, x = index + 1, x + w
+			index = index + 1
 		end
-
-		y = y + h
 	end
 
 	tile_flags.Resolve()
+
+  --
+  --
+  --
+
+  local visited, max_id = {}, 0
+
+  for i = 1, n do
+    max_id = AuxGatherComponent(i, visited, names, ncols, max_id)
+  end
+
+  --
+  --
+  --
+
+  local mg, mn = tileset.modify_geometry, tileset.merge_normals
+
+  for id = 1, max_id do
+    index = 1
+
+    local vs, uvs = {}, {}
+    local sources, tops, left = { indices = {}, vertices = vs, uvs = uvs }, {}
+
+    if mn then
+      sources.normals = {}
+    end
+
+    --
+    --
+    --
+
+    while index <= n do
+      for col = 1, ncols do
+        index, tops[col], left = index + 1, AuxBuildComponent(index, visited, names, id, sources, tops[col], left)
+      end
+
+      left = nil
+    end
+    
+    --
+    --
+    --
+
+    if mg then
+      mg(sources)
+    end
+
+    --
+    --
+    --
+
+    for i = 2, #vs, 2 do
+      local vnoise = numeric.SampleNoise(vs[i - 1], vs[i] * 3.1)
+
+      uvs[i] = (vnoise % 1) * .725 + uvs[i] * .1625
+    end
+
+    --
+    --
+    --
+
+    if mn then
+      mn(sources)
+    end
+
+    --
+    --
+    --
+
+    local mesh = display.newMesh{ parent = group, mode = "indexed", indices = sources.indices, vertices = vs, uvs = uvs }
+
+    mesh:translate(mesh.path:getVertexOffset())
+
+    mesh.fill.effect = tileset.name
+  end
 end
-
---
---
---
-
----
--- @int index
--- @treturn DisplayObject Tile image, or **nil** if _index_ is invalid or the tile is blank.
-function M.GetImage (index)
-	return Tiles[index]
-end
-
---
---
---
-
-local FlagsToName = {}
-
-for k, v in pairs(NameToFlags) do
-	FlagsToName[v] = k
-end
-
-local function AuxSetTilesFromFlags (index, group, new_tile)
-	local flags = tile_flags.GetFlags(index)
-
-	display.remove(Tiles[index])
-
-	if flags ~= 0 then
-		local x, y = tile_layout.GetPosition(index)
-
-		Tiles[index] = new_tile(group, FlagsToName[flags], x, y, tile_layout.GetSizes())
-	else
-		Tiles[index] = nil
-	end
-end
-
---- Update the tiles in a rectangular region to reflect the current resolved flags, cf.
--- @{s3_utils.tile_flags.Resolve}.
--- @pgroup group Group to which tiles are added.
--- @callable new_tile TODO
--- @int col1 Column of one corner...
--- @int row1 ...row of one corner...
--- @int col2 ...column of another corner... (Columns will be sorted, and clamped.)
--- @int row2 ...and row of another corner. (Rows too.)
-function M.SetTilesFromFlags (group, new_tile, col1, row1, col2, row2)
-	tile_layout.VisitRegion(AuxSetTilesFromFlags, col1, row1, col2, row2, group, new_tile)
-end
-
---
---
---
-
-Runtime:addEventListener("enter_level", function()
-	Tiles = {}
-end)
-
---
---
---
-
-Runtime:addEventListener("leave_level", function()
-	Tiles = nil
-end)
 
 --
 --
