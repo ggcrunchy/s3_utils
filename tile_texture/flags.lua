@@ -34,7 +34,7 @@ local M = {}
 --
 
 for i, name in ipairs{
-  "DummyFirst", "OmitLast", "Parabola", "DoNormals", "ReverseEdge"
+  "DummyFirst", "OmitLast", "Parabola", "Interior", "DoNormals", "ReverseEdge"
 } do
   M[name] = 2^(i - 1)
 end

@@ -128,16 +128,36 @@ end
 --
 --
 
-function M.Rectangle (sources, left, right, cols, row)
+function M.Rectangle (sources, left, right, cols, opts)
   local is, vs, uvs, npoints = sources.indices, sources.vertices, sources.uvs, #left
 
   assert(npoints == #right, "Unbalanced rectangle edges")
 
-  local first, normals, nx, ny = GetFirstRow(), sources.normals, tile_texture_prims.GetEdgeNormal()
+  --
+  --
+  --
 
-  row = row or first -- n.b. assumes first = 1 when row exists
+  local normals, norm_npoints, nx, ny = sources.normals
 
-  for i = first, npoints do
+  if normals then
+    if opts then
+      norm_npoints, nx, ny = opts.norm_npoints, opts.nx, opts.ny
+    end
+
+    norm_npoints = norm_npoints or npoints
+
+    if not nx then
+      nx, ny = tile_texture_prims.HalfNormals(normals, left[1], right[1])
+    end
+  end
+
+  --
+  --
+  --
+
+  local arc = opts and opts.arc or "full"
+
+  for i = GetFirstRow(), npoints do
     local lx, ly, lu = tile_texture_prims.GetPoint(sources, left[i])
     local rx, ry, ru = tile_texture_prims.GetPoint(sources, right[i])
 
@@ -151,7 +171,7 @@ function M.Rectangle (sources, left, right, cols, row)
       CurRow[j + 1] = tile_texture_prims.AddLerpedPair(vs, lx, ly, rx, ry, j / cols)
 
       if normals then
-        tile_texture_norms.Arc(normals, "full", nx, ny, i - 1, npoints - 1)
+        tile_texture_norms.Arc(normals, arc, nx, ny, i - 1, norm_npoints - 1)
       end
 
       tile_texture_prims.AddU(uvs, lu, ru, j / cols, true)
@@ -175,7 +195,7 @@ function M.Rectangle (sources, left, right, cols, row)
     --
     --
 
-    CurRow, PrevRow, row = PrevRow, CurRow, row + 1
+    CurRow, PrevRow = PrevRow, CurRow
   end
 end
 
@@ -222,7 +242,8 @@ function M.Trapezoid (sources, left, right, ntop, interp, flags)
   --
   --
 
-  local normals, ul = interp == DefInterp and sources.normals, left[1]
+  local normals, ul, nx, ny = interp == DefInterp and sources.normals, left[1], tile_texture_prims.GetEdgeNormal()
+  local do_interior = tile_texture_flags.HasFlag(flags, "Interior")
   local do_parabola = tile_texture_flags.HasFlag(flags, "Parabola")
   local is, uvs, npoints = sources.indices, sources.uvs, ntop + 1
 
@@ -241,7 +262,11 @@ function M.Trapezoid (sources, left, right, ntop, interp, flags)
       local t = j / w
 
       if normals then
-        tile_texture_norms.Interior(normals, j, w, i - 1, nlayers - 1, ul)
+        if do_interior then
+          tile_texture_norms.Interior(normals, j + 1, w, i - 1, nlayers - 1, ul)
+        else
+          tile_texture_norms.Arc(normals, "forward", nx, ny, i - 1, nlayers - 1)
+        end
       end
 
       CurRow[j + 1] = interp(sources, lx, ly, rx, ry, t, i, nlayers)

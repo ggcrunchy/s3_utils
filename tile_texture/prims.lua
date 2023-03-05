@@ -32,6 +32,7 @@ local _AddLerpedPair_
 local _AddPair_
 local _AddU_
 local _GetEdgeNormal_
+local _GetFromNormals_
 
 -- Exports --
 local M = {}
@@ -173,12 +174,35 @@ end
 --
 --
 
+function M.GetFromNormals (normals, index)
+  index = index * 2 -- resolve to pairs
+
+  if normals then
+    return normals[index - 1], normals[index]
+  end
+end
+
+--
+--
+--
+
 function M.GetPoint (sources, index)
   index = index * 2 -- resolve to pairs
 
   local vs, uvs = sources.vertices, sources.uvs
 
   return vs[index - 1], vs[index], uvs[index - 1]
+end
+
+--
+--
+--
+
+function M.HalfNormals (normals, li, ri)
+  local lnx, lny = _GetFromNormals_(normals, li)
+  local rnx, rny = _GetFromNormals_(normals, ri)
+
+  return lnx + rnx, lny + rny
 end
 
 --
@@ -209,5 +233,6 @@ _AddLerpedPair_ = M.AddLerpedPair
 _AddPair_ = M.AddPair
 _AddU_ = M.AddU
 _GetEdgeNormal_ = M.GetEdgeNormal
+_GetFromNormals_ = M.GetFromNormals
 
 return M

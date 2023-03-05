@@ -441,20 +441,6 @@ end)
 --
 --
 
-Runtime:addEventListener("tiles_changed", function(event)
-  if Shapes then
-    for i in pairs(Shapes) do -- TODO: off-center points could be switched by rotation...
-      Shapes[i] = {}
-    end
-  end
-
-	BakeShapes(event)
-end)
-
---
---
---
-
 Runtime:addEventListener("things_loaded", function(level)
 	if Shapes then
 		Rows = {}

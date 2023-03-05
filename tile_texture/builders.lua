@@ -228,7 +228,6 @@ function Funcs.Horizontal (sources, _, left)
   -- right: E->F / (2->4)
   local right = tile_texture_utils.GetEdge(sources, nil, "right")
 
-  tile_texture_prims.SetEdgeNormal(0, -1)
   shapes.Rectangle(sources, left, right, tile_texture_utils.GetProp("rectangle_count"))
 
   return nil, right -- emit to left
@@ -246,7 +245,6 @@ function Funcs.Vertical (sources, top, _)
   -- bottom: G->H (1->3)
   local bottom = tile_texture_utils.GetEdge(sources, nil, "bottom")
 
-  tile_texture_prims.SetEdgeNormal(-1, 0)
   shapes.Rectangle(sources, bottom, top, tile_texture_utils.GetProp("rectangle_count"))
 
   return bottom, nil -- emit to top
@@ -282,13 +280,13 @@ function Funcs.TopT (sources, _, left)
 
   -- top: C->E
   tile_texture_prims.SetEdgeNormal(0, -1)
-  shapes.Triangle(sources, vr, wl, mid, tile_texture_flags.DoInterior)
+  shapes.Triangle(sources, vr, wl, mid)
 
   -- bottom: reverse(G->H)
   local xl, xr, bottom = tile_texture_utils.TriangleTowardMiddle(sources, nil, "bottom", mid, mx, my, "reverse")
 
-  tile_texture_utils.CornerTriangles(sources, xr, vl, mid, -1, 1)
-  tile_texture_utils.CornerTriangles(sources, wr, xl, mid, 1, 1)
+  tile_texture_utils.CornerTriangles(sources, xr, vl, mid)
+  tile_texture_utils.CornerTriangles(sources, wr, xl, mid)
   
   return bottom, right -- emit to top, left
 end
@@ -309,13 +307,13 @@ function Funcs.BottomT (sources, top, left)
 
   -- top: F->D
   tile_texture_prims.SetEdgeNormal(0, 1)
-  shapes.Triangle(sources, vr, wl, mid, tile_texture_flags.DoInterior)
+  shapes.Triangle(sources, vr, wl, mid)
 
   -- bottom: A->B
   local xl, xr = tile_texture_utils.TriangleTowardMiddle(sources, top, "top", mid, mx, my)
 
-  tile_texture_utils.CornerTriangles(sources, xr, vl, mid, -1, -1)
-  tile_texture_utils.CornerTriangles(sources, wr, xl, mid, 1, -1)
+  tile_texture_utils.CornerTriangles(sources, xr, vl, mid)
+  tile_texture_utils.CornerTriangles(sources, wr, xl, mid)
 
   return nil, left2 -- emit to left
 end
@@ -336,13 +334,13 @@ function Funcs.LeftT (sources, top, _)
 
   -- top: D->F
   tile_texture_prims.SetEdgeNormal(-1, 0)
-  shapes.Triangle(sources, vr, wl, mid, tile_texture_flags.DoInterior)
+  shapes.Triangle(sources, vr, wl, mid)
 
   -- bottom: E->F
   local xl, xr, bottom = tile_texture_utils.TriangleTowardMiddle(sources, nil, "right", mid, mx, my)
 
-  tile_texture_utils.CornerTriangles(sources, xr, vl, mid, 1, 1)
-  tile_texture_utils.CornerTriangles(sources, wr, xl, mid, 1, -1)
+  tile_texture_utils.CornerTriangles(sources, xr, vl, mid)
+  tile_texture_utils.CornerTriangles(sources, wr, xl, mid)
 
   return left, bottom -- emit to top, left
 end
@@ -363,13 +361,13 @@ function Funcs.RightT (sources, top, left)
 
   -- top: B->H
   tile_texture_prims.SetEdgeNormal(1, 0)
-  shapes.Triangle(sources, vr, wl, mid, tile_texture_flags.DoInterior)
+  shapes.Triangle(sources, vr, wl, mid)
 
   -- bottom: reverse(C->D)
   local xl, xr = tile_texture_utils.TriangleTowardMiddle(sources, left, "left", mid, mx, my, "reverse")
 
-  tile_texture_utils.CornerTriangles(sources, xr, vl, mid, -1, -1)
-  tile_texture_utils.CornerTriangles(sources, wr, xl, mid, -1, 1)
+  tile_texture_utils.CornerTriangles(sources, xr, vl, mid)
+  tile_texture_utils.CornerTriangles(sources, wr, xl, mid)
 
   return right, nil -- emit to top
 end
@@ -391,14 +389,14 @@ function Funcs.FourWays (sources, top, left)
   -- top: A->B
   local ul, ur = tile_texture_utils.TriangleTowardMiddle(sources, top, "top", mid, mx, my)
 
-  tile_texture_utils.CornerTriangles(sources, vr, ul, mid, -1, -1)
-  tile_texture_utils.CornerTriangles(sources, ur, wl, mid, 1, -1)
+  tile_texture_utils.CornerTriangles(sources, vr, ul, mid)
+  tile_texture_utils.CornerTriangles(sources, ur, wl, mid)
 
   -- bottom: reverse(G->H)
   local xl, xr, bottom = tile_texture_utils.TriangleTowardMiddle(sources, nil, "bottom", mid, mx, my, "reverse")
 
-  tile_texture_utils.CornerTriangles(sources, xr, vl, mid, -1, 1)
-  tile_texture_utils.CornerTriangles(sources, wr, xl, mid, 1, 1)
+  tile_texture_utils.CornerTriangles(sources, xr, vl, mid)
+  tile_texture_utils.CornerTriangles(sources, wr, xl, mid)
 
   return bottom, right -- emit to top, left
 end

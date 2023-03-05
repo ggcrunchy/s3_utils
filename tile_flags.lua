@@ -346,14 +346,6 @@ end)
 --
 --
 
-Runtime:addEventListener("tiles_changed", function()
-	_Resolve_(true)
-end)
-
---
---
---
-
 _GetDirections_ = M.GetDirections
 _GetFlags_ = M.GetFlags
 _Resolve_ = M.Resolve

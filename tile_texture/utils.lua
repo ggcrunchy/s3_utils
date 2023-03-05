@@ -135,7 +135,13 @@ end
 --
 --
 
-function M.CornerTriangles (sources, ledge, redge, mid, nx, ny)
+local RectOpts = { arc = "forward" }
+
+--
+--
+--
+
+function M.CornerTriangles (sources, ledge, redge, mid)
   local layer_count = _GetProp_("layer_count")
 
   assert(layer_count and layer_count % 2 == 0)
@@ -148,17 +154,21 @@ function M.CornerTriangles (sources, ledge, redge, mid, nx, ny)
   --
   --
 
-  local normals = sources.normals
+  local normals, nx, ny = sources.normals
 
   if normals then
+    nx, ny = tile_texture_prims.HalfNormals(normals, ledge[1], redge[1])
+
     tile_texture_norms.Unit(normals, nx, ny)
   end
 
   -- Beyond a certain point the triangles become slivers and the u-value interpolation
   -- suffers, so break off the latter part of each edge.
-  local is, corner_count, l2, r2 = sources.indices, _GetProp_("corner_count"), {}, {}
+  local is, l2, r2 = sources.indices, {}, {}
 
-  for i = corner_count + 1, #ledge do
+  RectOpts.norm_npoints, RectOpts.nx, RectOpts.ny, RectOpts.row = #ledge, nx, ny
+
+  for i = _GetProp_("corner_count") + 1, #ledge do
     l2[#l2 + 1], ledge[i] = ledge[i]
     r2[#r2 + 1], redge[i] = redge[i]
   end
@@ -171,10 +181,8 @@ function M.CornerTriangles (sources, ledge, redge, mid, nx, ny)
   remove(redge, 1)
 
   -- Begin the interior as a two-wide rectangle.
-  tile_texture_prims.SetEdgeNormal(nx, ny)
   shapes.SetPrevRow{ ledge[1], top, redge[1] }
-
-  shapes.Rectangle(sources, ledge, redge, 2)
+  shapes.Rectangle(sources, ledge, redge, 2, RectOpts)
 
   -- Use three triangles to populate the next row, and build on that to fill the remainder
   -- with a one-wide rectangle. Close with a triangle.
@@ -183,7 +191,7 @@ function M.CornerTriangles (sources, ledge, redge, mid, nx, ny)
   tile_texture_prims.AddIndexedTriangle(is, ledge[#ledge], i2, l2[1])
   tile_texture_prims.AddIndexedTriangle(is, redge[#redge], i2, r2[1])
   tile_texture_prims.AddIndexedTriangle(is, l2[1], i2, r2[1])
-  shapes.Rectangle(sources, l2, r2, 1, corner_count) -- n.b. adjusted row; also no new points, so shorthand for indexed triangle calls
+  shapes.Rectangle(sources, l2, r2, 1)
   tile_texture_prims.AddIndexedTriangle(is, l2[#l2], r2[#r2], mid)
 end
 
@@ -321,7 +329,7 @@ function M.TriangleTowardMiddle (sources, top, what, mid, mx, my, how)
   redge[1] = top[n]
 
   shapes.SetPrevRow(top)
-  shapes.Triangle(sources, ledge, redge, mid, tile_texture_flags.DoInterior)
+  shapes.Triangle(sources, ledge, redge, mid, tile_texture_flags.Interior)
 
   return ledge, redge, top
 end
