@@ -218,17 +218,17 @@ function M.GetState (group, x, y, w, h)
 	local px, py = gx + x * scale, gy + y * scale
 
 	if px < Left then
-		gx = min(gx + Fix(scale, Left + XOffset - px), XOffset) -- TODO the XOffset logic predates scaling...
+		gx = min(gx + (Left + XOffset - px) / scale, XOffset) -- TODO the XOffset logic predates scaling...
 	elseif px > Right then
-		gx = gx - Fix(scale, px - Right)
+		gx = gx - (px - Right) / scale
 	end
 
 	gx = max(gx, min(0, CW - w * scale)) -- zooming might also require a clamp, so outside the px > Right check
 
 	if py < Top then
-		gy = min(gy + Fix(scale, Top + YOffset - py), YOffset) -- TODO: ditto
+		gy = min(gy + (Top + YOffset - py) / scale, YOffset) -- TODO: ditto
 	elseif py > Bottom then
-		gy = gy - Fix(scale, py - Bottom)
+		gy = gy - (py - Bottom) / scale
 	end
 
 	gy = max(gy, min(0, CH - h * scale)) -- as with x

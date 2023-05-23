@@ -24,9 +24,12 @@
 --
 
 -- Standard library imports --
-local abs = math.abs
 local assert = assert
-local ceil = math.ceil
+local insert = table.insert
+local remove = table.remove
+
+-- Extension imports --
+local indexOf = table.indexOf
 
 -- Solar2D globals --
 local display = display
@@ -69,7 +72,7 @@ local function Touch (event)
 	return true
 end
 
-local Current, Previous
+--local Current, Previous
 
 --- DOCME
 -- @pgroup group
@@ -94,6 +97,8 @@ function M.AddActionButton (group, do_actions)
 	action:addEventListener("touch", Touch)
 
 	ActionGroup.isVisible = false
+
+  ActionGroup.m_list = {}
 end
 
 --
@@ -101,7 +106,7 @@ end
 --
 
 function M.GetCurrent ()
-  return Current
+  return ActionGroup.m_list[1]
 end
 
 --
@@ -116,36 +121,13 @@ local function Cancel (trans)
 	end
 end
 
-local Scaling
-
 Runtime:addEventListener("leave_level", function()
 	transition.cancel("action_fading")
 
-	Cancel(Scaling)
+	Cancel(ActionGroup and ActionGroup.m_scaling)
 
-	ActionGroup, Scaling, Current, Previous = nil
+	ActionGroup = nil
 end)
-
---
---
---
-
-local FadeIconParams = { tag = "action_fading" }
-
-local function FadeIcon (icon, alpha)
-	FadeIconParams.alpha = alpha
-	FadeIconParams.time = ceil(150 * abs(alpha - icon.alpha))
-
-	if icon.fade_dir then
-		transition.cancel(icon)
-	else
-		icon.alpha = 1 - alpha
-	end
-
-	transition.to(icon, FadeIconParams)
-
-	icon.fade_dir = alpha > .5 and "in" or "out"
-end
 
 --
 --
@@ -165,38 +147,12 @@ local function CreateIcon (name, is_text)
   ActionGroup:insert(icon)
 
   icon.x, icon.y = action.x, action.y
-  icon.width, icon.height, icon.alpha = 96, 96, 0
+  icon.width, icon.height = 96, 96
 
   icon.name = name -- nil if name was an object, see above
   icon.ref_count = 0
 
   return icon
-end
-
---
---
---
-
-local function AddIconToSequence (icon, name, is_text)
-	icon = icon or CreateIcon(name, is_text)
-
-  if icon.ref_count == 0 then
-    FadeIcon(icon, 1)
-  end
-
-	icon.ref_count = icon.ref_count + 1
-end
-
---
---
---
-
-local function RemoveIconFromSequence (icon)
-	icon.ref_count = icon.ref_count - 1
-
-	if icon.ref_count == 0 and icon.fade_dir ~= "out" then
-    FadeIcon(icon, 0)
-	end
 end
 
 --
@@ -217,7 +173,7 @@ local function FindIcon (name, is_text)
   end
 end
 
-local function MergeDotIntoSequence (dot, touch)
+local function GetIconFromDot (dot)
 	local name = dot.touch_image_P
 	local is_text = not name
 
@@ -225,21 +181,38 @@ local function MergeDotIntoSequence (dot, touch)
 		name = dot.touch_text_P or "Use"
 	end
 
-  local icon = FindIcon(name, is_text)
+  return FindIcon(name, is_text), name, is_text
+end
+
+--
+--
+--
+
+local function MergeDotIntoList (dot, touch)
+	local icon, name, is_text = GetIconFromDot(dot)
+
+  local list = ActionGroup.m_list
+  local index = indexOf(list, dot)
 
 	if touch then
-		AddIconToSequence(icon, name, is_text)
+    icon = icon or CreateIcon(name, is_text)
 
-    Previous, Current = Current, dot
+    if #list > 0 then -- do first, since...
+      GetIconFromDot(list[1]).isVisible = false -- ...this...
+    end
+
+    insert(list, 1, dot)
+
+    icon.isVisible = true -- ...and this might be the same
 	else
-		RemoveIconFromSequence(icon)
+    assert(index, "Stopped touching untracked dot")
 
-    assert(dot == Current or dot == Previous, "Stopped touching untracked dot")
+    icon.isVisible = false -- likewise here...
 
-    if dot == Current then
-      Current, Previous = Previous
-    else
-      Previous = nil
+    remove(list, index)
+
+    if #list > 0 then
+      GetIconFromDot(list[1]).isVisible = true -- ...with this
     end
 	end
 end
@@ -251,14 +224,14 @@ end
 local ScaleInOut = { time = 250, transition = easing.outQuad }
 
 local function ScaleActionButton (button, delta)
-	Cancel(Scaling)
+	Cancel(ActionGroup.m_scaling)
 
 	ScaleInOut.xScale = 1 + delta
 	ScaleInOut.yScale = 1 + delta
 
 	button.m_scale_delta = delta
 
-	Scaling = transition.to(button, ScaleInOut)
+  ActionGroup.m_scaling = transition.to(button, ScaleInOut)
 end
 
 local ScaleToNormal = {
@@ -273,7 +246,7 @@ local ScaleToNormal = {
 
 function ScaleInOut.onComplete (object)
 	if display.isValid(object) then
-		Scaling = transition.to(object, ScaleToNormal)
+    ActionGroup.m_scaling = transition.to(object, ScaleToNormal)
 	end
 end
 
@@ -320,7 +293,7 @@ Runtime:addEventListener("touching_dot", function(event)
 		ShowAction(true)
 	end
 
-	MergeDotIntoSequence(event.dot, event.is_touching)
+	MergeDotIntoList(event.dot, event.is_touching)
 
 	ntouch = ntouch + (event.is_touching and 1 or -1)
 
