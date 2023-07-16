@@ -137,7 +137,8 @@ function M.TryToMove (object, dist, dir)
 
 	--
 	-- CONSIDER: What if 'dist' happened to be low?
-	local stuck = 1 + (x - x0)^2 + (y - y0)^2 == 1
+  local dx, dy = x - x0, y - y0
+	local stuck = 1 + dx * dx + dy * dy == 1
 
 	if stuck and path_opts and path_opts.IsFollowingPath(object) then
 		local count = StuckFrameCounts[object] or 0

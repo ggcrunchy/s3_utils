@@ -59,8 +59,9 @@ local function Touch (event)
 		display.getCurrentStage():setFocus(button, nil)
 
 		local cx, cy = button:localToContent(0, 0)
+    local dx, dy, radius = event.x - cx, event.y - cy, button.path.radius
 
-		if (event.x - cx)^2 + (event.y - cy)^2 < button.path.radius^2 then
+		if dx * dy + dy * dy < radius * radius then
 			button.m_func()
 		end
 		-- ^^ TODO: is the underlying logic robust enough or do we need to guard this too?

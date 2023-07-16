@@ -123,7 +123,8 @@ local MidCol, MidRow
 -- @uint row ...and row, in [1, _ny_].
 -- @see Run
 function M.Add (col, row)
-	local dist_sq = (col - CX)^2 + (row - CY)^2
+  local dx, dy = col - CX, row - CY
+	local dist_sq = dx * dx + dy * dy
 
 	if dist_sq < Closest then
 		Closest, MidCol, MidRow = dist_sq, col, row

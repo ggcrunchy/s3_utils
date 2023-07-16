@@ -61,7 +61,7 @@ local function StickTimer (stick)
 		elseif not stick.m_x then
 			local base = stick.m_base
 			local dx, dy = stick.x - base.x, stick.y - base.y
-			local dist_sq = dx^2 + dy^2
+			local dist_sq = dx * dx + dy * dy
 
 			if dist_sq > 4 then
 				local scale = min(15 / sqrt(dist_sq), 1)
@@ -88,9 +88,9 @@ local function JoystickTouch (event)
 		local base, x, y = stick.m_base, event.x - stick.m_x, event.y - stick.m_y
 		local bx, by = base.x, base.y
 		local dx, dy = x - bx, y - by
-		local dist_sq = dx^2 + dy^2
+		local dist_sq = dx * dx + dy * dy
 
-		if dist_sq > StickRange^2 then
+		if dist_sq > StickRange * StickRange then
 			local scale = StickRange / sqrt(dist_sq)
 
 			dx, dy = dx * scale, dy * scale

@@ -86,7 +86,7 @@ end
 --
 
 function M.Arc (normals, what, x, y, i, n)
-  local sq_len = x^2 + y^2
+  local sq_len = x * x + y * y
 
   if 1 + sq_len ~= 1 then
     local scale = Lookup(what, i + 1, n) / sqrt(sq_len)
@@ -114,7 +114,7 @@ end
 --
 
 function M.Unit (normals, nx, ny)
-  local sq_len, scale = nx^2 + ny^2, 0
+  local sq_len, scale = nx * nx + ny * ny, 0
 
   if 1 + sq_len ~= 1 then
     scale = 1 / sqrt(sq_len)

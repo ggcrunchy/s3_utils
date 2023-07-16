@@ -152,7 +152,7 @@ function M.make (info, params)
 
 		-- 
 		local w, h = tile_layout.GetSizes()
-		local rect = display.newRect(params:GetLayer("things1"), (info.col - .5) * w, (info.row - .5) * h, w, h)
+		local rect = display.newRect(params:GetLayer("decals"), (info.col - .5) * w, (info.row - .5) * h, w, h)
 
 		rect:addEventListener("collision", function(event)
 			local phase, which = event.phase, handles[collision.GetType(event.other)]

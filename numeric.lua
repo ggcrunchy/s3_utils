@@ -28,8 +28,10 @@ local assert = assert
 local ceil = math.ceil
 local floor = math.floor
 local max = math.max
-local sqrt = math.sqrt
 local type = type
+
+-- Extension imports --
+local hypot = math.hypot
 
 -- Exports --
 local M = {}
@@ -61,7 +63,7 @@ function M.MakeLengthQuantizer (params)
   bias, minimum, offset, rescale, unit = bias or 0 or 1, minimum or 0, offset or 0, rescale or 1, unit or 1
 
   return function(dx, dy)
-    return max(minimum, step_func(sqrt(dx^2 + dy^2) / unit + bias)) * rescale + offset
+    return max(minimum, step_func(hypot(dx, dy) / unit + bias)) * rescale + offset
   end
 end
 
@@ -133,7 +135,7 @@ local Grads3 = {
 
 -- 2D weight contribution
 local function GetN (ix, iy, x, y)
-    local t = .5 - x^2 - y^2
+    local t = .5 - x * x - y * y
     local index = Perms12[ix + Perms[iy + 1] + 1]
     local grad = Grads3[index + 1]
 
@@ -141,8 +143,8 @@ local function GetN (ix, iy, x, y)
 end
 
 -- 2D skew factor:
-local F = (sqrt(3) - 1) / 2
-local G = (3 - sqrt(3)) / 6
+local F = (math.sqrt(3) - 1) / 2
+local G = (3 - math.sqrt(3)) / 6
 local G2 = 2 * G - 1
 
 --- 2-dimensional simplex noise.

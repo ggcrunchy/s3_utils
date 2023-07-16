@@ -197,14 +197,6 @@ end
 --
 --
 
-local function Clamp (n)
-	return n - n % 2 -- fix to prevent tile seams
-end
-
-local function Fix (scale, n)
-	return Clamp(n / scale)
-end
-
 local Left, Right, Top, Bottom
 
 local XOffset, YOffset = 0, 0

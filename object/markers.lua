@@ -32,11 +32,13 @@ local min = math.min
 local pairs = pairs
 local pi = math.pi
 local sin = math.sin
-local sqrt = math.sqrt
 
 -- Modules --
 local glow = require("s3_utils.object.glow")
 local numeric = require("s3_utils.numeric")
+
+-- Extension imports --
+local hypot = math.hypot
 
 -- Solar2D globals --
 local display = display
@@ -199,7 +201,7 @@ function ArrowGroup:SetEndPoints (x1, y1, x2, y2, offset)
 	local dx, dy = x2 - x1, y2 - y1
 	local angle = deg(atan2(dy, dx))
 	local dfunc = self.m_dfunc
-	local n, len, fade_from = self.numChildren, sqrt(dx^2 + dy^2)
+	local n, len, fade_from = self.numChildren, hypot(dx, dy)
 
 	if self.m_is_line then
 		fade_from = len - self[1].height
@@ -215,7 +217,7 @@ function ArrowGroup:SetEndPoints (x1, y1, x2, y2, offset)
 
 		--
 		if fade_from then
-			local dist = max(sqrt(dx2^2 + dy2^2) - fade_from, 0)
+			local dist = max(hypot(dx2, dy2) - fade_from, 0)
 
 			arrow.alpha = 1 - (dist / (len - fade_from))^3
 		end
@@ -451,7 +453,7 @@ local MakeColumn = ArrowGroupMaker(75, function(i, n, dx, dy, offset, agroup)
 
 		agroup.m_dir = dir
 
-		local len = sqrt(dx^2 + dy^2) / 20
+		local len = hypot(dx, dy) / 20
 		local nx, ny = dx / len, dy / len
 
 		if dir == "backward" then
