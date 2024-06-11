@@ -42,7 +42,7 @@ local Precision = qualifiers.DefaultPrecisionOr("P_POSITION")
 -- See LICENSE (above).
 
 --- DOCME
-M.WORLEY_3x3 = includer.AddSnippet(([[
+M.WORLEY_2 = includer.AddSnippet(([[
 
     // Permutation polynomial: (34x^2 + x) mod 289
     _PRECISION_ vec3 permute (_PRECISION_ vec3 x) {

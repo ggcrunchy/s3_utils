@@ -40,7 +40,29 @@ local HashSnippet = includer.AddSnippet[[
 
     // Created by inigo quilez - iq/2013
     // License Creative Commons Attribution-NonCommercial-ShareAlike 3.0 Unported License.
-    #if !defined(GL_ES) || defined(GL_FRAGMENT_PRECISION_HIGH)
+    #if 1
+      P_UV float IQ_HASH (P_UV float p)
+      {
+          p = fract(p * .1031);
+          
+          p *= p + 33.33;
+          p *= p + p;
+          
+          return fract(p);
+      }
+
+      //----------------------------------------------------------------------------------------
+      //  1 out, 2 in...
+      P_UV float IQ_HASH (P_UV vec2 p)
+      {
+        P_UV vec3 p3  = fract(vec3(p.xyx) * .1031);
+          
+        p3 += dot(p3, p3.yzx + 33.33);
+        
+        return fract((p3.x + p3.y) * p3.z);
+      }
+    
+    #elif !defined(GL_ES) || defined(GL_FRAGMENT_PRECISION_HIGH)
         #define IQ_HASH(n) fract(sin(n) * 43758.5453)
     #else
         #define IQ_HASH(n) fract(sin(n) * 43.7585453)
@@ -64,7 +86,7 @@ M.IQ1 = includer.AddSnippet{
         _PRECISION_ vec2 p = floor(x);
         _PRECISION_ vec2 f = fract(x);
 
-        f = f * f * (3.0 - 2.0 * f);
+        f = smoothstep(vec2(0.), vec2(1.), f);//f * f * (3.0 - 2.0 * f);
 
         _PRECISION_ float n = p.x + p.y * 57.0;
 
@@ -109,7 +131,7 @@ M.IQ2 = includer.AddSnippet{
         p = vec2(dot(p, vec2(127.1, 311.7)),
                  dot(p, vec2(269.5, 183.3)));
 
-        return -1. + 2. * IQ_HASH(p);
+        return vec2(-1.) + 2. * IQ_HASH(p);
     }
 ]]):gsub("_PRECISION_", Precision)
 

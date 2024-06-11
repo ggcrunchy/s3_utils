@@ -25,6 +25,7 @@
 
 -- Modules --
 local includer = require("solar2d_utils.includer")
+local args = require("s3_utils.snippets.miscellany.args")
 local qualifiers = require("s3_utils.snippets.utils.qualifiers")
 
 -- Exports --
@@ -121,7 +122,7 @@ M.SIMPLEX_3D = includer.AddSnippet(([[
     }
 
     _PRECISION_ vec4 permute (_PRECISION_ vec4 x) {
-         return mod289(((x*34.0)+1.0)*x);
+         return mod289(((x*34.0)+10.0)*x);
     }
 
     _PRECISION_ vec4 taylorInvSqrt (_PRECISION_ vec4 r)
@@ -198,9 +199,9 @@ M.SIMPLEX_3D = includer.AddSnippet(([[
       p3 *= norm.w;
 
     // Mix final noise value
-      _PRECISION_ vec4 m = max(0.6 - vec4(dot(x0,x0), dot(x1,x1), dot(x2,x2), dot(x3,x3)), 0.0);
+      _PRECISION_ vec4 m = max(0.5 - vec4(dot(x0,x0), dot(x1,x1), dot(x2,x2), dot(x3,x3)), 0.0);
       m = m * m;
-      return 42.0 * dot( m*m, vec4( dot(p0,x0), dot(p1,x1), 
+      return 105.0 * dot( m*m, vec4( dot(p0,x0), dot(p1,x1), 
                                     dot(p2,x2), dot(p3,x3) ) );
       }
 ]]):gsub("_PRECISION_", Precision))
@@ -210,7 +211,10 @@ M.SIMPLEX_3D = includer.AddSnippet(([[
 --
 
 --- DOCME
-M.FLOW_NOISE_2D = includer.AddSnippet(([[
+M.FLOW_NOISE_2D = includer.AddSnippet{
+    requires = { args.OUT },
+    
+    any = ([[
 
     // GLSL implementation of 2D "flow noise" as presented
     // by Ken Perlin and Fabrice Neyret at Siggraph 2001.
@@ -251,7 +255,7 @@ M.FLOW_NOISE_2D = includer.AddSnippet(([[
     #endif
     }
 
-    _PRECISION_ float SimplexRD2 (_PRECISION_ vec2 P, _PRECISION_ float rot, $(D_OUT) vec2 grad)
+    _PRECISION_ float SimplexRD2 (_PRECISION_ vec2 P, _PRECISION_ float rot, OUT_PARAM(_PRECISION_) vec2 grad)
     {
       // Transform input point to the skewed simplex grid
       _PRECISION_ vec2 Ps = P + dot(P, vec2(F2));
@@ -302,7 +306,162 @@ M.FLOW_NOISE_2D = includer.AddSnippet(([[
       // Add contributions from the three corners and return
       return 40.0 * (n.x + n.y + n.z);
     }
-]]):gsub("_PRECISION_", Precision))
+]]):gsub("_PRECISION_", Precision)
+
+}
+
+--
+--
+--
+
+--- DOCME
+M.PSRD2 = includer.AddSnippet{
+    requires = { args.OUT },
+    
+    any = ([[
+    // psrdnoise2.glsl
+    //
+    // Authors: Stefan Gustavson (stefan.gustavson@gmail.com)
+    // and Ian McEwan (ijm567@gmail.com)
+    // Version 2021-12-02, published under the MIT license (see below)
+    //
+    // Copyright (c) 2021 Stefan Gustavson and Ian McEwan.
+
+    //
+    // Periodic (tiling) 2-D simplex noise (hexagonal lattice gradient noise)
+    // with rotating gradients and analytic derivatives.
+    //
+    // This is (yet) another variation on simplex noise. Unlike previous
+    // implementations, the grid is axis-aligned and slightly stretched in
+    // the y direction to permit rectangular tiling.
+    // The noise pattern can be made to tile seamlessly to any integer period
+    // in x and any even integer period in y. Odd periods may be specified
+    // for y, but then the actual tiling period will be twice that number.
+    //
+    // The rotating gradients give the appearance of a swirling motion, and
+    // can serve a similar purpose for animation as motion along z in 3-D
+    // noise. The rotating gradients in conjunction with the analytic
+    // derivatives allow for "flow noise" effects as presented by Ken
+    // Perlin and Fabrice Neyret.
+    //
+
+    //
+    // 2-D tiling simplex noise with rotating gradients and analytical derivative.
+    // "vec2 x" is the point (x,y) to evaluate,
+    // "vec2 period" is the desired periods along x and y, and
+    // "float alpha" is the rotation (in radians) for the swirling gradients.
+    // The "float" return value is the noise value, and
+    // the "out vec2 gradient" argument returns the x,y partial derivatives.
+    //
+    // Setting either period to 0.0 or a negative value will skip the wrapping
+    // along that dimension. Setting both periods to 0.0 makes the function
+    // execute about 15% faster.
+    //
+    // Not using the return value for the gradient will make the compiler
+    // eliminate the code for computing it. This speeds up the function
+    // by 10-15%.
+    //
+    // The rotation by alpha uses one single addition. Unlike the 3-D version
+    // of psrdnoise(), setting alpha == 0.0 gives no speedup.
+    //
+    _PRECISION_ float PSRD (_PRECISION_ vec2 x, _PRECISION_ vec2 period, _PRECISION_ float alpha, OUT_PARAM(_PRECISION_) vec2 gradient)
+    {
+      // Transform to simplex space (axis-aligned hexagonal grid)
+      _PRECISION_ vec2 uv = vec2(x.x + x.y * 0.5, x.y);
+
+      // Determine which simplex we're in, with i0 being the "base"
+      _PRECISION_ vec2 i0 = floor(uv);
+      _PRECISION_ vec2 f0 = fract(uv);
+      
+      // o1 is the offset in simplex space to the second corner
+      _PRECISION_ float cmp = step(f0.y, f0.x);
+      _PRECISION_ vec2 o1 = vec2(cmp, 1.0 - cmp);
+
+      // Enumerate the remaining simplex corners
+      _PRECISION_ vec2 i1 = i0 + o1;
+      _PRECISION_ vec2 i2 = i0 + vec2(1.0, 1.0);
+
+      // Transform corners back to texture space
+      _PRECISION_ vec2 v0 = vec2(i0.x - i0.y * 0.5, i0.y);
+      _PRECISION_ vec2 v1 = vec2(v0.x + o1.x - o1.y * 0.5, v0.y + o1.y);
+      _PRECISION_ vec2 v2 = vec2(v0.x + 0.5, v0.y + 1.0);
+
+      // Compute vectors from v to each of the simplex corners
+      _PRECISION_ vec2 x0 = x - v0;
+      _PRECISION_ vec2 x1 = x - v1;
+      _PRECISION_ vec2 x2 = x - v2;
+
+      _PRECISION_ vec3 iu, iv;
+      _PRECISION_ vec3 xw, yw;
+
+      // Wrap to periods, if desired
+      if(any(greaterThan(period, vec2(0.0))))
+      {
+        xw = vec3(v0.x, v1.x, v2.x);
+        yw = vec3(v0.y, v1.y, v2.y);
+        
+        if(period.x > 0.0)
+          xw = mod(vec3(v0.x, v1.x, v2.x), period.x);
+          
+        if(period.y > 0.0)
+          yw = mod(vec3(v0.y, v1.y, v2.y), period.y);
+          
+        // Transform back to simplex space and fix rounding errors
+        iu = floor(xw + 0.5 * yw + 0.5);
+        iv = floor(yw + 0.5);
+      }
+      
+      else // Shortcut if neither x nor y periods are specified
+      {
+        iu = vec3(i0.x, i1.x, i2.x);
+        iv = vec3(i0.y, i1.y, i2.y);
+      }
+
+      // Compute one pseudo-random hash value for each corner
+      _PRECISION_ vec3 hash = mod(iu, 289.0);
+      
+      hash = mod((hash * 51.0 + 2.0) * hash + iv, 289.0);
+      hash = mod((hash * 34.0 + 10.0) * hash, 289.0);
+
+      // Pick a pseudo-random angle and add the desired rotation
+      _PRECISION_ vec3 psi = hash * 0.07482 + alpha;
+      _PRECISION_ vec3 gx = cos(psi);
+      _PRECISION_ vec3 gy = sin(psi);
+
+      // Reorganize for dot products below
+      _PRECISION_ vec2 g0 = vec2(gx.x, gy.x);
+      _PRECISION_ vec2 g1 = vec2(gx.y, gy.y);
+      _PRECISION_ vec2 g2 = vec2(gx.z, gy.z);
+
+      // Radial decay with distance from each simplex corner
+      _PRECISION_ vec3 w = 0.8 - vec3(dot(x0, x0), dot(x1, x1), dot(x2, x2));
+      
+      w = max(w, 0.0);
+      
+      _PRECISION_ vec3 w2 = w * w;
+      _PRECISION_ vec3 w4 = w2 * w2;
+
+      // The value of the linear ramp from each of the corners
+      _PRECISION_ vec3 gdotx = vec3(dot(g0, x0), dot(g1, x1), dot(g2, x2));
+
+      // Multiply by the radial decay and sum up the noise value
+      _PRECISION_ float n = dot(w4, gdotx);
+
+      // Compute the first order partial derivatives
+      _PRECISION_ vec3 w3 = w2 * w;
+      _PRECISION_ vec3 dw = -8.0 * w3 * gdotx;
+      _PRECISION_ vec2 dn0 = w4.x * g0 + dw.x * x0;
+      _PRECISION_ vec2 dn1 = w4.y * g1 + dw.y * x1;
+      _PRECISION_ vec2 dn2 = w4.z * g2 + dw.z * x2;
+      
+      gradient = 10.9 * (dn0 + dn1 + dn2);
+
+      // Scale the return value to fit nicely into the range [-1, 1]
+      return 10.9 * n;
+    }
+]]):gsub("_PRECISION_", Precision)
+
+}
 
 --
 --

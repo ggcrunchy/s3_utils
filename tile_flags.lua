@@ -339,7 +339,7 @@ end)
 --
 
 Runtime:addEventListener("reset", function()
-	_Resolve_()
+  _Resolve_()
 end)
 
 --

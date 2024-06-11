@@ -117,7 +117,7 @@ end
 --
 --
 
-local Groups = { "game", "canvas", "game_dynamic", "hud", "borders" }
+local Groups = { "game", "canvas", "game_dynamic", "hud" }
 
 local function InvalidateCanvas (canvas_rect)
   local canvas = canvas_rect.m_canvas
@@ -207,35 +207,6 @@ function M.BeforeEntering (w, h)
 		local background_func = level.background or DefaultBackground
 
     background_func(current_level.layers.background)
-
-		-- Enforce true letterbox mode.
-    local sx, sy = display.screenOriginX, display.screenOriginY
-
-		if sx ~= 0 or sy ~= 0 then
-      assert(sx == 0 or sy == 0, "Both screen origin offsets non-0")
-
-			for i = 1, 2 do
-				local x, y, w, h
-
-        if sx ~= 0 then
-          x, y, w, h = 0, ch / 2, -sx, ch
-        else
-          x, y, w, h = cw / 2, 0, cw, -sy
-        end
-
-        local border = display.newRect(current_level.groups.borders, x, y, w, h)
-
-				border:setFillColor(0)
-
-        local anchor, coord = i == 1 and 1 or 0, i == 1 and 0
-
-        if sx ~= 0 then
-          border.anchorX, border.x = anchor, coord or cw
-        else
-          border.anchorY, border.y = anchor, coord or ch
-        end
-			end
-		end
 	end
 end
 

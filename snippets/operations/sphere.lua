@@ -107,7 +107,10 @@ M.GET_UV_Z_PHI = includer.AddSnippet{
 --
 
 local PhiToU = [[
-    P_POSITION float u = .5 + phi * ONE_OVER_TWO_PI;
+    P_POSITION float u = .5 + phi * ONE_OVER_PI; // TODO: two pi?
+
+    // dphi = mod(dphi, TWO_PI);
+    // oldu = u
 
     #ifdef SPHERE_PINGPONG_ANGLE
         u = mod(u + dphi, 2.);
@@ -138,6 +141,7 @@ M.GET_UV_PHI_DELTA = includer.AddSnippet{
 
 	#ifdef SPHERE_REPAIR_SEAM_POWER
 		uv.x = mix(uv.y * uv.y, uv.x, pow(4. * uv.x * (uv.x - 1.), SPHERE_REPAIR_SEAM_POWER));
+      // u = mix(1. - u, u, step(oldu, u));
 	#endif
 
 		return uv;
